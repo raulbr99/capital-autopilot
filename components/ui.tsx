@@ -56,31 +56,43 @@ export function NumField({
   step,
   onCommit,
   busy,
+  hint,
+  suffix,
 }: {
   label: string;
   value: number;
   step: number;
   onCommit: (v: number) => void;
   busy?: boolean;
+  hint?: string;
+  suffix?: string;
 }) {
   const [v, setV] = useState(String(value));
   useEffect(() => setV(String(value)), [value]);
   return (
     <label className="block">
       <span className="tag">{label}</span>
-      <input
-        type="number"
-        step={step}
-        value={v}
-        disabled={busy}
-        onChange={(e) => setV(e.target.value)}
-        onBlur={() => {
-          const n = parseFloat(v);
-          if (Number.isFinite(n) && n !== value) onCommit(n);
-        }}
-        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-        className="mt-1.5 w-full rounded-lg border border-cement bg-base px-2.5 py-2 font-mono text-sm text-white transition-colors focus:border-accent focus:outline-none disabled:opacity-40"
-      />
+      <div className="relative mt-1.5">
+        <input
+          type="number"
+          step={step}
+          value={v}
+          disabled={busy}
+          onChange={(e) => setV(e.target.value)}
+          onBlur={() => {
+            const n = parseFloat(v);
+            if (Number.isFinite(n) && n !== value) onCommit(n);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+          className="w-full rounded-lg border border-cement bg-base px-2.5 py-2 font-mono text-sm text-white transition-colors focus:border-accent focus:outline-none disabled:opacity-40"
+        />
+        {suffix && (
+          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 font-mono text-[11px] text-muted">
+            {suffix}
+          </span>
+        )}
+      </div>
+      {hint && <span className="mt-1 block text-[10px] leading-snug text-muted">{hint}</span>}
     </label>
   );
 }
