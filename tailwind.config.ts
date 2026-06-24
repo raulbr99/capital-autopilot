@@ -8,23 +8,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Superficies — grafito frío profundo (no negro puro, no navy)
-        ink: "#0B0D11", // fondo de la app
-        base: "#0F1218", // fondo alterno / barras
-        soft: "#14171D", // paneles / cards
-        raised: "#1A1E26", // elevado / hover
-        industrial: "#242a33", // hairline principal (borde/separador)
-        cement: "#2c333d", // borde secundario / inputs
-        // Acento — iris/periwinkle (≤10% de la superficie, solo estado/acción)
-        accent: "#6E7CF7",
-        volt: "#6E7CF7", // alias para clases heredadas
-        // Semánticos P&L — esmeralda / rosa refinados
-        long: "#34C98A",
-        short: "#F2567A",
-        // Texto
-        white: "#E7E9EE", // primario (blanco suave, no #fff)
-        dim: "#A0A7B4", // secundario
-        muted: "#6B7280", // terciario
+        // Mapeadas a variables CSS (ver globals.css) -> soportan dark + light
+        ink: "rgb(var(--ink) / <alpha-value>)",
+        base: "rgb(var(--base) / <alpha-value>)",
+        soft: "rgb(var(--soft) / <alpha-value>)",
+        raised: "rgb(var(--raised) / <alpha-value>)",
+        industrial: "rgb(var(--industrial) / <alpha-value>)",
+        cement: "rgb(var(--cement) / <alpha-value>)",
+        accent: "rgb(var(--accent) / <alpha-value>)",
+        volt: "rgb(var(--accent) / <alpha-value>)", // alias heredado
+        onaccent: "rgb(var(--onaccent) / <alpha-value>)", // texto sobre acento
+        long: "rgb(var(--long) / <alpha-value>)",
+        short: "rgb(var(--short) / <alpha-value>)",
+        white: "rgb(var(--white) / <alpha-value>)",
+        dim: "rgb(var(--dim) / <alpha-value>)",
+        muted: "rgb(var(--muted) / <alpha-value>)",
       },
       fontFamily: {
         // Una sola familia (Inter); el "display" es la misma con más peso

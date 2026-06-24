@@ -13,6 +13,7 @@ import WalkForward from "./WalkForward";
 import Analytics from "./Analytics";
 import LogFeed from "./LogFeed";
 import CommandPalette, { type Command } from "./CommandPalette";
+import ThemeToggle from "./ThemeToggle";
 
 const TICK_MS = 6000;
 const TRADES_MS = 12000;
@@ -155,7 +156,7 @@ export default function Dashboard() {
       {/* HEADER */}
       <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between border-b border-industrial bg-ink/85 px-5 backdrop-blur md:px-8">
         <div className="flex items-center gap-3">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-ink">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
             <span className="font-display text-base font-bold leading-none">A</span>
           </div>
           <div>
@@ -173,6 +174,7 @@ export default function Dashboard() {
             </span>
           )}
           <ConnBadge configured={configured} enabled={enabled} />
+          <ThemeToggle />
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
             className="hidden rounded-md border border-industrial px-2 py-1 font-mono text-[10px] text-muted transition-colors hover:border-cement hover:text-dim md:block"
@@ -220,7 +222,7 @@ export default function Dashboard() {
               onClick={() => patch({ enabled: !enabled })}
               disabled={busy || !configured}
               className={`mt-4 w-full rounded-lg px-6 py-3.5 text-sm font-semibold transition-opacity disabled:opacity-40 ${
-                enabled ? "bg-short text-white hover:opacity-90" : "bg-accent text-ink hover:opacity-90"
+                enabled ? "bg-short text-[#fff] hover:opacity-90" : "bg-accent text-onaccent hover:opacity-90"
               }`}
             >
               {enabled ? "Detener piloto" : "Activar piloto"}

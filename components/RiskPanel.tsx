@@ -27,7 +27,7 @@ export default function RiskPanel({
                 disabled={busy}
                 onClick={() => patch({ risk: { sizingMode: m } })}
                 className={`py-2 font-mono text-[11px] ${
-                  r.sizingMode === m ? "bg-volt text-ink" : "bg-soft text-muted"
+                  r.sizingMode === m ? "bg-volt text-onaccent" : "bg-soft text-muted"
                 }`}
               >
                 {m === "percent" ? "% RIESGO" : "UNIDADES FIJAS"}

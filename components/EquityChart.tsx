@@ -60,7 +60,7 @@ export default function EquityChart({
         </linearGradient>
       </defs>
       {[0.25, 0.5, 0.75].map((g) => (
-        <line key={g} x1={pad} x2={W - pad} y1={pad + g * (H - pad * 2)} y2={pad + g * (H - pad * 2)} stroke="#242a33" strokeWidth="1" />
+        <line key={g} x1={pad} x2={W - pad} y1={pad + g * (H - pad * 2)} y2={pad + g * (H - pad * 2)} stroke="#8891a0" strokeOpacity="0.18" strokeWidth="1" />
       ))}
       <polygon points={ddArea} fill="#F2567A" opacity="0.06" />
       <polygon points={area} fill="url(#eqfill)" />

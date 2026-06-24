@@ -24,7 +24,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" data-theme="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var p=new URLSearchParams(location.search).get('theme');var t=p||localStorage.getItem('theme')||'dark';if(p){localStorage.setItem('theme',p);}document.documentElement.setAttribute('data-theme',t);}catch(e){}})()",
+          }}
+        />
+      </head>
       <body
         className={`${sans.variable} ${mono.variable} bg-ink text-white font-sans antialiased`}
       >

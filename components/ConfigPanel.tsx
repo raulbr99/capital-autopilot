@@ -87,7 +87,7 @@ export default function ConfigPanel({
               placeholder="EPIC ej. NZDUSD"
               className="w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-volt focus:outline-none"
             />
-            <button onClick={add} disabled={busy} className="bg-volt px-3 font-display text-xs text-ink disabled:opacity-40">
+            <button onClick={add} disabled={busy} className="bg-volt px-3 font-display text-xs text-onaccent disabled:opacity-40">
               +
             </button>
           </div>

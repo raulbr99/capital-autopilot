@@ -2,13 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ===== Tema por variables (canales RGB para soportar opacidad de Tailwind) ===== */
+:root,
+:root[data-theme="dark"] {
   color-scheme: dark;
+  --ink: 11 13 17;
+  --base: 15 18 24;
+  --soft: 20 23 29;
+  --raised: 26 30 38;
+  --industrial: 36 42 51;
+  --cement: 44 51 61;
+  --accent: 110 124 247;
+  --onaccent: 11 13 17;
+  --long: 52 201 138;
+  --short: 242 86 122;
+  --white: 231 233 238;
+  --dim: 160 167 180;
+  --muted: 107 114 128;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ink: 246 247 249; /* fondo app */
+  --base: 250 251 252; /* inputs / cajas alt */
+  --soft: 255 255 255; /* cards */
+  --raised: 240 242 245;
+  --industrial: 227 230 236; /* hairline */
+  --cement: 205 211 219;
+  --accent: 79 87 224; /* iris más profundo para contraste sobre blanco */
+  --onaccent: 255 255 255;
+  --long: 11 134 90;
+  --short: 214 41 92;
+  --white: 23 26 33; /* texto primario (oscuro) */
+  --dim: 82 89 100; /* secundario */
+  --muted: 99 106 117; /* terciario / etiquetas */
 }
 
 html,
 body {
-  background: #0b0d11;
+  background: rgb(var(--ink));
 }
 
 body {
@@ -16,37 +48,31 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Display = misma familia (Inter) con más peso y tracking ajustado */
 .font-display,
 [class~="font-display"] {
   font-weight: 660;
   letter-spacing: -0.018em;
 }
 
-/* Cifras tabulares en todo lo monoespaciado (precios, PnL, tablas) */
 .font-mono,
 [class~="font-mono"] {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
-/* Etiqueta técnica refinada (sans, sin tracking extremo) */
 .tag {
   font-family: var(--font-sans);
   font-size: 10.5px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: #6b7280;
+  color: rgb(var(--muted));
   text-transform: uppercase;
 }
 
-/* Anillo de acento sutil para elementos activos */
 .ring-accent {
-  box-shadow: 0 0 0 1px rgba(110, 124, 247, 0.5),
-    0 0 0 4px rgba(110, 124, 247, 0.1);
+  box-shadow: 0 0 0 1px rgb(var(--accent) / 0.5), 0 0 0 4px rgb(var(--accent) / 0.1);
 }
 
-/* Radio por defecto en controles (las utilidades rounded-* lo sobreescriben) */
 @layer base {
   button,
   input,
@@ -56,7 +82,6 @@ body {
   }
 }
 
-/* Scrollbars discretos */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -65,17 +90,13 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2c333d;
-  border: 3px solid #0b0d11;
+  background: rgb(var(--cement));
+  border: 3px solid rgb(var(--ink));
   border-radius: 8px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #3a424e;
-}
 
-/* Foco accesible y consistente */
 *:focus-visible {
-  outline: 2px solid rgba(110, 124, 247, 0.7);
+  outline: 2px solid rgb(var(--accent) / 0.7);
   outline-offset: 1px;
 }
 
