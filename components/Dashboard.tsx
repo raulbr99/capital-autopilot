@@ -9,6 +9,7 @@ import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
 import ConfigPanel from "./ConfigPanel";
 import BacktestPanel from "./BacktestPanel";
+import WalkForward from "./WalkForward";
 import Analytics from "./Analytics";
 import LogFeed from "./LogFeed";
 import CommandPalette, { type Command } from "./CommandPalette";
@@ -133,6 +134,7 @@ export default function Dashboard() {
     { id: "toggle", label: enabled ? "Detener piloto" : "Activar piloto", hint: "ENGINE", run: () => patch({ enabled: !enabled }) },
     { id: "mode", label: dryRun ? "Cambiar a LIVE (opera de verdad)" : "Cambiar a PAPER (dry-run)", hint: "MODE", run: () => patch({ dryRun: !dryRun }) },
     { id: "bt", label: "Ir a Backtest", hint: "SCROLL", run: () => document.getElementById("backtest")?.scrollIntoView({ behavior: "smooth" }) },
+    { id: "wf", label: "Ir a Walk-Forward (validación)", hint: "SCROLL", run: () => document.getElementById("walkforward")?.scrollIntoView({ behavior: "smooth" }) },
     { id: "perf", label: "Ir a Performance", hint: "SCROLL", run: () => document.getElementById("perf")?.scrollIntoView({ behavior: "smooth" }) },
     { id: "atr", label: "Toggle SL/TP por ATR", hint: "RISK", run: () => patch({ risk: { useAtrStops: !cfg?.risk.useAtrStops } }) },
   ];
@@ -265,6 +267,9 @@ export default function Dashboard() {
             <PositionsTable positions={positions} onClose={closePos} busy={busy} />
             <div id="backtest">
               <BacktestPanel />
+            </div>
+            <div id="walkforward">
+              <WalkForward watchlist={cfg?.watchlist ?? []} />
             </div>
             <div id="perf">
               <Analytics a={analytics} trades={trades} />
