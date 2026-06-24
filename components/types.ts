@@ -2,7 +2,7 @@ export type Signal = {
   type: "BUY" | "SELL" | "FLAT";
   confidence: number;
   reason: string;
-  indicators: { smaFast: number; smaSlow: number; rsi: number };
+  indicators: { smaFast: number; smaSlow: number; rsi: number; adx: number };
 };
 
 export type EpicEval = {
@@ -76,6 +76,9 @@ export type StrategyConfig = {
   rsiBuyBelow: number;
   rsiSellAbove: number;
   minConfidence: number;
+  useRegimeFilter: boolean;
+  adxPeriod: number;
+  adxThreshold: number;
 };
 
 export type RiskConfig = {

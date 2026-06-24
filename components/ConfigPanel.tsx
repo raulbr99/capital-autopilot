@@ -89,6 +89,25 @@ export default function ConfigPanel({
         </div>
 
         <div className="border-t border-industrial pt-3">
+          <button
+            disabled={busy}
+            onClick={() => patch({ strategy: { useRegimeFilter: !cfg.strategy.useRegimeFilter } })}
+            className={`mb-2 flex w-full items-center justify-between border px-3 py-2 font-mono text-[11px] ${
+              cfg.strategy.useRegimeFilter ? "border-volt text-volt" : "border-cement text-muted"
+            }`}
+          >
+            FILTRO RÉGIMEN (ADX) — solo opera en tendencia
+            <span>{cfg.strategy.useRegimeFilter ? "ON" : "OFF"}</span>
+          </button>
+          <div className="grid grid-cols-2 gap-3">
+            <NumField label="ADX_PERIODO" value={cfg.strategy.adxPeriod} step={1} busy={busy}
+              onCommit={(v) => patch({ strategy: { adxPeriod: v } })} />
+            <NumField label="ADX_UMBRAL" value={cfg.strategy.adxThreshold} step={1} busy={busy}
+              onCommit={(v) => patch({ strategy: { adxThreshold: v } })} />
+          </div>
+        </div>
+
+        <div className="border-t border-industrial pt-3">
           <p className="tag mb-2">NOTIFICACIONES</p>
           <div className="grid grid-cols-2 gap-2">
             <NotifyRow

@@ -66,7 +66,13 @@ function SignalCard({ e }: { e: EpicEval }) {
         <Ind label="SMA-F" v={s.indicators.smaFast} />
         <Ind label="SMA-S" v={s.indicators.smaSlow} />
         <Ind label="RSI" v={s.indicators.rsi} d={0} />
-        <Ind label="ATR" v={e.atr} />
+        <div>
+          <p className="text-muted">ADX</p>
+          <p className={s.indicators.adx >= 25 ? "text-long" : "text-muted"}>
+            {Number.isFinite(s.indicators.adx) ? s.indicators.adx.toFixed(0) : "—"}
+            <span className="ml-1 text-[8px]">{s.indicators.adx >= 25 ? "TREND" : "RANGE"}</span>
+          </p>
+        </div>
       </div>
       {e.hasPosition && (
         <p className="mt-2 inline-block bg-volt/10 px-2 py-0.5 font-mono text-[9px] text-volt">

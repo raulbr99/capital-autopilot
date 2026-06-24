@@ -29,6 +29,14 @@ export async function GET(req: Request) {
 
   try {
     const cfg = await loadConfig();
+    // A/B del filtro de régimen: ?regime=on|off sobreescribe la config
+    const regime = searchParams.get("regime");
+    const strategy = { ...cfg.strategy };
+    if (regime === "on") strategy.useRegimeFilter = true;
+    if (regime === "off") strategy.useRegimeFilter = false;
+    const adxTh = searchParams.get("adxThreshold");
+    if (adxTh) strategy.adxThreshold = Number(adxTh);
+
     const candles = await getPrices(epic, resolution, max);
     if (candles.length < isBars + oosBars) {
       return NextResponse.json({
@@ -37,7 +45,7 @@ export async function GET(req: Request) {
         error: `Histórico insuficiente (${candles.length} velas, hacen falta ≥ ${isBars + oosBars}).`,
       });
     }
-    const result = walkForward(epic, candles, cfg.strategy, cfg.risk, cfg.sizePerTrade, {
+    const result = walkForward(epic, candles, strategy, cfg.risk, cfg.sizePerTrade, {
       isBars,
       oosBars,
     });
