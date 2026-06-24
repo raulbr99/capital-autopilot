@@ -15,7 +15,7 @@ export type EpicEval = {
   spark: number[];
 };
 
-export type Instrument = { epic: string; resolution: string };
+export type Instrument = { epic: string; resolution: string; regimeFilter?: boolean };
 export const RESOLUTIONS = [
   "MINUTE",
   "MINUTE_5",
@@ -103,6 +103,7 @@ export type NotifyConfig = {
 export type BotConfig = {
   enabled: boolean;
   dryRun: boolean;
+  aiFilter: boolean;
   instruments: Instrument[];
   watchlist: string[];
   sizePerTrade: number;

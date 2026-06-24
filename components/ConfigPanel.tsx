@@ -30,6 +30,12 @@ export default function ConfigPanel({
     patch({
       instruments: instruments.map((i) => (i.epic === epic ? { ...i, resolution } : i)),
     });
+  const toggleRegime = (epic: string) =>
+    patch({
+      instruments: instruments.map((i) =>
+        i.epic === epic ? { ...i, regimeFilter: !i.regimeFilter } : i
+      ),
+    });
 
   return (
     <div className="border border-industrial bg-soft">
@@ -53,6 +59,16 @@ export default function ConfigPanel({
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
+                <button
+                  onClick={() => toggleRegime(i.epic)}
+                  disabled={busy}
+                  title="Filtro de régimen ADX para este activo"
+                  className={`border px-1.5 py-1.5 font-mono text-[9px] ${
+                    i.regimeFilter ? "border-volt text-volt" : "border-cement text-muted"
+                  }`}
+                >
+                  ADX
+                </button>
                 <button
                   onClick={() => remove(i.epic)}
                   disabled={busy}
@@ -105,6 +121,19 @@ export default function ConfigPanel({
             <NumField label="ADX_UMBRAL" value={cfg.strategy.adxThreshold} step={1} busy={busy}
               onCommit={(v) => patch({ strategy: { adxThreshold: v } })} />
           </div>
+        </div>
+
+        <div className="border-t border-industrial pt-3">
+          <button
+            disabled={busy}
+            onClick={() => patch({ aiFilter: !cfg.aiFilter })}
+            className={`flex w-full items-center justify-between border px-3 py-2 font-mono text-[11px] ${
+              cfg.aiFilter ? "border-volt text-volt glow-volt" : "border-cement text-muted"
+            }`}
+          >
+            🤖 CAPA IA — Claude revisa/veta cada señal
+            <span>{cfg.aiFilter ? "ON" : "OFF"}</span>
+          </button>
         </div>
 
         <div className="border-t border-industrial pt-3">

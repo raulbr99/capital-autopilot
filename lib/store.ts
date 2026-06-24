@@ -30,7 +30,11 @@ export const DEFAULT_RISK: RiskConfig = {
   cooldownMin: 30,
 };
 
-export type Instrument = { epic: string; resolution: string };
+export type Instrument = {
+  epic: string;
+  resolution: string;
+  regimeFilter?: boolean; // override por activo del filtro ADX (undefined = usa el global)
+};
 
 export const RESOLUTIONS = [
   "MINUTE",
@@ -61,6 +65,7 @@ export const DEFAULT_NOTIFY: NotifyConfig = {
 export type BotConfig = {
   enabled: boolean; // toggle de la UI (ticks del navegador)
   dryRun: boolean; // modo paper: registra trades pero NO los envia a Capital
+  aiFilter: boolean; // capa IA: revisa/veta cada senal antes de operar
   instruments: Instrument[]; // activos con su resolucion de senal
   watchlist: string[]; // espejo de instruments[].epic (compat)
   sizePerTrade: number; // unidades (modo fixed)
@@ -75,13 +80,18 @@ export type BotConfig = {
 export const DEFAULT_CONFIG: BotConfig = {
   enabled: false,
   dryRun: true, // arranca en paper por seguridad
+  aiFilter: false, // off por defecto; se enciende cuando hay AI Gateway
   instruments: [
-    { epic: "GOLD", resolution: "HOUR_4" },
-    { epic: "EURUSD", resolution: "HOUR_4" },
-    { epic: "NZDUSD", resolution: "DAY" },
-    { epic: "BTCUSD", resolution: "HOUR_4" },
+    { epic: "NZDUSD", resolution: "DAY", regimeFilter: false },
+    { epic: "EURUSD", resolution: "HOUR_4", regimeFilter: true },
+    { epic: "GOLD", resolution: "HOUR_4", regimeFilter: false },
+    { epic: "GBPJPY", resolution: "DAY", regimeFilter: false },
+    { epic: "EURJPY", resolution: "DAY", regimeFilter: false },
+    { epic: "USDCHF", resolution: "HOUR_4", regimeFilter: true },
+    { epic: "BTCUSD", resolution: "HOUR_4", regimeFilter: true },
+    { epic: "ETHUSD", resolution: "DAY", regimeFilter: true },
   ],
-  watchlist: ["GOLD", "EURUSD", "NZDUSD", "BTCUSD"],
+  watchlist: ["NZDUSD", "EURUSD", "GOLD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD"],
   sizePerTrade: 0.1,
   maxOpenPositions: 3,
   stopDistance: 150,

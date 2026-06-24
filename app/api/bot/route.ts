@@ -32,6 +32,7 @@ export async function PATCH(req: Request) {
       .map((i: any) => ({
         epic: String(i.epic).toUpperCase().trim(),
         resolution: i.resolution || DEFAULT_RESOLUTION,
+        ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
       }));
     cfg.watchlist = cfg.instruments.map((i) => i.epic);
   } else if (Array.isArray(body.watchlist)) {

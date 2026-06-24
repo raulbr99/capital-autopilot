@@ -132,6 +132,7 @@ function mergeConfig(base: BotConfig, override: any): BotConfig {
       .map((i: any) => ({
         epic: String(i.epic).toUpperCase().trim(),
         resolution: i.resolution || DEFAULT_RESOLUTION,
+        ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
       }));
   } else if (Array.isArray(override.watchlist)) {
     instruments = override.watchlist.map((epic: string) => ({

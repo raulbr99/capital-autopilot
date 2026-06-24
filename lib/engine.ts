@@ -20,7 +20,7 @@ import {
   type Candle,
 } from "./capital";
 import { evaluate, atr, type Signal } from "./strategy";
-import { bot, log, pushEquity, todayKey, TradeRecord, DEFAULT_RESOLUTION } from "./store";
+import { bot, log, pushEquity, todayKey, TradeRecord, DEFAULT_RESOLUTION, type Instrument } from "./store";
 import {
   loadConfig,
   loadRuntime,
@@ -31,6 +31,7 @@ import {
   appendLog,
 } from "./db";
 import { notify, notifyConfigured } from "./notify";
+import { reviewSignal } from "./ai";
 
 export type EpicEval = {
   epic: string;
@@ -93,7 +94,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   const [account, positions] = await Promise.all([getAccount(), getPositions()]);
 
   // ---- instrumentos (epic + resolución de señal) ----
-  const instruments =
+  const instruments: Instrument[] =
     cfg.instruments && cfg.instruments.length
       ? cfg.instruments
       : cfg.watchlist.map((epic) => ({ epic, resolution: DEFAULT_RESOLUTION }));
@@ -101,12 +102,18 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   // ---- precios + ATR + señal por activo (cada uno a SU resolución) ----
   const candlesByEpic = new Map<string, Candle[]>();
   const evals: EpicEval[] = [];
-  for (const { epic, resolution } of instruments) {
-    const res = resolution || DEFAULT_RESOLUTION;
+  for (const inst of instruments) {
+    const epic = inst.epic;
+    const res = inst.resolution || DEFAULT_RESOLUTION;
+    // filtro de régimen por instrumento (si está definido, sobreescribe el global)
+    const strat =
+      inst.regimeFilter === undefined
+        ? cfg.strategy
+        : { ...cfg.strategy, useRegimeFilter: inst.regimeFilter };
     try {
       const candles = await getPrices(epic, res, 150);
       candlesByEpic.set(epic, candles);
-      const signal = evaluate(candles, cfg.strategy);
+      const signal = evaluate(candles, strat);
       const price = candles.length ? candles[candles.length - 1].close : 0;
       const a = atr(candles, cfg.risk.atrPeriod);
       const spark = candles.slice(-30).map((c) => c.close);
@@ -187,6 +194,28 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
         `${e.epic} ${e.signal.type} ${(e.signal.confidence * 100).toFixed(0)}% — ${e.signal.reason}`,
         e.epic
       );
+
+      // Capa IA: segunda opinión (fail-open). Veta si desaprueba con confianza.
+      const verdict = await reviewSignal({
+        epic: e.epic,
+        resolution: e.resolution,
+        direction: e.signal.type as "BUY" | "SELL",
+        price: e.price,
+        reason: e.signal.reason,
+        indicators: { ...e.signal.indicators, atr: e.atr },
+        recentCloses: e.spark,
+      });
+      if (verdict && !verdict.approve && verdict.confidence >= 0.6) {
+        logN(
+          "info",
+          `🤖 IA vetó ${e.epic}: ${verdict.reason} (conf ${(verdict.confidence * 100).toFixed(0)}%)`,
+          e.epic
+        );
+        continue;
+      }
+      if (verdict?.approve) {
+        logN("info", `🤖 IA OK ${e.epic}: ${verdict.reason}`, e.epic);
+      }
 
       const trade: TradeRecord = {
         id: `${Date.now()}-${e.epic}`,
