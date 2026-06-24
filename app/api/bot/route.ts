@@ -25,6 +25,11 @@ export async function PATCH(req: Request) {
     log("info", cfg.dryRun ? "📝 Modo PAPER (dry-run)" : "💸 Modo LIVE — opera de verdad");
     void appendLog(bot().logs[0]);
   }
+  if (typeof body.aiFilter === "boolean") {
+    cfg.aiFilter = body.aiFilter;
+    log("info", cfg.aiFilter ? "🤖 Capa IA ACTIVADA" : "🤖 Capa IA desactivada");
+    void appendLog(bot().logs[0]);
+  }
   // instruments: lista de {epic, resolution}
   if (Array.isArray(body.instruments)) {
     cfg.instruments = body.instruments
