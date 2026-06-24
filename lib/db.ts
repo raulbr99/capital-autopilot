@@ -300,6 +300,17 @@ export async function appendEquity(pt: EquityPoint): Promise<void> {
   }
 }
 
+export async function clearEquity(): Promise<void> {
+  bot().equity = [];
+  const s = await supa();
+  if (!s) return;
+  try {
+    await s.from("ap_equity").delete().neq("id", 0);
+  } catch {
+    /* noop */
+  }
+}
+
 export async function getEquity(limit = 300): Promise<EquityPoint[]> {
   const s = await supa();
   if (!s) return bot().equity.slice(-limit);

@@ -20,7 +20,7 @@ import {
   type Candle,
 } from "./capital";
 import { evaluate, atr, type Signal } from "./strategy";
-import { bot, log, pushEquity, todayKey, TradeRecord, DEFAULT_RESOLUTION, type Instrument } from "./store";
+import { bot, log, pushEquity, todayKey, TradeRecord, DEFAULT_RESOLUTION, type Instrument, type EquityPoint } from "./store";
 import {
   loadConfig,
   loadRuntime,
@@ -28,6 +28,7 @@ import {
   recordTrade,
   updateTrade,
   appendEquity,
+  getEquity,
   appendLog,
 } from "./db";
 import { notify, notifyConfigured } from "./notify";
@@ -272,6 +273,8 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   pushEquity(equity);
   await appendEquity({ ts: Date.now(), equity });
   await saveRuntime();
+  // Histórico desde BD (consistente entre instancias serverless)
+  const equityHistory = await getEquity(240);
 
   return {
     configured: true,
@@ -285,7 +288,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
     account,
     openPositions,
     evals,
-    state: snapshotState(),
+    state: snapshotState(equityHistory),
     opened,
   };
 }
@@ -416,12 +419,12 @@ function base(
   };
 }
 
-export function snapshotState() {
+export function snapshotState(equity?: EquityPoint[]) {
   const b = bot();
   return {
     config: b.config,
     logs: b.logs.slice(0, 50),
-    equity: b.equity,
+    equity: equity ?? b.equity,
     trades: b.trades.slice(0, 60),
     stats: b.stats,
     lastTick: b.lastTick,
