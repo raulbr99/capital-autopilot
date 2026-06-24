@@ -30,6 +30,20 @@ export const DEFAULT_RISK: RiskConfig = {
   cooldownMin: 30,
 };
 
+export type Instrument = { epic: string; resolution: string };
+
+export const RESOLUTIONS = [
+  "MINUTE",
+  "MINUTE_5",
+  "MINUTE_15",
+  "MINUTE_30",
+  "HOUR",
+  "HOUR_4",
+  "DAY",
+  "WEEK",
+] as const;
+export const DEFAULT_RESOLUTION = "HOUR_4";
+
 export type NotifyConfig = {
   telegram: boolean;
   discord: boolean;
@@ -47,7 +61,8 @@ export const DEFAULT_NOTIFY: NotifyConfig = {
 export type BotConfig = {
   enabled: boolean; // toggle de la UI (ticks del navegador)
   dryRun: boolean; // modo paper: registra trades pero NO los envia a Capital
-  watchlist: string[];
+  instruments: Instrument[]; // activos con su resolucion de senal
+  watchlist: string[]; // espejo de instruments[].epic (compat)
   sizePerTrade: number; // unidades (modo fixed)
   maxOpenPositions: number;
   stopDistance: number; // puntos (si no usa ATR)
@@ -60,7 +75,13 @@ export type BotConfig = {
 export const DEFAULT_CONFIG: BotConfig = {
   enabled: false,
   dryRun: true, // arranca en paper por seguridad
-  watchlist: ["BTCUSD", "ETHUSD", "GOLD"],
+  instruments: [
+    { epic: "GOLD", resolution: "HOUR_4" },
+    { epic: "EURUSD", resolution: "HOUR_4" },
+    { epic: "NZDUSD", resolution: "DAY" },
+    { epic: "BTCUSD", resolution: "HOUR_4" },
+  ],
+  watchlist: ["GOLD", "EURUSD", "NZDUSD", "BTCUSD"],
   sizePerTrade: 0.1,
   maxOpenPositions: 3,
   stopDistance: 150,

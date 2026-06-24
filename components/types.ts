@@ -7,12 +7,25 @@ export type Signal = {
 
 export type EpicEval = {
   epic: string;
+  resolution: string;
   signal: Signal;
   hasPosition: boolean;
   price: number;
   atr: number;
   spark: number[];
 };
+
+export type Instrument = { epic: string; resolution: string };
+export const RESOLUTIONS = [
+  "MINUTE",
+  "MINUTE_5",
+  "MINUTE_15",
+  "MINUTE_30",
+  "HOUR",
+  "HOUR_4",
+  "DAY",
+  "WEEK",
+];
 
 export type OpenPos = {
   key: string;
@@ -87,6 +100,7 @@ export type NotifyConfig = {
 export type BotConfig = {
   enabled: boolean;
   dryRun: boolean;
+  instruments: Instrument[];
   watchlist: string[];
   sizePerTrade: number;
   maxOpenPositions: number;

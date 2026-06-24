@@ -33,6 +33,7 @@ function SignalCard({ e }: { e: EpicEval }) {
       <div className="flex items-start justify-between">
         <div>
           <span className="font-display text-base">{e.epic}</span>
+          <span className="ml-1.5 bg-industrial px-1 py-0.5 font-mono text-[8px] text-volt">{e.resolution}</span>
           <p className="font-mono text-[10px] text-muted">@{e.price ? e.price.toFixed(2) : "—"}</p>
         </div>
         <span

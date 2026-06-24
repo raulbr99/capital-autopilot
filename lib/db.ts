@@ -14,6 +14,8 @@ import {
   TradeRecord,
   EquityPoint,
   LogEntry,
+  Instrument,
+  DEFAULT_RESOLUTION,
 } from "./store";
 
 type SupaClient = {
@@ -122,15 +124,31 @@ export async function saveConfig(cfg: BotConfig): Promise<void> {
 }
 
 function mergeConfig(base: BotConfig, override: any): BotConfig {
+  // instruments: usa los guardados; si no hay (config antigua), derívalos del watchlist
+  let instruments: Instrument[];
+  if (Array.isArray(override.instruments) && override.instruments.length) {
+    instruments = override.instruments
+      .filter((i: any) => i && i.epic)
+      .map((i: any) => ({
+        epic: String(i.epic).toUpperCase().trim(),
+        resolution: i.resolution || DEFAULT_RESOLUTION,
+      }));
+  } else if (Array.isArray(override.watchlist)) {
+    instruments = override.watchlist.map((epic: string) => ({
+      epic: String(epic).toUpperCase().trim(),
+      resolution: DEFAULT_RESOLUTION,
+    }));
+  } else {
+    instruments = base.instruments;
+  }
   return {
     ...base,
     ...override,
     strategy: { ...base.strategy, ...(override.strategy || {}) },
     risk: { ...base.risk, ...(override.risk || {}) },
     notify: { ...base.notify, ...(override.notify || {}) },
-    watchlist: Array.isArray(override.watchlist)
-      ? override.watchlist
-      : base.watchlist,
+    instruments,
+    watchlist: instruments.map((i) => i.epic),
   };
 }
 

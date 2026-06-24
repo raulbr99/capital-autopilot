@@ -224,6 +224,39 @@ function mid(p: any): number {
   return p?.bid ?? p?.ask ?? 0;
 }
 
+export type MarketDetails = {
+  epic: string;
+  minDealSize: number;
+  sizeStep: number;
+  maxDealSize: number;
+};
+
+const mdCache = new Map<string, { d: MarketDetails; t: number }>();
+
+function ruleVal(o: any): number | null {
+  const v = o?.value;
+  return typeof v === "number" ? v : null;
+}
+
+/** Reglas de tamaño del instrumento (min, step, max) — cacheadas 1h. */
+export async function getMarketDetails(epic: string): Promise<MarketDetails> {
+  const c = mdCache.get(epic);
+  if (c && Date.now() - c.t < 3_600_000) return c.d;
+  const data = await json<any>(
+    await authed(`/api/v1/markets/${encodeURIComponent(epic)}`)
+  );
+  const r = data.dealingRules ?? {};
+  const minDealSize = ruleVal(r.minDealSize) ?? 0.01;
+  const d: MarketDetails = {
+    epic,
+    minDealSize,
+    sizeStep: ruleVal(r.minSizeIncrement) ?? minDealSize,
+    maxDealSize: ruleVal(r.maxDealSize) ?? Number.MAX_SAFE_INTEGER,
+  };
+  mdCache.set(epic, { d, t: Date.now() });
+  return d;
+}
+
 export type Transaction = {
   epic: string;
   pnl: number;

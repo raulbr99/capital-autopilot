@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BotConfig } from "./types";
+import { RESOLUTIONS } from "./types";
 import { SectionHead, NumField } from "./ui";
 
 export default function ConfigPanel({
@@ -16,32 +17,50 @@ export default function ConfigPanel({
   notifyEnv: { telegram: boolean; discord: boolean };
 }) {
   const [w, setW] = useState("");
+  const instruments = cfg.instruments ?? [];
   const add = () => {
     const v = w.toUpperCase().trim();
-    if (!v || cfg.watchlist.includes(v)) return;
-    patch({ watchlist: [...cfg.watchlist, v] });
+    if (!v || instruments.some((i) => i.epic === v)) return;
+    patch({ instruments: [...instruments, { epic: v, resolution: "HOUR_4" }] });
     setW("");
   };
-  const remove = (e: string) =>
-    patch({ watchlist: cfg.watchlist.filter((x) => x !== e) });
+  const remove = (epic: string) =>
+    patch({ instruments: instruments.filter((i) => i.epic !== epic) });
+  const setRes = (epic: string, resolution: string) =>
+    patch({
+      instruments: instruments.map((i) => (i.epic === epic ? { ...i, resolution } : i)),
+    });
 
   return (
     <div className="border border-industrial bg-soft">
-      <SectionHead label="STRATEGY // WATCHLIST + SEÑALES" />
+      <SectionHead label="STRATEGY // INSTRUMENTOS + RESOLUCIÓN" />
       <div className="space-y-4 p-4">
         <div>
-          <p className="tag mb-2">WATCHLIST</p>
-          <div className="flex flex-wrap gap-1.5">
-            {cfg.watchlist.map((e) => (
-              <button
-                key={e}
-                onClick={() => remove(e)}
-                disabled={busy}
-                className="group flex items-center gap-1.5 border border-cement bg-industrial px-2 py-1 font-mono text-[11px] text-dim hover:border-short"
-              >
-                {e}
-                <span className="text-muted group-hover:text-short">✕</span>
-              </button>
+          <p className="tag mb-2">INSTRUMENTOS (activo · resolución de señal)</p>
+          <div className="space-y-1.5">
+            {instruments.map((i) => (
+              <div key={i.epic} className="flex items-center gap-1.5">
+                <span className="flex-1 border border-cement bg-industrial px-2 py-1.5 font-mono text-[11px] text-white">
+                  {i.epic}
+                </span>
+                <select
+                  value={i.resolution}
+                  disabled={busy}
+                  onChange={(e) => setRes(i.epic, e.target.value)}
+                  className="border border-cement bg-ink px-1.5 py-1.5 font-mono text-[10px] text-volt focus:outline-none"
+                >
+                  {RESOLUTIONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => remove(i.epic)}
+                  disabled={busy}
+                  className="border border-cement px-2 py-1.5 font-mono text-[11px] text-muted hover:border-short hover:text-short"
+                >
+                  ✕
+                </button>
+              </div>
             ))}
           </div>
           <div className="mt-2 flex gap-1.5">
@@ -49,7 +68,7 @@ export default function ConfigPanel({
               value={w}
               onChange={(e) => setW(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && add()}
-              placeholder="EPIC ej. BTCUSD"
+              placeholder="EPIC ej. NZDUSD"
               className="w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-volt focus:outline-none"
             />
             <button onClick={add} disabled={busy} className="bg-volt px-3 font-display text-xs text-ink disabled:opacity-40">

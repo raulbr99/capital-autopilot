@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { bot, log } from "@/lib/store";
+import { bot, log, DEFAULT_RESOLUTION } from "@/lib/store";
 import { loadConfig, saveConfig, appendLog } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +25,23 @@ export async function PATCH(req: Request) {
     log("info", cfg.dryRun ? "📝 Modo PAPER (dry-run)" : "💸 Modo LIVE — opera de verdad");
     void appendLog(bot().logs[0]);
   }
-  if (Array.isArray(body.watchlist)) {
-    cfg.watchlist = body.watchlist
+  // instruments: lista de {epic, resolution}
+  if (Array.isArray(body.instruments)) {
+    cfg.instruments = body.instruments
+      .filter((i: any) => i && i.epic)
+      .map((i: any) => ({
+        epic: String(i.epic).toUpperCase().trim(),
+        resolution: i.resolution || DEFAULT_RESOLUTION,
+      }));
+    cfg.watchlist = cfg.instruments.map((i) => i.epic);
+  } else if (Array.isArray(body.watchlist)) {
+    // compat: editar solo epics preservando resolución de los que ya estaban
+    const prev = new Map(cfg.instruments.map((i) => [i.epic, i.resolution]));
+    cfg.instruments = body.watchlist
       .map((s: string) => String(s).toUpperCase().trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .map((epic: string) => ({ epic, resolution: prev.get(epic) || DEFAULT_RESOLUTION }));
+    cfg.watchlist = cfg.instruments.map((i) => i.epic);
   }
   for (const k of ["sizePerTrade", "maxOpenPositions", "stopDistance", "profitDistance"] as const) {
     if (typeof body[k] === "number" && body[k] > 0) {

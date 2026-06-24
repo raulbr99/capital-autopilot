@@ -14,12 +14,13 @@ import {
   getPositions,
   getPrices,
   openPosition,
+  getMarketDetails,
   capitalConfigured,
   type Position,
   type Candle,
 } from "./capital";
 import { evaluate, atr, type Signal } from "./strategy";
-import { bot, log, pushEquity, todayKey, TradeRecord } from "./store";
+import { bot, log, pushEquity, todayKey, TradeRecord, DEFAULT_RESOLUTION } from "./store";
 import {
   loadConfig,
   loadRuntime,
@@ -33,6 +34,7 @@ import { notify, notifyConfigured } from "./notify";
 
 export type EpicEval = {
   epic: string;
+  resolution: string;
   signal: Signal;
   hasPosition: boolean;
   price: number;
@@ -90,21 +92,28 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
 
   const [account, positions] = await Promise.all([getAccount(), getPositions()]);
 
-  // ---- precios + ATR + señal por activo ----
+  // ---- instrumentos (epic + resolución de señal) ----
+  const instruments =
+    cfg.instruments && cfg.instruments.length
+      ? cfg.instruments
+      : cfg.watchlist.map((epic) => ({ epic, resolution: DEFAULT_RESOLUTION }));
+
+  // ---- precios + ATR + señal por activo (cada uno a SU resolución) ----
   const candlesByEpic = new Map<string, Candle[]>();
   const evals: EpicEval[] = [];
-  for (const epic of cfg.watchlist) {
+  for (const { epic, resolution } of instruments) {
+    const res = resolution || DEFAULT_RESOLUTION;
     try {
-      const candles = await getPrices(epic, "MINUTE", 80);
+      const candles = await getPrices(epic, res, 150);
       candlesByEpic.set(epic, candles);
       const signal = evaluate(candles, cfg.strategy);
       const price = candles.length ? candles[candles.length - 1].close : 0;
       const a = atr(candles, cfg.risk.atrPeriod);
       const spark = candles.slice(-30).map((c) => c.close);
-      evals.push({ epic, signal, hasPosition: false, price, atr: a, spark });
+      evals.push({ epic, resolution: res, signal, hasPosition: false, price, atr: a, spark });
       if (signal.type !== "FLAT") b.stats.signals++;
     } catch (err: any) {
-      logN("error", `Error evaluando ${epic}: ${err.message}`, epic);
+      logN("error", `Error evaluando ${epic} (${res}): ${err.message}`, epic);
     }
   }
   const priceOf = (epic: string) =>
@@ -170,7 +179,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       if (openCount >= cfg.maxOpenPositions) break;
 
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
-      const size = sizeFor(cfg, equity, stopDist, e.price);
+      const size = await sizeFor(cfg, equity, stopDist, e.epic);
       if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) continue;
 
       logN(
@@ -261,19 +270,27 @@ function distances(cfg: ReturnType<typeof bot>["config"], a: number, price: numb
   return { stopDist: cfg.stopDistance, tpDist: cfg.profitDistance };
 }
 
-function sizeFor(
+async function sizeFor(
   cfg: ReturnType<typeof bot>["config"],
   equity: number,
   stopDist: number,
-  price: number
-): number {
-  if (cfg.risk.sizingMode === "percent" && stopDist > 0) {
-    const riskAmount = (equity * cfg.risk.riskPercent) / 100;
-    // aprox: 1 unidad ~ 1 unidad de precio de exposicion (demo)
-    const size = riskAmount / stopDist;
-    return Math.max(0.01, Math.round(size * 100) / 100);
+  epic: string
+): Promise<number> {
+  if (cfg.risk.sizingMode !== "percent" || stopDist <= 0) {
+    return cfg.sizePerTrade;
   }
-  return cfg.sizePerTrade;
+  // Riesgo fijo en €: con PnL = size · movimiento, size = riesgo / distancia_stop.
+  const riskAmount = (equity * cfg.risk.riskPercent) / 100;
+  let size = riskAmount / stopDist;
+  try {
+    const md = await getMarketDetails(epic);
+    const step = md.sizeStep > 0 ? md.sizeStep : md.minDealSize;
+    size = Math.round(size / step) * step; // ajustar al incremento del instrumento
+    size = Math.max(md.minDealSize, Math.min(size, md.maxDealSize)); // respetar min/max
+  } catch {
+    size = Math.max(0.01, Math.round(size * 100) / 100);
+  }
+  return size;
 }
 
 function floating(t: TradeRecord, price: number): number {
