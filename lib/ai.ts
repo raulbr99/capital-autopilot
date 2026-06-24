@@ -12,10 +12,10 @@
  */
 
 import { bot } from "./store";
+import { relevantEvents, describeEvents } from "./calendar";
 
-// Modelo barato y fiable. Cambiable con AI_MODEL (p.ej. anthropic/claude-haiku-4.5
-// para más calidad, o meta-llama/llama-3.3-70b-instruct:free para coste cero).
-const MODEL = process.env.AI_MODEL || "anthropic/claude-3-haiku";
+// Modelo potente con buena relación calidad/precio. Cambiable con AI_MODEL.
+const MODEL = process.env.AI_MODEL || "google/gemini-2.5-flash";
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
 export type AiVerdict = { approve: boolean; confidence: number; reason: string };
@@ -38,6 +38,14 @@ export function aiConfigured(): boolean {
 export async function askAi(ctx: SignalContext): Promise<AiVerdict> {
   if (!process.env.OPENROUTER_API_KEY) throw new Error("Falta OPENROUTER_API_KEY");
 
+  // Contexto macro: eventos económicos de alto impacto próximos para este activo
+  let eventsText = "Sin eventos de alto impacto próximos.";
+  try {
+    eventsText = describeEvents(await relevantEvents(ctx.epic));
+  } catch {
+    /* sin calendario -> seguimos solo con técnico */
+  }
+
   const res = await fetch(ENDPOINT, {
     method: "POST",
     headers: {
@@ -51,7 +59,7 @@ export async function askAi(ctx: SignalContext): Promise<AiVerdict> {
       temperature: 0.2,
       max_tokens: 220,
       response_format: { type: "json_object" },
-      messages: [{ role: "user", content: prompt(ctx) }],
+      messages: [{ role: "user", content: prompt(ctx, eventsText) }],
     }),
   });
 
@@ -84,14 +92,14 @@ function parseVerdict(text: string): AiVerdict {
   };
 }
 
-function prompt(c: SignalContext): string {
+function prompt(c: SignalContext, events: string): string {
   const i = c.indicators;
   const trend = i.smaFast > i.smaSlow ? "alcista" : "bajista";
   return [
     "Eres un analista de trading prudente y escéptico. FILTRA señales técnicas de",
     "baja calidad de un bot de tendencia (cruce de medias + RSI). Aprueba solo setups",
     "de tendencia razonables; veta los que parezcan lateral/whipsaw, sobreextendidos",
-    "o contradictorios.",
+    "o contradictorios, o con riesgo de noticia inminente.",
     "",
     `Activo: ${c.epic} (${c.resolution})`,
     `Dirección propuesta: ${c.direction} a precio ${c.price}`,
@@ -100,8 +108,14 @@ function prompt(c: SignalContext): string {
     `  RSI ${i.rsi.toFixed(0)}, ADX ${i.adx.toFixed(0)} (>25 = tendencia fuerte), ATR ${i.atr.toFixed(4)}.`,
     `Últimos cierres: ${c.recentCloses.slice(-12).map((n) => n.toFixed(4)).join(", ")}`,
     "",
-    "Si ADX es bajo (<20) tiende a vetar (lateral). Si el RSI contradice fuerte la",
-    "dirección (ej. comprar con RSI>75), sé cauto.",
+    `Calendario económico (alto impacto): ${events}`,
+    "",
+    "Reglas:",
+    "- Si hay un evento de ALTO IMPACTO inminente (próximos ~45 min) para la divisa del",
+    "  activo, VETA: la volatilidad de la noticia suele saltar el stop. Si acaba de pasar",
+    "  (últimos minutos), sé muy cauto.",
+    "- Si ADX es bajo (<20), tiende a vetar (mercado lateral).",
+    "- Si el RSI contradice fuerte la dirección (ej. comprar con RSI>75), sé cauto.",
     "",
     'Responde SOLO con JSON: {"approve": true|false, "confidence": 0..1, "reason": "breve, en español"}',
   ].join("\n");
