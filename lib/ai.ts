@@ -1,23 +1,22 @@
 /**
  * Capa de IA: "segunda opinión" sobre cada señal técnica antes de operar.
+ * El motor técnico (SMA+RSI+ADX) PROPONE; un LLM vía OpenRouter FILTRA.
  *
- * El motor técnico (SMA+RSI+ADX) PROPONE; Claude (vía Vercel AI Gateway) FILTRA:
- * recibe el contexto del setup y aprueba o veta, con razonamiento.
+ * Fail-open: si la IA no está configurada o falla, devuelve null y el motor
+ * sigue con su decisión técnica (nunca bloquea por un error de la IA).
  *
- * Diseño "fail-open": si la IA no está configurada o falla, devuelve null y el
- * motor sigue con su decisión técnica (nunca bloquea por un error de la IA).
+ * Auth: OPENROUTER_API_KEY (sk-or-v1-...). Modelo barato por defecto (Haiku).
  *
- * Auth del Gateway: en Vercel funciona con el OIDC del proyecto automáticamente;
- * en local necesita AI_GATEWAY_API_KEY.
- *
- * ⚠️ De momento razona SOLO con el contexto técnico que le pasamos (precio +
- * indicadores). NO tiene calendario económico ni noticias en vivo todavía
- * (siguiente iteración: enchufar un feed de eventos macro).
+ * ⚠️ De momento razona SOLO con el contexto técnico (precio + indicadores).
+ * NO tiene calendario económico ni noticias en vivo (siguiente iteración).
  */
 
 import { bot } from "./store";
 
-const MODEL = "anthropic/claude-haiku-4-5";
+// Modelo barato y fiable. Cambiable con AI_MODEL (p.ej. anthropic/claude-haiku-4.5
+// para más calidad, o meta-llama/llama-3.3-70b-instruct:free para coste cero).
+const MODEL = process.env.AI_MODEL || "anthropic/claude-3-haiku";
+const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
 export type AiVerdict = { approve: boolean; confidence: number; reason: string };
 
@@ -32,37 +31,34 @@ export type SignalContext = {
 };
 
 export function aiConfigured(): boolean {
-  return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL);
+  return Boolean(process.env.OPENROUTER_API_KEY);
 }
 
-/** Llamada cruda a la IA (lanza si falla). La usan reviewSignal y el endpoint de test. */
+/** Llamada cruda a OpenRouter (lanza si falla). La usan reviewSignal y el test. */
 export async function askAi(ctx: SignalContext): Promise<AiVerdict> {
-  const { generateObject } = await import("ai");
-  const { z } = await import("zod");
+  if (!process.env.OPENROUTER_API_KEY) throw new Error("Falta OPENROUTER_API_KEY");
 
-  // Esquema laxo (los modelos a veces se salen de min/max o max-length) -> normalizo abajo
-  const schema = z.object({
-    approve: z.boolean(),
-    confidence: z.number(),
-    reason: z.string(),
+  const res = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://capital-autopilot.vercel.app",
+      "X-Title": "Capital Autopilot",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      temperature: 0.2,
+      max_tokens: 220,
+      response_format: { type: "json_object" },
+      messages: [{ role: "user", content: prompt(ctx) }],
+    }),
   });
 
-  const { object } = await generateObject({
-    model: MODEL,
-    schema,
-    maxRetries: 2,
-    temperature: 0.2,
-    prompt: prompt(ctx),
-  });
-  const o = object as { approve: boolean; confidence: number; reason: string };
-  let conf = Number(o.confidence);
-  if (!Number.isFinite(conf)) conf = 0.5;
-  if (conf > 1) conf = conf / 100; // por si devuelve 0..100
-  return {
-    approve: Boolean(o.approve),
-    confidence: Math.max(0, Math.min(1, conf)),
-    reason: String(o.reason || "").slice(0, 200),
-  };
+  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const text: string = data.choices?.[0]?.message?.content ?? "";
+  return parseVerdict(text);
 }
 
 export async function reviewSignal(ctx: SignalContext): Promise<AiVerdict | null> {
@@ -70,18 +66,32 @@ export async function reviewSignal(ctx: SignalContext): Promise<AiVerdict | null
   try {
     return await askAi(ctx);
   } catch {
-    return null; // fail-open: si la IA falla, el motor sigue con su decisión técnica
+    return null; // fail-open
   }
+}
+
+function parseVerdict(text: string): AiVerdict {
+  // extrae el primer bloque JSON aunque venga con texto alrededor
+  const match = text.match(/\{[\s\S]*\}/);
+  const obj = JSON.parse(match ? match[0] : text);
+  let conf = Number(obj.confidence);
+  if (!Number.isFinite(conf)) conf = 0.5;
+  if (conf > 1) conf = conf / 100; // por si devuelve 0..100
+  return {
+    approve: Boolean(obj.approve),
+    confidence: Math.max(0, Math.min(1, conf)),
+    reason: String(obj.reason || "").slice(0, 200),
+  };
 }
 
 function prompt(c: SignalContext): string {
   const i = c.indicators;
   const trend = i.smaFast > i.smaSlow ? "alcista" : "bajista";
   return [
-    "Eres un analista de trading prudente y escéptico. Tu trabajo es FILTRAR señales",
-    "técnicas de baja calidad de un bot de tendencia (cruce de medias + RSI).",
-    "Aprueba solo setups de tendencia con calidad razonable; veta los que parezcan",
-    "lateral/whipsaw, sobreextendidos o contradictorios.",
+    "Eres un analista de trading prudente y escéptico. FILTRA señales técnicas de",
+    "baja calidad de un bot de tendencia (cruce de medias + RSI). Aprueba solo setups",
+    "de tendencia razonables; veta los que parezcan lateral/whipsaw, sobreextendidos",
+    "o contradictorios.",
     "",
     `Activo: ${c.epic} (${c.resolution})`,
     `Dirección propuesta: ${c.direction} a precio ${c.price}`,
@@ -90,7 +100,9 @@ function prompt(c: SignalContext): string {
     `  RSI ${i.rsi.toFixed(0)}, ADX ${i.adx.toFixed(0)} (>25 = tendencia fuerte), ATR ${i.atr.toFixed(4)}.`,
     `Últimos cierres: ${c.recentCloses.slice(-12).map((n) => n.toFixed(4)).join(", ")}`,
     "",
-    "Reglas: si ADX es bajo (<20) tiende a vetar (lateral). Si el RSI contradice fuerte",
-    "la dirección (ej. comprar con RSI>75), sé cauto. Devuelve approve/confidence/reason.",
+    "Si ADX es bajo (<20) tiende a vetar (lateral). Si el RSI contradice fuerte la",
+    "dirección (ej. comprar con RSI>75), sé cauto.",
+    "",
+    'Responde SOLO con JSON: {"approve": true|false, "confidence": 0..1, "reason": "breve, en español"}',
   ].join("\n");
 }
