@@ -14,8 +14,10 @@
 import { bot } from "./store";
 import { relevantEvents, describeEvents } from "./calendar";
 
-// Modelo potente con buena relación calidad/precio. Cambiable con AI_MODEL.
-const MODEL = process.env.AI_MODEL || "google/gemini-2.5-flash";
+// Modelo potente. Cambiable con AI_MODEL.
+const MODEL = process.env.AI_MODEL || "google/gemini-3.5-flash";
+// Web search (plugin web de OpenRouter): la IA ve noticias recientes del activo.
+const WEB_SEARCH = process.env.AI_WEB_SEARCH !== "false";
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
 export type AiVerdict = { approve: boolean; confidence: number; reason: string };
@@ -57,9 +59,23 @@ export async function askAi(ctx: SignalContext): Promise<AiVerdict> {
     body: JSON.stringify({
       model: MODEL,
       temperature: 0.2,
-      max_tokens: 220,
+      // Alto: gemini 3.x consume tokens en "thinking" antes del JSON final
+      max_tokens: 1500,
+      reasoning: { effort: "low" },
       response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt(ctx, eventsText) }],
+      // Búsqueda web: OpenRouter busca noticias recientes y las inyecta en contexto
+      ...(WEB_SEARCH
+        ? {
+            plugins: [
+              {
+                id: "web",
+                max_results: 3,
+                search_prompt: `Noticias recientes y sentimiento de mercado para ${ctx.epic} (últimas horas): banco central, geopolítica, datos macro.`,
+              },
+            ],
+          }
+        : {}),
     }),
   });
 
@@ -110,10 +126,15 @@ function prompt(c: SignalContext, events: string): string {
     "",
     `Calendario económico (alto impacto): ${events}`,
     "",
+    "Tienes resultados de búsqueda web recientes sobre el activo (si los hay): úsalos",
+    "para detectar noticias o sentimiento que aumenten el riesgo o contradigan la señal.",
+    "",
     "Reglas:",
     "- Si hay un evento de ALTO IMPACTO inminente (próximos ~45 min) para la divisa del",
     "  activo, VETA: la volatilidad de la noticia suele saltar el stop. Si acaba de pasar",
     "  (últimos minutos), sé muy cauto.",
+    "- Si hay noticias recientes relevantes (banco central, geopolítica, shock) que",
+    "  aumenten la incertidumbre o vayan contra la dirección, sé cauto o veta.",
     "- Si ADX es bajo (<20), tiende a vetar (mercado lateral).",
     "- Si el RSI contradice fuerte la dirección (ej. comprar con RSI>75), sé cauto.",
     "",
