@@ -46,6 +46,7 @@ export async function getSession(force = false): Promise<Session> {
     body: JSON.stringify({
       identifier: process.env.CAPITAL_IDENTIFIER,
       password: process.env.CAPITAL_PASSWORD,
+      encryptedPassword: false,
     }),
     cache: "no-store",
   });
