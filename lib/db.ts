@@ -169,6 +169,7 @@ export async function loadRuntime(): Promise<void> {
       b.dayAnchor = data.data.dayAnchor ?? null;
       b.killedDate = data.data.killedDate ?? null;
       b.cooldownUntil = data.data.cooldownUntil ?? 0;
+      b.aiReviewedAt = data.data.aiReviewedAt ?? {};
       b.stats = data.data.stats ?? b.stats;
     }
   } catch {
@@ -187,6 +188,7 @@ export async function saveRuntime(): Promise<void> {
         dayAnchor: b.dayAnchor,
         killedDate: b.killedDate,
         cooldownUntil: b.cooldownUntil,
+        aiReviewedAt: b.aiReviewedAt,
         stats: b.stats,
       },
       updated_at: new Date().toISOString(),

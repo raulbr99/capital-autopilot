@@ -104,6 +104,7 @@ export type BotConfig = {
   enabled: boolean;
   dryRun: boolean;
   aiFilter: boolean;
+  aiCooldownMin: number;
   instruments: Instrument[];
   watchlist: string[];
   sizePerTrade: number;

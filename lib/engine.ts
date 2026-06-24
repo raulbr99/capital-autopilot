@@ -32,7 +32,7 @@ import {
   appendLog,
 } from "./db";
 import { notify, notifyConfigured } from "./notify";
-import { reviewSignal } from "./ai";
+import { reviewSignal, type AiVerdict } from "./ai";
 
 export type EpicEval = {
   epic: string;
@@ -166,6 +166,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   const cooldownActive = Date.now() < b.cooldownUntil;
   const effectiveAllow =
     allowTradesIntent &&
+    cfg.enabled && // el toggle "Activar/Detener" controla también el cron
     !killedToday &&
     !cooldownActive &&
     tradesToday < cfg.risk.maxTradesPerDay;
@@ -197,15 +198,22 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       );
 
       // Capa IA: segunda opinión (fail-open). Veta si desaprueba con confianza.
-      const verdict = await reviewSignal({
-        epic: e.epic,
-        resolution: e.resolution,
-        direction: e.signal.type as "BUY" | "SELL",
-        price: e.price,
-        reason: e.signal.reason,
-        indicators: { ...e.signal.indicators, atr: e.atr },
-        recentCloses: e.spark,
-      });
+      // Cooldown por activo: no gastar otra llamada de IA si lo revisamos hace poco.
+      let verdict: AiVerdict | null = null;
+      if (cfg.aiFilter) {
+        const since = Date.now() - (b.aiReviewedAt[e.epic] || 0);
+        if (since < cfg.aiCooldownMin * 60_000) continue; // en cooldown -> salta
+        b.aiReviewedAt[e.epic] = Date.now();
+        verdict = await reviewSignal({
+          epic: e.epic,
+          resolution: e.resolution,
+          direction: e.signal.type as "BUY" | "SELL",
+          price: e.price,
+          reason: e.signal.reason,
+          indicators: { ...e.signal.indicators, atr: e.atr },
+          recentCloses: e.spark,
+        });
+      }
       if (verdict && !verdict.approve && verdict.confidence >= 0.6) {
         logN(
           "info",

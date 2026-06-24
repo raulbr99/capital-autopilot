@@ -66,6 +66,7 @@ export type BotConfig = {
   enabled: boolean; // toggle de la UI (ticks del navegador)
   dryRun: boolean; // modo paper: registra trades pero NO los envia a Capital
   aiFilter: boolean; // capa IA: revisa/veta cada senal antes de operar
+  aiCooldownMin: number; // no re-evaluar el mismo activo con IA dentro de X min
   instruments: Instrument[]; // activos con su resolucion de senal
   watchlist: string[]; // espejo de instruments[].epic (compat)
   sizePerTrade: number; // unidades (modo fixed)
@@ -81,6 +82,7 @@ export const DEFAULT_CONFIG: BotConfig = {
   enabled: false,
   dryRun: true, // arranca en paper por seguridad
   aiFilter: false, // off por defecto; se enciende cuando hay AI Gateway
+  aiCooldownMin: 45, // 1 revisión IA por activo cada 45 min como mucho
   instruments: [
     { epic: "NZDUSD", resolution: "DAY", regimeFilter: false },
     { epic: "EURUSD", resolution: "HOUR_4", regimeFilter: true },
@@ -136,6 +138,7 @@ export type BotState = {
   trades: TradeRecord[];
   dayAnchor: DayAnchor | null;
   killedDate: string | null; // si === hoy, kill-switch activo (no opera)
+  aiReviewedAt: Record<string, number>; // epic -> ts última revisión IA (cooldown)
   lastTick: number;
   cooldownUntil: number; // timestamp; no abrir hasta pasarlo
   stats: { signals: number; tradesOpened: number; tradesClosed: number };
@@ -154,6 +157,7 @@ function init(): BotState {
     trades: [],
     dayAnchor: null,
     killedDate: null,
+    aiReviewedAt: {},
     lastTick: 0,
     cooldownUntil: 0,
     stats: { signals: 0, tradesOpened: 0, tradesClosed: 0 },

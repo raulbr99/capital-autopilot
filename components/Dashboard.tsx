@@ -54,7 +54,9 @@ export default function Dashboard() {
     tick(false);
     loadTrades();
     fetch("/api/capital/session").catch(() => {});
-    const t1 = setInterval(() => tick(true), TICK_MS);
+    // solo-lectura: el navegador NO opera (evita gastar IA cada 6s).
+    // El trading autónomo lo dispara el cron cada 15 min.
+    const t1 = setInterval(() => tick(false), TICK_MS);
     const t2 = setInterval(loadTrades, TRADES_MS);
     const t3 = setInterval(
       () => setNow(new Date().toLocaleTimeString("es-ES", { hour12: false })),
