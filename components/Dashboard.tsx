@@ -155,12 +155,14 @@ export default function Dashboard() {
       {/* HEADER */}
       <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between border-b border-industrial bg-ink/85 px-5 backdrop-blur md:px-8">
         <div className="flex items-center gap-3">
-          <div className="grid h-8 w-8 place-items-center bg-volt text-ink">
-            <span className="font-display text-base leading-none">A</span>
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-ink">
+            <span className="font-display text-base font-bold leading-none">A</span>
           </div>
           <div>
-            <h1 className="font-display text-[15px] leading-none tracking-tight">CAPITAL AUTOPILOT</h1>
-            <p className="tag mt-1">MOTOR_DE_POSICIONES_AUTÓNOMAS</p>
+            <h1 className="font-display text-[15px] font-semibold leading-none tracking-tight text-white">
+              Capital Autopilot
+            </h1>
+            <p className="mt-1 text-[11px] text-muted">Trading autónomo · Capital.com</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -173,13 +175,13 @@ export default function Dashboard() {
           <ConnBadge configured={configured} enabled={enabled} />
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-            className="hidden border border-cement px-2 py-1 font-mono text-[10px] text-muted hover:text-volt md:block"
+            className="hidden rounded-md border border-industrial px-2 py-1 font-mono text-[10px] text-muted transition-colors hover:border-cement hover:text-dim md:block"
           >
             ⌘K
           </button>
           <div className="hidden text-right lg:block">
             <p className="font-mono text-sm text-white">{now}</p>
-            <p className="tag">DEMO // CAPITAL.COM</p>
+            <p className="tag">Capital.com</p>
           </div>
         </div>
       </header>
@@ -189,12 +191,12 @@ export default function Dashboard() {
 
         {/* HERO */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
-          <div className={`relative overflow-hidden border ${enabled ? "border-volt glow-volt" : "border-cement"} bg-soft p-6`}>
-            <p className="tag">AUTOPILOT_ENGINE</p>
-            <div className="mt-4 flex items-center gap-3">
-              <span className={`h-3 w-3 ${enabled ? "bg-long animate-pulseDot" : "bg-muted"}`} />
-              <span className={`font-display text-3xl ${enabled ? "text-glow text-volt" : "text-dim"}`}>
-                {enabled ? "RUNNING" : "STANDBY"}
+          <div className={`relative overflow-hidden rounded-xl border bg-soft p-6 transition-shadow ${enabled ? "border-accent/40 ring-accent" : "border-industrial"}`}>
+            <p className="tag">Motor</p>
+            <div className="mt-4 flex items-center gap-2.5">
+              <span className={`h-2.5 w-2.5 rounded-full ${enabled ? "animate-pulseDot bg-long" : "bg-muted"}`} />
+              <span className={`font-display text-3xl font-semibold tracking-tight ${enabled ? "text-white" : "text-dim"}`}>
+                {enabled ? "Activo" : "En espera"}
               </span>
             </div>
             <p className="mt-2 max-w-[280px] text-xs leading-relaxed text-muted">
@@ -205,11 +207,11 @@ export default function Dashboard() {
 
             <div className="mt-4 flex flex-wrap gap-2">
               <Toggle on={dryRun} busy={busy} labelOn="PAPER" labelOff="LIVE" onClick={() => patch({ dryRun: !dryRun })} />
-              <span className="flex items-center gap-1.5 border border-cement px-3 py-1.5 font-mono text-[11px]">
-                CRON
-                <span className={`h-2 w-2 ${snap?.armed ? "bg-long animate-pulseDot" : "bg-muted"}`} />
+              <span className="flex items-center gap-1.5 rounded-lg border border-industrial px-3 py-2 text-xs font-medium text-dim">
+                Cron 24/7
+                <span className={`h-2 w-2 rounded-full ${snap?.armed ? "animate-pulseDot bg-long" : "bg-muted"}`} />
                 <span className={snap?.armed ? "text-long" : "text-muted"}>
-                  {snap?.armed ? "ARMADO" : "OFF"}
+                  {snap?.armed ? "armado" : "off"}
                 </span>
               </span>
             </div>
@@ -217,33 +219,33 @@ export default function Dashboard() {
             <button
               onClick={() => patch({ enabled: !enabled })}
               disabled={busy || !configured}
-              className={`mt-4 w-full px-6 py-4 font-display text-sm tracking-wide transition disabled:opacity-40 ${
-                enabled ? "bg-short text-white hover:opacity-90" : "bg-volt text-ink hover:opacity-90"
+              className={`mt-4 w-full rounded-lg px-6 py-3.5 text-sm font-semibold transition-opacity disabled:opacity-40 ${
+                enabled ? "bg-short text-white hover:opacity-90" : "bg-accent text-ink hover:opacity-90"
               }`}
             >
-              {enabled ? "■ DETENER PILOTO" : "▶ ACTIVAR PILOTO"}
+              {enabled ? "Detener piloto" : "Activar piloto"}
             </button>
 
-            <div className="mt-5 grid grid-cols-3 gap-px border border-industrial bg-industrial text-center">
+            <div className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial text-center">
               <MiniStat label="SEÑALES" value={snap?.state.stats.signals ?? 0} />
               <MiniStat label="ABIERTAS" value={snap?.state.stats.tradesOpened ?? 0} />
               <MiniStat label="CERRADAS" value={snap?.state.stats.tradesClosed ?? 0} />
             </div>
 
             {/* guardarrailes en vivo */}
-            <div className="mt-3 space-y-1.5 border border-industrial bg-ink p-3 font-mono text-[10px]">
-              <Row label="PNL_HOY" value={`${(snap?.dailyPnlPct ?? 0) >= 0 ? "+" : ""}${(snap?.dailyPnlPct ?? 0).toFixed(2)}%`} tone={(snap?.dailyPnlPct ?? 0) >= 0 ? "long" : "short"} />
-              <Row label="TRADES_HOY" value={`${snap?.tradesToday ?? 0} / ${cfg?.risk.maxTradesPerDay ?? "—"}`} />
-              <Row label="COOLDOWN" value={cooldownLabel(snap?.cooldownUntil ?? 0)} />
+            <div className="mt-3 space-y-2 rounded-lg border border-industrial bg-base p-3.5 text-xs">
+              <Row label="PnL hoy" value={`${(snap?.dailyPnlPct ?? 0) >= 0 ? "+" : ""}${(snap?.dailyPnlPct ?? 0).toFixed(2)}%`} tone={(snap?.dailyPnlPct ?? 0) >= 0 ? "long" : "short"} />
+              <Row label="Trades hoy" value={`${snap?.tradesToday ?? 0} / ${cfg?.risk.maxTradesPerDay ?? "—"}`} />
+              <Row label="Cooldown" value={cooldownLabel(snap?.cooldownUntil ?? 0)} />
             </div>
           </div>
 
-          <div className="border border-industrial bg-soft p-5">
+          <div className="rounded-xl border border-industrial bg-soft p-5">
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <p className="tag">EQUITY_CURVE {dryRun ? "// PAPER" : "// LIVE"}</p>
-                <p className="mt-1 font-display text-3xl">
-                  {fmt(lastEquity)} <span className="font-mono text-sm text-muted">{acc?.currency}</span>
+                <p className="tag">Equity · {dryRun ? "paper" : "live"}</p>
+                <p className="mt-1.5 font-mono text-3xl font-medium tracking-tight text-white">
+                  {fmt(lastEquity)} <span className="text-sm font-normal text-muted">{acc?.currency}</span>
                 </p>
               </div>
               <PnlPill value={floatPnl} currency={acc?.currency} />
@@ -253,11 +255,11 @@ export default function Dashboard() {
         </section>
 
         {/* STATS */}
-        <section className="mt-4 grid grid-cols-2 gap-px border border-industrial bg-industrial md:grid-cols-4">
-          <StatCard label="BALANCE" value={acc ? fmt(acc.balance) : "—"} unit={acc?.currency} />
-          <StatCard label="DISPONIBLE" value={acc ? fmt(acc.available) : "—"} unit={acc?.currency} />
-          <StatCard label="PNL_FLOTANTE" value={fmt(floatPnl)} unit={acc?.currency} tone={floatPnl >= 0 ? "long" : "short"} />
-          <StatCard label="POSICIONES" value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`} />
+        <section className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
+          <StatCard label="Balance" value={acc ? fmt(acc.balance) : "—"} unit={acc?.currency} />
+          <StatCard label="Disponible" value={acc ? fmt(acc.available) : "—"} unit={acc?.currency} />
+          <StatCard label="PnL flotante" value={fmt(floatPnl)} unit={acc?.currency} tone={floatPnl >= 0 ? "long" : "short"} />
+          <StatCard label="Posiciones" value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`} />
         </section>
 
         {/* MAIN GRID */}
@@ -283,9 +285,9 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <footer className="mt-8 flex items-center justify-between border-t border-industrial py-5">
-          <p className="tag">CAPITAL_AUTOPILOT // BUILD_DEMO</p>
-          <p className="tag">⚠ SOLO DEMO — NO ES CONSEJO FINANCIERO</p>
+        <footer className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-industrial py-6 text-[11px] text-muted sm:flex-row">
+          <p>Capital Autopilot</p>
+          <p>Cuenta real · modo PAPER · no es consejo financiero</p>
         </footer>
       </main>
     </div>
@@ -332,13 +334,13 @@ function Ticker({ evals }: { evals: Snapshot["evals"] }) {
   const items = evals.length > 0 ? evals : [{ epic: "—", signal: { type: "FLAT", confidence: 0 } } as any];
   const row = [...items, ...items];
   return (
-    <div className="overflow-hidden border-b border-industrial bg-black">
-      <div className="flex w-max animate-ticker whitespace-nowrap py-1.5">
+    <div className="overflow-hidden border-b border-industrial bg-base">
+      <div className="flex w-max animate-ticker whitespace-nowrap py-2">
         {row.map((e, i) => (
-          <span key={i} className="mx-6 inline-flex items-center gap-2 font-mono text-[11px]">
+          <span key={i} className="mx-5 inline-flex items-center gap-2 font-mono text-[11px]">
             <span className="text-dim">{e.epic}</span>
             <span className={e.signal.type === "BUY" ? "text-long" : e.signal.type === "SELL" ? "text-short" : "text-muted"}>
-              {e.signal.type === "BUY" ? "▲ LONG" : e.signal.type === "SELL" ? "▼ SHORT" : "● FLAT"}
+              {e.signal.type === "BUY" ? "▲ long" : e.signal.type === "SELL" ? "▼ short" : "· flat"}
             </span>
             <span className="text-muted">{Math.round((e.signal.confidence ?? 0) * 100)}%</span>
           </span>
@@ -349,12 +351,12 @@ function Ticker({ evals }: { evals: Snapshot["evals"] }) {
 }
 
 function ConnBadge({ configured, enabled }: { configured: boolean; enabled: boolean }) {
-  const color = !configured ? "bg-short" : enabled ? "bg-long" : "bg-volt";
-  const label = !configured ? "SIN_CREDENCIALES" : enabled ? "LIVE" : "CONECTADO";
+  const color = !configured ? "bg-short" : enabled ? "bg-long" : "bg-accent";
+  const label = !configured ? "sin credenciales" : enabled ? "live" : "conectado";
   return (
-    <div className="flex items-center gap-2 border border-cement px-3 py-1.5">
-      <span className={`h-2 w-2 ${color} ${enabled ? "animate-pulseDot" : ""}`} />
-      <span className="tag !text-dim">{label}</span>
+    <div className="flex items-center gap-2 rounded-lg border border-industrial px-3 py-1.5">
+      <span className={`h-2 w-2 rounded-full ${color} ${enabled ? "animate-pulseDot" : ""}`} />
+      <span className="text-[11px] font-medium text-dim">{label}</span>
     </div>
   );
 }
@@ -362,19 +364,19 @@ function ConnBadge({ configured, enabled }: { configured: boolean; enabled: bool
 function ModeBadge({ dryRun }: { dryRun: boolean }) {
   return (
     <span
-      className={`px-2 py-1 font-mono text-[10px] ${
-        dryRun ? "bg-volt/10 text-volt" : "bg-short/15 text-short"
+      className={`rounded-md px-2.5 py-1 text-[11px] font-medium ${
+        dryRun ? "bg-accent/10 text-accent" : "bg-short/15 text-short"
       }`}
     >
-      {dryRun ? "📝 PAPER" : "💸 LIVE"}
+      {dryRun ? "Paper" : "Live"}
     </span>
   );
 }
 
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-soft py-3">
-      <p className="font-display text-xl text-white">{value}</p>
+    <div className="bg-soft py-3.5">
+      <p className="font-mono text-xl font-medium text-white">{value}</p>
       <p className="tag mt-0.5">{label}</p>
     </div>
   );
@@ -383,9 +385,9 @@ function MiniStat({ label, value }: { label: string; value: number }) {
 function PnlPill({ value, currency }: { value: number; currency?: string }) {
   const pos = value >= 0;
   return (
-    <div className={`border px-3 py-2 text-right ${pos ? "border-long/40 bg-long/5" : "border-short/40 bg-short/5"}`}>
-      <p className="tag">PNL_FLOTANTE</p>
-      <p className={`font-mono text-lg ${pos ? "text-long" : "text-short"}`}>
+    <div className={`rounded-lg border px-3.5 py-2 text-right ${pos ? "border-long/30 bg-long/5" : "border-short/30 bg-short/5"}`}>
+      <p className="tag">PnL flotante</p>
+      <p className={`font-mono text-lg font-medium ${pos ? "text-long" : "text-short"}`}>
         {pos ? "+" : ""}
         {fmt(value)} {currency}
       </p>
@@ -395,12 +397,12 @@ function PnlPill({ value, currency }: { value: number; currency?: string }) {
 
 function ConfigWarning() {
   return (
-    <div className="mb-5 border border-short/40 bg-short/5 p-4">
-      <p className="font-display text-sm text-short">⚠ CREDENCIALES NO CONFIGURADAS</p>
+    <div className="mb-5 rounded-xl border border-short/30 bg-short/5 p-4">
+      <p className="text-sm font-semibold text-short">Credenciales no configuradas</p>
       <p className="mt-2 text-xs leading-relaxed text-dim">
-        Copia <code className="bg-industrial px-1 font-mono text-volt">.env.local.example</code> a{" "}
-        <code className="bg-industrial px-1 font-mono text-volt">.env.local</code> con tus credenciales DEMO de Capital.com.
-        El dashboard funciona en modo PAPER local hasta entonces.
+        Copia <code className="rounded bg-industrial px-1 font-mono text-accent">.env.local.example</code> a{" "}
+        <code className="rounded bg-industrial px-1 font-mono text-accent">.env.local</code> con tus credenciales de Capital.com.
+        El panel funciona en modo PAPER local hasta entonces.
       </p>
     </div>
   );

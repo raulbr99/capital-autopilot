@@ -69,9 +69,9 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
   };
 
   return (
-    <div className="border border-industrial bg-soft">
+    <div className="border border-industrial bg-soft rounded-xl">
       <SectionHead
-        label="WALK-FORWARD // VALIDACIÓN_FUERA_DE_MUESTRA"
+        label="Walk-forward · validación"
         right={
           <div className="flex items-center gap-2">
             <select

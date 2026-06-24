@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Inter, Archivo_Black, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const body = Inter({ subsets: ["latin"], variable: "--font-body" });
-const display = Archivo_Black({
-  weight: "400",
+const sans = Inter({
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-sans",
+  display: "swap",
 });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "CAPITAL AUTOPILOT // motor de posiciones autónomas",
-  description: "Dashboard de trading autónomo sobre Capital.com (DEMO)",
+  title: "Capital Autopilot — autonomous trading",
+  description: "Panel de trading autónomo sobre Capital.com",
 };
 
 export default function RootLayout({
@@ -23,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${body.variable} ${display.variable} ${mono.variable} bg-ink text-white font-body antialiased`}
+        className={`${sans.variable} ${mono.variable} bg-ink text-white font-sans antialiased`}
       >
         {children}
       </body>

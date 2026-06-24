@@ -5,8 +5,8 @@ import { SectionHead, Sparkline } from "./ui";
 
 export default function SignalMatrix({ evals }: { evals: EpicEval[] }) {
   return (
-    <div className="border border-industrial bg-soft">
-      <SectionHead label="SIGNAL_MATRIX // EVALUACIÓN_EN_VIVO" />
+    <div className="border border-industrial bg-soft rounded-xl">
+      <SectionHead label="Señales · en vivo" />
       <div className="grid grid-cols-1 gap-px bg-industrial p-px sm:grid-cols-2 xl:grid-cols-3">
         {evals.length === 0 && (
           <div className="col-span-full bg-soft p-8 text-center">
@@ -29,7 +29,6 @@ function SignalCard({ e }: { e: EpicEval }) {
   const confColor = buy ? "text-long" : sell ? "text-short" : "text-muted";
   return (
     <div className="group relative overflow-hidden bg-soft p-4 transition hover:bg-[#121212]">
-      <span className="scanline -top-2 opacity-0 transition group-hover:animate-scan group-hover:opacity-100" />
       <div className="flex items-start justify-between">
         <div>
           <span className="font-display text-base">{e.epic}</span>

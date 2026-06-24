@@ -14,8 +14,8 @@ export default function RiskPanel({
 }) {
   const r = cfg.risk;
   return (
-    <div className="border border-industrial bg-soft">
-      <SectionHead label="RISK_ENGINE // GUARDARRAÍLES" />
+    <div className="border border-industrial bg-soft rounded-xl">
+      <SectionHead label="Gestión de riesgo" />
       <div className="space-y-4 p-4">
         {/* sizing mode */}
         <div>

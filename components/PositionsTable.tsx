@@ -13,8 +13,8 @@ export default function PositionsTable({
   busy: boolean;
 }) {
   return (
-    <div className="border border-industrial bg-soft">
-      <SectionHead label={`POSICIONES_ABIERTAS // ${positions.length}`} />
+    <div className="border border-industrial bg-soft rounded-xl">
+      <SectionHead label={`Posiciones abiertas · ${positions.length}`} />
       {positions.length === 0 ? (
         <div className="dotgrid p-10 text-center">
           <span className="tag">NO_HAY_POSICIONES_ABIERTAS</span>

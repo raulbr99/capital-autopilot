@@ -38,8 +38,8 @@ export default function ConfigPanel({
     });
 
   return (
-    <div className="border border-industrial bg-soft">
-      <SectionHead label="STRATEGY // INSTRUMENTOS + RESOLUCIÓN" />
+    <div className="border border-industrial bg-soft rounded-xl">
+      <SectionHead label="Instrumentos y señal" />
       <div className="space-y-4 p-4">
         <div>
           <p className="tag mb-2">INSTRUMENTOS (activo · resolución de señal)</p>
@@ -128,7 +128,7 @@ export default function ConfigPanel({
             disabled={busy}
             onClick={() => patch({ aiFilter: !cfg.aiFilter })}
             className={`flex w-full items-center justify-between border px-3 py-2 font-mono text-[11px] ${
-              cfg.aiFilter ? "border-volt text-volt glow-volt" : "border-cement text-muted"
+              cfg.aiFilter ? "border-volt text-volt" : "border-cement text-muted"
             }`}
           >
             🤖 CAPA IA — Claude revisa/veta cada señal
@@ -137,7 +137,7 @@ export default function ConfigPanel({
         </div>
 
         <div className="border-t border-industrial pt-3">
-          <p className="tag mb-2">NOTIFICACIONES</p>
+          <p className="tag mb-2">Notificaciones</p>
           <div className="grid grid-cols-2 gap-2">
             <NotifyRow
               label="TELEGRAM"

@@ -13,10 +13,10 @@ export default function Analytics({
   if (!a) return null;
   return (
     <div className="space-y-4">
-      <div className="border border-industrial bg-soft">
-        <SectionHead label="PERFORMANCE // MÉTRICAS" />
+      <div className="border border-industrial bg-soft rounded-xl">
+        <SectionHead label="Rendimiento" />
         <div className="grid grid-cols-2 gap-px border-b border-industrial bg-industrial md:grid-cols-4">
-          <StatCard label="WIN_RATE" value={`${a.winRate.toFixed(0)}%`} tone="volt" />
+          <StatCard label="WIN_RATE" value={`${a.winRate.toFixed(0)}%`} tone="accent" />
           <StatCard label="PROFIT_FACTOR" value={pf(a.profitFactor)} />
           <StatCard label="NET_PNL" value={fmt(a.netPnl)} tone={a.netPnl >= 0 ? "long" : "short"} />
           <StatCard label="MAX_DD" value={fmt(a.maxDrawdown)} tone="short" />
@@ -30,14 +30,14 @@ export default function Analytics({
 
         {/* Daily P&L bars */}
         <div className="p-4">
-          <p className="tag mb-2">PNL_DIARIO</p>
+          <p className="tag mb-2">PnL diario</p>
           <DailyBars data={a.dailyPnl} />
         </div>
       </div>
 
       {/* trade history */}
-      <div className="border border-industrial bg-soft">
-        <SectionHead label={`TRADE_LOG // ${trades.length}`} />
+      <div className="border border-industrial bg-soft rounded-xl">
+        <SectionHead label={`Operaciones · ${trades.length}`} />
         {trades.length === 0 ? (
           <div className="dotgrid p-8 text-center">
             <span className="tag">SIN_TRADES_TODAVÍA</span>

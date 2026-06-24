@@ -31,7 +31,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-lg border border-cement bg-soft glow-volt"
+        className="w-full max-w-lg overflow-hidden rounded-xl border border-cement bg-soft shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -61,7 +61,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
           ))}
         </div>
         <div className="border-t border-industrial px-4 py-2">
-          <span className="tag">⌘K // COMMAND_PALETTE</span>
+          <span className="tag">Command palette · ⌘K</span>
         </div>
       </div>
     </div>

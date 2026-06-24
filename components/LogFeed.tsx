@@ -15,10 +15,10 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
       ? "text-short"
       : "text-muted";
   return (
-    <div className="border border-industrial bg-soft">
+    <div className="border border-industrial bg-soft rounded-xl">
       <SectionHead
-        label="LIVE_LOG // STREAM_DEL_MOTOR"
-        right={<span className="h-1.5 w-1.5 animate-pulseDot bg-volt" />}
+        label="Registro en vivo"
+        right={<span className="h-1.5 w-1.5 rounded-full animate-pulseDot bg-volt" />}
       />
       <div className="max-h-[300px] space-y-px overflow-y-auto p-px">
         {logs.length === 0 && (

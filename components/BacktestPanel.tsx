@@ -45,9 +45,9 @@ export default function BacktestPanel() {
   };
 
   return (
-    <div className="border border-industrial bg-soft">
+    <div className="border border-industrial bg-soft rounded-xl">
       <SectionHead
-        label="BACKTEST // SIMULACIÓN_HISTÓRICA"
+        label="Backtest histórico"
         right={
           <div className="flex items-center gap-2">
             <select

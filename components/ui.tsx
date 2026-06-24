@@ -13,9 +13,9 @@ export const pf = (n: number) =>
 
 export function SectionHead({ label, right }: { label: string; right?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between border-b border-industrial px-4 py-2.5">
-      <span className="tag !text-dim">{label}</span>
-      {right ?? <span className="h-1.5 w-1.5 bg-volt" />}
+    <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
+      <span className="tag">{label}</span>
+      {right ?? <span className="h-1.5 w-1.5 rounded-full bg-accent/70" />}
     </div>
   );
 }
@@ -29,21 +29,22 @@ export function StatCard({
   label: string;
   value: string;
   unit?: string;
-  tone?: "long" | "short" | "volt";
+  tone?: "long" | "short" | "accent";
 }) {
   const c =
     tone === "long"
       ? "text-long"
       : tone === "short"
       ? "text-short"
-      : tone === "volt"
-      ? "text-volt"
+      : tone === "accent"
+      ? "text-accent"
       : "text-white";
   return (
-    <div className="bg-soft p-4">
+    <div className="bg-soft p-5">
       <p className="tag">{label}</p>
-      <p className={`mt-2 font-display text-2xl ${c}`}>
-        {value} {unit && <span className="font-mono text-xs text-muted">{unit}</span>}
+      <p className={`mt-2 font-mono text-2xl font-medium tracking-tight ${c}`}>
+        {value}{" "}
+        {unit && <span className="text-xs font-normal text-muted">{unit}</span>}
       </p>
     </div>
   );
@@ -78,7 +79,7 @@ export function NumField({
           if (Number.isFinite(n) && n !== value) onCommit(n);
         }}
         onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-        className="mt-1 w-full border border-cement bg-ink px-2 py-1.5 font-mono text-sm text-white focus:border-volt focus:outline-none disabled:opacity-40"
+        className="mt-1.5 w-full rounded-lg border border-cement bg-base px-2.5 py-2 font-mono text-sm text-white transition-colors focus:border-accent focus:outline-none disabled:opacity-40"
       />
     </label>
   );
@@ -101,14 +102,14 @@ export function Toggle({
     <button
       onClick={onClick}
       disabled={busy}
-      className={`flex items-center gap-2 border px-3 py-1.5 font-mono text-[11px] transition disabled:opacity-40 ${
-        on ? "border-volt text-volt" : "border-cement text-muted"
+      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-40 ${
+        on ? "border-accent/40 bg-accent/10 text-accent" : "border-cement text-muted hover:text-dim"
       }`}
     >
-      <span className={`h-2.5 w-4 ${on ? "bg-volt" : "bg-cement"} relative`}>
+      <span className={`relative h-3.5 w-6 rounded-full transition-colors ${on ? "bg-accent" : "bg-cement"}`}>
         <span
-          className={`absolute top-0 h-2.5 w-2 bg-ink transition-all ${
-            on ? "left-2" : "left-0"
+          className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white transition-all ${
+            on ? "left-[13px]" : "left-0.5"
           }`}
         />
       </span>
@@ -129,18 +130,18 @@ export function Sparkline({
   h?: number;
 }) {
   if (!data || data.length < 2)
-    return <div style={{ width: w, height: h }} className="bg-industrial/40" />;
+    return <div style={{ width: w, height: h }} className="rounded bg-industrial/40" />;
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
   const x = (i: number) => (i / (data.length - 1)) * w;
-  const y = (v: number) => h - ((v - min) / range) * (h - 4) - 2;
+  const y = (val: number) => h - ((val - min) / range) * (h - 4) - 2;
   const line = data.map((d, i) => `${x(i).toFixed(1)},${y(d).toFixed(1)}`).join(" ");
   const isUp = up ?? data[data.length - 1] >= data[0];
-  const c = isUp ? "#26FF8A" : "#FF3B5C";
+  const c = isUp ? "#34C98A" : "#F2567A";
   return (
     <svg width={w} height={h} className="overflow-visible">
-      <polyline points={line} fill="none" stroke={c} strokeWidth="1.5" />
+      <polyline points={line} fill="none" stroke={c} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={x(data.length - 1)} cy={y(data[data.length - 1])} r="2" fill={c} />
     </svg>
   );

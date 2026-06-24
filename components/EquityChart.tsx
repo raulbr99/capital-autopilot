@@ -49,7 +49,7 @@ export default function EquityChart({
     .join(" ")}`;
 
   const up = values[values.length - 1] >= values[0];
-  const stroke = up ? "#26FF8A" : "#FF3B5C";
+  const stroke = up ? "#34C98A" : "#F2567A";
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-[200px] w-full">
@@ -60,9 +60,9 @@ export default function EquityChart({
         </linearGradient>
       </defs>
       {[0.25, 0.5, 0.75].map((g) => (
-        <line key={g} x1={pad} x2={W - pad} y1={pad + g * (H - pad * 2)} y2={pad + g * (H - pad * 2)} stroke="#1A1A1A" strokeWidth="1" />
+        <line key={g} x1={pad} x2={W - pad} y1={pad + g * (H - pad * 2)} y2={pad + g * (H - pad * 2)} stroke="#242a33" strokeWidth="1" />
       ))}
-      <polygon points={ddArea} fill="#FF3B5C" opacity="0.06" />
+      <polygon points={ddArea} fill="#F2567A" opacity="0.06" />
       <polygon points={area} fill="url(#eqfill)" />
       <polyline points={line} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {markers.map((m, i) => (
@@ -71,7 +71,7 @@ export default function EquityChart({
           cx={xt(m.ts)}
           cy={H - pad - 4}
           r="2.5"
-          fill={(m.pnl ?? 0) >= 0 ? "#26FF8A" : "#FF3B5C"}
+          fill={(m.pnl ?? 0) >= 0 ? "#34C98A" : "#F2567A"}
         />
       ))}
       <circle cx={x(data.length - 1)} cy={y(values[values.length - 1])} r="3.5" fill={stroke} />

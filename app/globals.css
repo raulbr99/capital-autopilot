@@ -8,58 +8,83 @@
 
 html,
 body {
-  background: #0a0a0a;
+  background: #0b0d11;
 }
 
-/* Rejilla industrial de fondo */
-.grid-bg {
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 44px 44px;
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-.glow-volt {
-  box-shadow: 0 0 0 1px rgba(209, 255, 38, 0.4), 0 0 28px rgba(209, 255, 38, 0.18);
+/* Display = misma familia (Inter) con más peso y tracking ajustado */
+.font-display,
+[class~="font-display"] {
+  font-weight: 660;
+  letter-spacing: -0.018em;
 }
 
-.text-glow {
-  text-shadow: 0 0 18px rgba(209, 255, 38, 0.55);
+/* Cifras tabulares en todo lo monoespaciado (precios, PnL, tablas) */
+.font-mono,
+[class~="font-mono"] {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
-/* Scanline que recorre las cards en hover */
-.scanline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #d1ff26, transparent);
-  pointer-events: none;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #0f0f0f;
-}
-::-webkit-scrollbar-thumb {
-  background: #252525;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #353535;
-}
-
+/* Etiqueta técnica refinada (sans, sin tracking extremo) */
 .tag {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  color: #606060;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #6b7280;
   text-transform: uppercase;
 }
 
-.dotgrid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 14px 14px;
+/* Anillo de acento sutil para elementos activos */
+.ring-accent {
+  box-shadow: 0 0 0 1px rgba(110, 124, 247, 0.5),
+    0 0 0 4px rgba(110, 124, 247, 0.1);
+}
+
+/* Radio por defecto en controles (las utilidades rounded-* lo sobreescriben) */
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    border-radius: 0.5rem;
+  }
+}
+
+/* Scrollbars discretos */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2c333d;
+  border: 3px solid #0b0d11;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a424e;
+}
+
+/* Foco accesible y consistente */
+*:focus-visible {
+  outline: 2px solid rgba(110, 124, 247, 0.7);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

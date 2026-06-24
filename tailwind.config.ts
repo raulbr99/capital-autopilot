@@ -8,47 +8,57 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#0A0A0A",
-        soft: "#0F0F0F",
-        industrial: "#1A1A1A",
-        cement: "#252525",
-        volt: "#D1FF26",
-        long: "#26FF8A",
-        short: "#FF3B5C",
-        muted: "#606060",
-        dim: "#A0A0A0",
+        // Superficies — grafito frío profundo (no negro puro, no navy)
+        ink: "#0B0D11", // fondo de la app
+        base: "#0F1218", // fondo alterno / barras
+        soft: "#14171D", // paneles / cards
+        raised: "#1A1E26", // elevado / hover
+        industrial: "#242a33", // hairline principal (borde/separador)
+        cement: "#2c333d", // borde secundario / inputs
+        // Acento — iris/periwinkle (≤10% de la superficie, solo estado/acción)
+        accent: "#6E7CF7",
+        volt: "#6E7CF7", // alias para clases heredadas
+        // Semánticos P&L — esmeralda / rosa refinados
+        long: "#34C98A",
+        short: "#F2567A",
+        // Texto
+        white: "#E7E9EE", // primario (blanco suave, no #fff)
+        dim: "#A0A7B4", // secundario
+        muted: "#6B7280", // terciario
       },
       fontFamily: {
-        display: ["var(--font-display)", "system-ui", "sans-serif"],
-        body: ["var(--font-body)", "system-ui", "sans-serif"],
+        // Una sola familia (Inter); el "display" es la misma con más peso
+        display: ["var(--font-sans)", "system-ui", "sans-serif"],
+        body: ["var(--font-sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
+      borderRadius: {
+        lg: "0.625rem", // 10px
+        xl: "0.875rem", // 14px
+      },
+      boxShadow: {
+        elevated: "0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -8px rgba(0,0,0,0.55)",
+        ring: "0 0 0 1px rgba(110,124,247,0.45)",
+      },
       keyframes: {
-        scan: {
-          "0%": { transform: "translateY(-100%)", opacity: "0" },
-          "50%": { opacity: "1" },
-          "100%": { transform: "translateY(100%)", opacity: "0" },
-        },
         pulseDot: {
           "0%, 100%": { opacity: "1", transform: "scale(1)" },
-          "50%": { opacity: "0.35", transform: "scale(0.8)" },
+          "50%": { opacity: "0.4", transform: "scale(0.82)" },
         },
         ticker: {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
-        flicker: {
-          "0%, 100%": { opacity: "1" },
-          "92%": { opacity: "1" },
-          "94%": { opacity: "0.4" },
-          "96%": { opacity: "1" },
+        fadeUp: {
+          "0%": { opacity: "0", transform: "translateY(4px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
       },
       animation: {
-        scan: "scan 2.2s linear infinite",
-        pulseDot: "pulseDot 1.4s ease-in-out infinite",
-        ticker: "ticker 40s linear infinite",
-        flicker: "flicker 6s linear infinite",
+        pulseDot: "pulseDot 1.6s ease-in-out infinite",
+        ticker: "ticker 60s linear infinite",
+        fadeUp: "fadeUp 0.25s cubic-bezier(0.22,1,0.36,1)",
       },
     },
   },
