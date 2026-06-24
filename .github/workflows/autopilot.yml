@@ -1,0 +1,24 @@
+name: Autopilot tick (cada 15 min)
+
+# Dispara el motor cada 15 min SIN necesidad de plan Vercel Pro.
+# Requiere 2 secrets del repo (Settings -> Secrets and variables -> Actions):
+#   AUTOPILOT_URL  -> https://TU-APP.vercel.app
+#   CRON_SECRET    -> el mismo valor que pusiste en Vercel
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {} # permite dispararlo a mano
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tick
+        run: |
+          code=$(curl -s -o /tmp/out.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.AUTOPILOT_URL }}/api/bot/cron")
+          echo "HTTP $code"
+          cat /tmp/out.json
+          test "$code" = "200"
