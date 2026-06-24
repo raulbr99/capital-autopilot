@@ -10,6 +10,8 @@
  * Cacheamos la sesion en memoria del servidor (~9 min) para no re-loguear en cada tick.
  */
 
+import { loadSessionToken, saveSessionToken } from "./db";
+
 const BASE_URL =
   process.env.CAPITAL_BASE_URL ||
   "https://demo-api-capital.backend-capital.com";
@@ -17,7 +19,7 @@ const BASE_URL =
 type Session = { cst: string; xst: string; createdAt: number };
 
 let cached: Session | null = null;
-const SESSION_TTL = 9 * 60 * 1000; // 9 minutos
+const SESSION_TTL = 8 * 60 * 1000; // 8 minutos (sesion Capital ~10 min de inactividad)
 
 export function capitalConfigured(): boolean {
   return Boolean(
@@ -35,6 +37,16 @@ export async function getSession(force = false): Promise<Session> {
   }
   if (!force && cached && Date.now() - cached.createdAt < SESSION_TTL) {
     return cached;
+  }
+
+  // Cache compartido en Supabase: reutiliza el token entre invocaciones
+  // serverless en vez de re-loguear en cada arranque en frio (evita el 429).
+  if (!force) {
+    const shared = await loadSessionToken();
+    if (shared && Date.now() - shared.createdAt < SESSION_TTL) {
+      cached = shared;
+      return cached;
+    }
   }
 
   const res = await fetch(`${BASE_URL}/api/v1/session`, {
@@ -63,6 +75,7 @@ export async function getSession(force = false): Promise<Session> {
   }
 
   cached = { cst, xst, createdAt: Date.now() };
+  void saveSessionToken(cst, xst);
   return cached;
 }
 

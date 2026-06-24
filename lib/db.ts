@@ -46,6 +46,46 @@ async function supa(): Promise<SupaClient | null> {
   return client;
 }
 
+/* ---------------- SESSION (token cache compartido) ---------------- */
+
+export async function loadSessionToken(): Promise<{
+  cst: string;
+  xst: string;
+  createdAt: number;
+} | null> {
+  const s = await supa();
+  if (!s) return null;
+  try {
+    const { data } = await s
+      .from("ap_session")
+      .select("cst,xst,created_at")
+      .eq("id", 1)
+      .maybeSingle();
+    if (data?.cst && data?.xst) {
+      return {
+        cst: data.cst,
+        xst: data.xst,
+        createdAt: new Date(data.created_at).getTime(),
+      };
+    }
+  } catch {
+    /* noop */
+  }
+  return null;
+}
+
+export async function saveSessionToken(cst: string, xst: string): Promise<void> {
+  const s = await supa();
+  if (!s) return;
+  try {
+    await s
+      .from("ap_session")
+      .upsert({ id: 1, cst, xst, created_at: new Date().toISOString() });
+  } catch {
+    /* noop */
+  }
+}
+
 /* ---------------- CONFIG ---------------- */
 
 export async function loadConfig(): Promise<BotConfig> {

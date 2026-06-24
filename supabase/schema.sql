@@ -15,6 +15,17 @@ create table if not exists ap_state (
   constraint ap_state_singleton check (id = 1)
 );
 
+-- Cache del token de sesion de Capital.com (CST + X-SECURITY-TOKEN),
+-- compartido entre invocaciones serverless para no re-loguear en cada arranque
+-- en frio (evita el rate-limit error.too-many.requests de Capital).
+create table if not exists ap_session (
+  id int primary key default 1,
+  cst text,
+  xst text,
+  created_at timestamptz default now(),
+  constraint ap_session_singleton check (id = 1)
+);
+
 create table if not exists ap_trades (
   id text primary key,
   ts timestamptz not null,
@@ -51,8 +62,9 @@ create index if not exists ap_logs_ts_idx on ap_logs (ts desc);
 
 -- El backend usa la service role key (acceso completo). RLS activado y sin
 -- politicas publicas: nadie con anon key puede leer/escribir.
-alter table ap_config enable row level security;
-alter table ap_state  enable row level security;
+alter table ap_config  enable row level security;
+alter table ap_state   enable row level security;
+alter table ap_session enable row level security;
 alter table ap_trades enable row level security;
 alter table ap_equity enable row level security;
 alter table ap_logs   enable row level security;
