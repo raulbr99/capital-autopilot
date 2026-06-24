@@ -123,11 +123,23 @@ export type AccountInfo = {
   currency: string;
 };
 
+// Cachés cortas: el dashboard hace polling cada 6s; sin esto saturamos el
+// rate-limit de Capital (429). Las invalidamos al abrir/cerrar posiciones.
+let accountCache: { d: AccountInfo; t: number } | null = null;
+let positionsCache: { d: Position[]; t: number } | null = null;
+const pricesCache = new Map<string, { d: Candle[]; t: number }>();
+
+export function invalidateCaches() {
+  accountCache = null;
+  positionsCache = null;
+}
+
 export async function getAccount(): Promise<AccountInfo> {
+  if (accountCache && Date.now() - accountCache.t < 15000) return accountCache.d;
   const data = await json<any>(await authed("/api/v1/accounts"));
   const acc = data.accounts?.[0] ?? {};
   const b = acc.balance ?? {};
-  return {
+  const out: AccountInfo = {
     accountId: acc.accountId ?? "—",
     balance: b.balance ?? 0,
     available: b.available ?? 0,
@@ -135,6 +147,8 @@ export async function getAccount(): Promise<AccountInfo> {
     pnl: b.profitLoss ?? 0,
     currency: acc.currency ?? "USD",
   };
+  accountCache = { d: out, t: Date.now() };
+  return out;
 }
 
 export type Position = {
@@ -149,8 +163,9 @@ export type Position = {
 };
 
 export async function getPositions(): Promise<Position[]> {
+  if (positionsCache && Date.now() - positionsCache.t < 8000) return positionsCache.d;
   const data = await json<any>(await authed("/api/v1/positions"));
-  return (data.positions ?? []).map((p: any) => ({
+  const out: Position[] = (data.positions ?? []).map((p: any) => ({
     dealId: p.position.dealId,
     epic: p.market.epic,
     direction: p.position.direction,
@@ -160,6 +175,8 @@ export async function getPositions(): Promise<Position[]> {
     currency: p.position.currency ?? "USD",
     createdDate: p.position.createdDateUTC ?? p.position.createdDate ?? "",
   }));
+  positionsCache = { d: out, t: Date.now() };
+  return out;
 }
 
 export async function openPosition(params: {
@@ -169,7 +186,7 @@ export async function openPosition(params: {
   stopDistance?: number;
   profitDistance?: number;
 }): Promise<{ dealReference: string }> {
-  return json(
+  const r = await json<{ dealReference: string }>(
     await authed("/api/v1/positions", {
       method: "POST",
       body: JSON.stringify({
@@ -184,14 +201,18 @@ export async function openPosition(params: {
       }),
     })
   );
+  invalidateCaches(); // cuenta/posiciones cambian tras abrir
+  return r;
 }
 
 export async function closePosition(
   dealId: string
 ): Promise<{ dealReference: string }> {
-  return json(
+  const r = await json<{ dealReference: string }>(
     await authed(`/api/v1/positions/${dealId}`, { method: "DELETE" })
   );
+  invalidateCaches();
+  return r;
 }
 
 export type Candle = { time: string; open: number; high: number; low: number; close: number };
@@ -201,6 +222,9 @@ export async function getPrices(
   resolution = "MINUTE",
   max = 60
 ): Promise<Candle[]> {
+  const key = `${epic}:${resolution}:${max}`;
+  const cached = pricesCache.get(key);
+  if (cached && Date.now() - cached.t < 60000) return cached.d;
   const data = await json<any>(
     await authed(
       `/api/v1/prices/${encodeURIComponent(
@@ -208,13 +232,15 @@ export async function getPrices(
       )}?resolution=${resolution}&max=${max}`
     )
   );
-  return (data.prices ?? []).map((p: any) => ({
+  const out: Candle[] = (data.prices ?? []).map((p: any) => ({
     time: p.snapshotTimeUTC ?? p.snapshotTime,
     open: mid(p.openPrice),
     high: mid(p.highPrice),
     low: mid(p.lowPrice),
     close: mid(p.closePrice),
   }));
+  pricesCache.set(key, { d: out, t: Date.now() });
+  return out;
 }
 
 function mid(p: any): number {
