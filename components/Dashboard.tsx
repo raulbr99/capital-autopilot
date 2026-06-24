@@ -281,9 +281,9 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-4">
+            <LogFeed logs={snap?.state.logs ?? []} />
             {cfg && <RiskPanel cfg={cfg} busy={busy} patch={patch} />}
             {cfg && <ConfigPanel cfg={cfg} busy={busy} patch={patch} notifyEnv={snap?.state.notifyEnv ?? { telegram: false, discord: false }} />}
-            <LogFeed logs={snap?.state.logs ?? []} />
           </div>
         </section>
 
