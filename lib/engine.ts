@@ -1,0 +1,384 @@
+/**
+ * Motor del piloto automatico (con gestion de riesgo + dry-run).
+ *
+ * - Carga config/estado durables desde Supabase (lib/db) -> el cron usa la
+ *   config de la UI aunque el proceso serverless se reinicie.
+ * - DRY-RUN (paper): simula entradas/salidas con SL/TP y calcula PnL realista
+ *   SIN enviar nada a Capital. Ideal para "ver pensar" al bot antes de armarlo.
+ * - Guardarrailes: kill-switch por perdida diaria, cooldown tras perdida,
+ *   maximo de trades/dia, sizing por % de equity y SL/TP por ATR.
+ */
+
+import {
+  getAccount,
+  getPositions,
+  getPrices,
+  openPosition,
+  capitalConfigured,
+  type Position,
+  type Candle,
+} from "./capital";
+import { evaluate, atr, type Signal } from "./strategy";
+import { bot, log, pushEquity, todayKey, TradeRecord } from "./store";
+import {
+  loadConfig,
+  loadRuntime,
+  saveRuntime,
+  recordTrade,
+  updateTrade,
+  appendEquity,
+  appendLog,
+} from "./db";
+import { notify, notifyConfigured } from "./notify";
+
+export type EpicEval = {
+  epic: string;
+  signal: Signal;
+  hasPosition: boolean;
+  price: number;
+  atr: number;
+  spark: number[]; // ultimos cierres para mini-grafica
+};
+
+export type OpenPos = {
+  key: string;
+  epic: string;
+  direction: "BUY" | "SELL";
+  size: number;
+  entry: number;
+  upl: number;
+  paper: boolean;
+  dealId?: string;
+};
+
+export function autopilotArmed(): boolean {
+  return process.env.AUTOPILOT_ARMED === "true";
+}
+
+export type EngineResult = {
+  configured: boolean;
+  enabled: boolean;
+  armed: boolean;
+  dryRun: boolean;
+  killedToday: boolean;
+  cooldownUntil: number;
+  tradesToday: number;
+  dailyPnlPct: number;
+  account: Awaited<ReturnType<typeof getAccount>> | null;
+  openPositions: OpenPos[];
+  evals: EpicEval[];
+  state: ReturnType<typeof snapshotState>;
+  opened: number;
+};
+
+const logN = (level: Parameters<typeof log>[0], msg: string, epic?: string) => {
+  log(level, msg, epic);
+  void appendLog(bot().logs[0]);
+};
+
+export async function runEngine(allowTradesIntent: boolean): Promise<EngineResult> {
+  const b = bot();
+  await loadConfig();
+  await loadRuntime();
+  const cfg = b.config;
+  b.lastTick = Date.now();
+  const today = todayKey();
+
+  if (!capitalConfigured()) {
+    return base(false, allowTradesIntent, 0, 0, 0, null, [], []);
+  }
+
+  const [account, positions] = await Promise.all([getAccount(), getPositions()]);
+
+  // ---- precios + ATR + señal por activo ----
+  const candlesByEpic = new Map<string, Candle[]>();
+  const evals: EpicEval[] = [];
+  for (const epic of cfg.watchlist) {
+    try {
+      const candles = await getPrices(epic, "MINUTE", 80);
+      candlesByEpic.set(epic, candles);
+      const signal = evaluate(candles, cfg.strategy);
+      const price = candles.length ? candles[candles.length - 1].close : 0;
+      const a = atr(candles, cfg.risk.atrPeriod);
+      const spark = candles.slice(-30).map((c) => c.close);
+      evals.push({ epic, signal, hasPosition: false, price, atr: a, spark });
+      if (signal.type !== "FLAT") b.stats.signals++;
+    } catch (err: any) {
+      logN("error", `Error evaluando ${epic}: ${err.message}`, epic);
+    }
+  }
+  const priceOf = (epic: string) =>
+    evals.find((e) => e.epic === epic)?.price ?? 0;
+
+  // ---- gestionar paper trades abiertos (fills SL/TP) ----
+  managePaperTrades(candlesByEpic);
+
+  // ---- equity (real o paper) ----
+  const paperOpen = b.trades.filter((t) => t.status === "open" && t.dryRun);
+  const paperFloating = paperOpen.reduce(
+    (s, t) => s + floating(t, priceOf(t.epic)),
+    0
+  );
+  const paperRealized = b.trades
+    .filter((t) => t.dryRun && t.status === "closed")
+    .reduce((s, t) => s + (t.pnl || 0), 0);
+  const equity = cfg.dryRun
+    ? account.balance + paperRealized + paperFloating
+    : account.balance + (account.pnl || 0);
+
+  // ---- ancla del dia / kill-switch ----
+  if (!b.dayAnchor || b.dayAnchor.date !== today) {
+    b.dayAnchor = { date: today, startEquity: equity };
+  }
+  const dailyPnlPct =
+    b.dayAnchor.startEquity > 0
+      ? ((equity - b.dayAnchor.startEquity) / b.dayAnchor.startEquity) * 100
+      : 0;
+
+  let killedToday = b.killedDate === today;
+  if (!killedToday && dailyPnlPct <= -cfg.risk.maxDailyLossPct) {
+    b.killedDate = today;
+    killedToday = true;
+    logN("kill", `🛑 KILL-SWITCH: pérdida diaria ${dailyPnlPct.toFixed(2)}% ≥ límite ${cfg.risk.maxDailyLossPct}%. Bot desarmado hoy.`);
+    if (cfg.notify.onKill)
+      await notify(`🛑 *KILL-SWITCH* — pérdida diaria ${dailyPnlPct.toFixed(2)}%. Autopilot detenido por hoy.`, true);
+  }
+
+  // ---- contadores / cooldown ----
+  const tradesToday = b.trades.filter((t) => todayKey(t.ts) === today).length;
+  const cooldownActive = Date.now() < b.cooldownUntil;
+  const effectiveAllow =
+    allowTradesIntent &&
+    !killedToday &&
+    !cooldownActive &&
+    tradesToday < cfg.risk.maxTradesPerDay;
+
+  // ---- posiciones abiertas unificadas (real + paper) ----
+  const openPositions: OpenPos[] = [
+    ...positions.map((p) => realToOpen(p)),
+    ...paperOpen.map((t) => paperToOpen(t, priceOf(t.epic))),
+  ];
+  const openEpics = new Set(openPositions.map((o) => o.epic));
+  evals.forEach((e) => (e.hasPosition = openEpics.has(e.epic)));
+  let openCount = openPositions.length;
+  let opened = 0;
+
+  // ---- abrir nuevas posiciones ----
+  if (effectiveAllow) {
+    for (const e of evals) {
+      if (e.signal.type === "FLAT" || openEpics.has(e.epic)) continue;
+      if (openCount >= cfg.maxOpenPositions) break;
+
+      const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
+      const size = sizeFor(cfg, equity, stopDist, e.price);
+      if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) continue;
+
+      logN(
+        "signal",
+        `${e.epic} ${e.signal.type} ${(e.signal.confidence * 100).toFixed(0)}% — ${e.signal.reason}`,
+        e.epic
+      );
+
+      const trade: TradeRecord = {
+        id: `${Date.now()}-${e.epic}`,
+        ts: Date.now(),
+        epic: e.epic,
+        direction: e.signal.type,
+        size,
+        entry: e.price,
+        status: "open",
+        dryRun: cfg.dryRun,
+        reason: e.signal.reason,
+      };
+      // stops "virtuales" para el simulador
+      (trade as any).sl =
+        e.signal.type === "BUY" ? e.price - stopDist : e.price + stopDist;
+      (trade as any).tp =
+        e.signal.type === "BUY" ? e.price + tpDist : e.price - tpDist;
+
+      if (cfg.dryRun) {
+        await recordTrade(trade);
+        b.stats.tradesOpened++;
+        openCount++;
+        opened++;
+        openEpics.add(e.epic);
+        logN("trade", `📝 PAPER ${e.signal.type} ${size.toFixed(2)} ${e.epic} @${e.price.toFixed(2)} (SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)})`, e.epic);
+        if (cfg.notify.onTrade)
+          await notify(`📝 *PAPER* ${e.signal.type} ${e.epic} @${e.price.toFixed(2)} · size ${size.toFixed(2)}`);
+      } else {
+        try {
+          const r = await openPosition({
+            epic: e.epic,
+            direction: e.signal.type,
+            size,
+            stopDistance: stopDist,
+            profitDistance: tpDist,
+          });
+          trade.dealId = r.dealReference;
+          await recordTrade(trade);
+          b.stats.tradesOpened++;
+          openCount++;
+          opened++;
+          openEpics.add(e.epic);
+          logN("trade", `✅ ABIERTA ${e.signal.type} ${size.toFixed(2)} ${e.epic} @${e.price.toFixed(2)} (SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)})`, e.epic);
+          if (cfg.notify.onTrade)
+            await notify(`✅ *LIVE* ${e.signal.type} ${e.epic} @${e.price.toFixed(2)} · size ${size.toFixed(2)} · SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)}`);
+        } catch (err: any) {
+          logN("error", `No se pudo abrir ${e.epic}: ${err.message}`, e.epic);
+        }
+      }
+    }
+  }
+
+  // ---- equity + persistencia ----
+  pushEquity(equity);
+  await appendEquity({ ts: Date.now(), equity });
+  await saveRuntime();
+
+  return {
+    configured: true,
+    enabled: cfg.enabled,
+    armed: autopilotArmed(),
+    dryRun: cfg.dryRun,
+    killedToday,
+    cooldownUntil: b.cooldownUntil,
+    tradesToday,
+    dailyPnlPct,
+    account,
+    openPositions,
+    evals,
+    state: snapshotState(),
+    opened,
+  };
+}
+
+/* ---------------- helpers ---------------- */
+
+function distances(cfg: ReturnType<typeof bot>["config"], a: number, price: number) {
+  if (cfg.risk.useAtrStops && Number.isFinite(a) && a > 0) {
+    return { stopDist: a * cfg.risk.atrStopMult, tpDist: a * cfg.risk.atrTpMult };
+  }
+  return { stopDist: cfg.stopDistance, tpDist: cfg.profitDistance };
+}
+
+function sizeFor(
+  cfg: ReturnType<typeof bot>["config"],
+  equity: number,
+  stopDist: number,
+  price: number
+): number {
+  if (cfg.risk.sizingMode === "percent" && stopDist > 0) {
+    const riskAmount = (equity * cfg.risk.riskPercent) / 100;
+    // aprox: 1 unidad ~ 1 unidad de precio de exposicion (demo)
+    const size = riskAmount / stopDist;
+    return Math.max(0.01, Math.round(size * 100) / 100);
+  }
+  return cfg.sizePerTrade;
+}
+
+function floating(t: TradeRecord, price: number): number {
+  if (!price) return 0;
+  const dir = t.direction === "BUY" ? 1 : -1;
+  return (price - t.entry) * dir * t.size;
+}
+
+function managePaperTrades(candlesByEpic: Map<string, Candle[]>) {
+  const b = bot();
+  const cfg = b.config;
+  for (const t of b.trades) {
+    if (t.status !== "open" || !t.dryRun) continue;
+    const candles = candlesByEpic.get(t.epic);
+    if (!candles || candles.length === 0) continue;
+    const last = candles[candles.length - 1];
+    const sl = (t as any).sl as number;
+    const tp = (t as any).tp as number;
+    let exit: number | null = null;
+    if (t.direction === "BUY") {
+      if (last.low <= sl) exit = sl;
+      else if (last.high >= tp) exit = tp;
+    } else {
+      if (last.high >= sl) exit = sl;
+      else if (last.low <= tp) exit = tp;
+    }
+    if (exit !== null) {
+      const dir = t.direction === "BUY" ? 1 : -1;
+      const pnl = (exit - t.entry) * dir * t.size;
+      t.exit = exit;
+      t.pnl = pnl;
+      t.status = "closed";
+      t.closedTs = Date.now();
+      b.stats.tradesClosed++;
+      void updateTrade(t.id, { exit, pnl, status: "closed", closedTs: t.closedTs });
+      const win = pnl >= 0;
+      logN("trade", `${win ? "🟢" : "🔴"} PAPER cierre ${t.epic} @${exit.toFixed(2)} · PnL ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`, t.epic);
+      if (!win) b.cooldownUntil = Date.now() + cfg.risk.cooldownMin * 60_000;
+      if (cfg.notify.onTrade)
+        void notify(`${win ? "🟢" : "🔴"} *PAPER cierre* ${t.epic} · PnL ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`);
+    }
+  }
+}
+
+function realToOpen(p: Position): OpenPos {
+  return {
+    key: p.dealId,
+    epic: p.epic,
+    direction: p.direction,
+    size: p.size,
+    entry: p.level,
+    upl: p.upl,
+    paper: false,
+    dealId: p.dealId,
+  };
+}
+function paperToOpen(t: TradeRecord, price: number): OpenPos {
+  return {
+    key: t.id,
+    epic: t.epic,
+    direction: t.direction,
+    size: t.size,
+    entry: t.entry,
+    upl: floating(t, price),
+    paper: true,
+  };
+}
+
+function base(
+  configured: boolean,
+  allow: boolean,
+  tradesToday: number,
+  dailyPnlPct: number,
+  cooldownUntil: number,
+  account: EngineResult["account"],
+  openPositions: OpenPos[],
+  evals: EpicEval[]
+): EngineResult {
+  const b = bot();
+  return {
+    configured,
+    enabled: b.config.enabled,
+    armed: autopilotArmed(),
+    dryRun: b.config.dryRun,
+    killedToday: false,
+    cooldownUntil,
+    tradesToday,
+    dailyPnlPct,
+    account,
+    openPositions,
+    evals,
+    state: snapshotState(),
+    opened: 0,
+  };
+}
+
+export function snapshotState() {
+  const b = bot();
+  return {
+    config: b.config,
+    logs: b.logs.slice(0, 50),
+    equity: b.equity,
+    trades: b.trades.slice(0, 60),
+    stats: b.stats,
+    lastTick: b.lastTick,
+    notifyEnv: notifyConfigured(),
+  };
+}

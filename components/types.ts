@@ -1,0 +1,146 @@
+export type Signal = {
+  type: "BUY" | "SELL" | "FLAT";
+  confidence: number;
+  reason: string;
+  indicators: { smaFast: number; smaSlow: number; rsi: number };
+};
+
+export type EpicEval = {
+  epic: string;
+  signal: Signal;
+  hasPosition: boolean;
+  price: number;
+  atr: number;
+  spark: number[];
+};
+
+export type OpenPos = {
+  key: string;
+  epic: string;
+  direction: "BUY" | "SELL";
+  size: number;
+  entry: number;
+  upl: number;
+  paper: boolean;
+  dealId?: string;
+};
+
+export type Account = {
+  accountId: string;
+  balance: number;
+  available: number;
+  pnl: number;
+  currency: string;
+};
+
+export type LogEntry = {
+  id: string;
+  ts: number;
+  level: "info" | "signal" | "trade" | "error" | "kill";
+  epic?: string;
+  message: string;
+};
+
+export type TradeRecord = {
+  id: string;
+  ts: number;
+  closedTs?: number;
+  epic: string;
+  direction: "BUY" | "SELL";
+  size: number;
+  entry: number;
+  exit?: number;
+  pnl?: number;
+  status: "open" | "closed";
+  dryRun: boolean;
+  reason: string;
+};
+
+export type StrategyConfig = {
+  fast: number;
+  slow: number;
+  rsiPeriod: number;
+  rsiBuyBelow: number;
+  rsiSellAbove: number;
+  minConfidence: number;
+};
+
+export type RiskConfig = {
+  sizingMode: "fixed" | "percent";
+  riskPercent: number;
+  useAtrStops: boolean;
+  atrPeriod: number;
+  atrStopMult: number;
+  atrTpMult: number;
+  maxDailyLossPct: number;
+  maxTradesPerDay: number;
+  cooldownMin: number;
+};
+
+export type NotifyConfig = {
+  telegram: boolean;
+  discord: boolean;
+  onTrade: boolean;
+  onKill: boolean;
+};
+
+export type BotConfig = {
+  enabled: boolean;
+  dryRun: boolean;
+  watchlist: string[];
+  sizePerTrade: number;
+  maxOpenPositions: number;
+  stopDistance: number;
+  profitDistance: number;
+  strategy: StrategyConfig;
+  risk: RiskConfig;
+  notify: NotifyConfig;
+};
+
+export type State = {
+  config: BotConfig;
+  logs: LogEntry[];
+  equity: { ts: number; equity: number }[];
+  trades: TradeRecord[];
+  stats: { signals: number; tradesOpened: number; tradesClosed: number };
+  lastTick: number;
+  notifyEnv: { telegram: boolean; discord: boolean };
+};
+
+export type Snapshot = {
+  configured: boolean;
+  enabled: boolean;
+  armed: boolean;
+  dryRun: boolean;
+  killedToday: boolean;
+  cooldownUntil: number;
+  tradesToday: number;
+  dailyPnlPct: number;
+  account: Account | null;
+  openPositions: OpenPos[];
+  evals: EpicEval[];
+  state: State;
+  opened: number;
+};
+
+export type Analytics = {
+  total: number;
+  closed: number;
+  open: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  netPnl: number;
+  grossWin: number;
+  grossLoss: number;
+  profitFactor: number;
+  avgWin: number;
+  avgLoss: number;
+  expectancy: number;
+  maxDrawdown: number;
+  bestStreak: number;
+  worstStreak: number;
+  byEpic: { epic: string; pnl: number; trades: number; winRate: number }[];
+  pnlCurve: { ts: number; cum: number }[];
+  dailyPnl: { date: string; pnl: number }[];
+};
