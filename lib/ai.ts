@@ -40,19 +40,29 @@ export async function askAi(ctx: SignalContext): Promise<AiVerdict> {
   const { generateObject } = await import("ai");
   const { z } = await import("zod");
 
+  // Esquema laxo (los modelos a veces se salen de min/max o max-length) -> normalizo abajo
   const schema = z.object({
-    approve: z.boolean().describe("true = dejar operar; false = vetar la operación"),
-    confidence: z.number().min(0).max(1).describe("0..1 de seguridad en el veredicto"),
-    reason: z.string().max(160).describe("motivo breve, en español"),
+    approve: z.boolean(),
+    confidence: z.number(),
+    reason: z.string(),
   });
 
   const { object } = await generateObject({
     model: MODEL,
     schema,
-    maxRetries: 1,
+    maxRetries: 2,
+    temperature: 0.2,
     prompt: prompt(ctx),
   });
-  return object as AiVerdict;
+  const o = object as { approve: boolean; confidence: number; reason: string };
+  let conf = Number(o.confidence);
+  if (!Number.isFinite(conf)) conf = 0.5;
+  if (conf > 1) conf = conf / 100; // por si devuelve 0..100
+  return {
+    approve: Boolean(o.approve),
+    confidence: Math.max(0, Math.min(1, conf)),
+    reason: String(o.reason || "").slice(0, 200),
+  };
 }
 
 export async function reviewSignal(ctx: SignalContext): Promise<AiVerdict | null> {
