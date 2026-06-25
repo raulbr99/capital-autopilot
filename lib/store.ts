@@ -63,8 +63,7 @@ export const DEFAULT_NOTIFY: NotifyConfig = {
 };
 
 export type BotConfig = {
-  enabled: boolean; // toggle de la UI (ticks del navegador)
-  dryRun: boolean; // modo paper: registra trades pero NO los envia a Capital
+  enabled: boolean; // interruptor maestro (Activar/Detener) que respeta el cron
   aiFilter: boolean; // capa IA: revisa/veta cada senal antes de operar
   aiCooldownMin: number; // no re-evaluar el mismo activo con IA dentro de X min
   instruments: Instrument[]; // activos con su resolucion de senal
@@ -80,7 +79,6 @@ export type BotConfig = {
 
 export const DEFAULT_CONFIG: BotConfig = {
   enabled: false,
-  dryRun: true, // arranca en paper por seguridad
   aiFilter: false, // off por defecto; se enciende cuando hay AI Gateway
   aiCooldownMin: 45, // 1 revisión IA por activo cada 45 min como mucho
   instruments: [

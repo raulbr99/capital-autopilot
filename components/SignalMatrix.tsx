@@ -28,7 +28,7 @@ function SignalCard({ e }: { e: EpicEval }) {
   const conf = Math.round((s.confidence ?? 0) * 100);
   const confColor = buy ? "text-long" : sell ? "text-short" : "text-muted";
   return (
-    <div className="group relative overflow-hidden bg-soft p-4 transition hover:bg-[#121212]">
+    <div className="group relative overflow-hidden bg-soft p-4 transition hover:bg-raised">
       <div className="flex items-start justify-between">
         <div>
           <span className="font-display text-base">{e.epic}</span>

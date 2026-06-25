@@ -34,7 +34,6 @@ export type OpenPos = {
   size: number;
   entry: number;
   upl: number;
-  paper: boolean;
   dealId?: string;
 };
 
@@ -102,7 +101,6 @@ export type NotifyConfig = {
 
 export type BotConfig = {
   enabled: boolean;
-  dryRun: boolean;
   aiFilter: boolean;
   aiCooldownMin: number;
   instruments: Instrument[];
@@ -130,7 +128,6 @@ export type Snapshot = {
   configured: boolean;
   enabled: boolean;
   armed: boolean;
-  dryRun: boolean;
   killedToday: boolean;
   cooldownUntil: number;
   tradesToday: number;

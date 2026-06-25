@@ -23,7 +23,7 @@ export async function GET() {
     return NextResponse.json({
       configured: true,
       generatedAt: new Date().toISOString(),
-      mode: cfg.dryRun ? "paper" : "live",
+      mode: "live",
       armed: process.env.AUTOPILOT_ARMED === "true",
       killedToday: bot().killedDate === new Date().toISOString().slice(0, 10),
       account: {

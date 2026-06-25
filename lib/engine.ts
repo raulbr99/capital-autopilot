@@ -51,7 +51,6 @@ export type OpenPos = {
   size: number;
   entry: number;
   upl: number;
-  paper: boolean;
   dealId?: string;
 };
 
@@ -63,7 +62,6 @@ export type EngineResult = {
   configured: boolean;
   enabled: boolean;
   armed: boolean;
-  dryRun: boolean;
   killedToday: boolean;
   cooldownUntil: number;
   tradesToday: number;
@@ -124,24 +122,8 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       logN("error", `Error evaluando ${epic} (${res}): ${err.message}`, epic);
     }
   }
-  const priceOf = (epic: string) =>
-    evals.find((e) => e.epic === epic)?.price ?? 0;
-
-  // ---- gestionar paper trades abiertos (fills SL/TP) ----
-  managePaperTrades(candlesByEpic);
-
-  // ---- equity (real o paper) ----
-  const paperOpen = b.trades.filter((t) => t.status === "open" && t.dryRun);
-  const paperFloating = paperOpen.reduce(
-    (s, t) => s + floating(t, priceOf(t.epic)),
-    0
-  );
-  const paperRealized = b.trades
-    .filter((t) => t.dryRun && t.status === "closed")
-    .reduce((s, t) => s + (t.pnl || 0), 0);
-  const equity = cfg.dryRun
-    ? account.balance + paperRealized + paperFloating
-    : account.balance + (account.pnl || 0);
+  // ---- equity ----
+  const equity = account.balance + (account.pnl || 0);
 
   // ---- ancla del dia / kill-switch ----
   if (!b.dayAnchor || b.dayAnchor.date !== today) {
@@ -171,11 +153,8 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
     !cooldownActive &&
     tradesToday < cfg.risk.maxTradesPerDay;
 
-  // ---- posiciones abiertas unificadas (real + paper) ----
-  const openPositions: OpenPos[] = [
-    ...positions.map((p) => realToOpen(p)),
-    ...paperOpen.map((t) => paperToOpen(t, priceOf(t.epic))),
-  ];
+  // ---- posiciones abiertas ----
+  const openPositions: OpenPos[] = positions.map((p) => realToOpen(p));
   const openEpics = new Set(openPositions.map((o) => o.epic));
   evals.forEach((e) => (e.hasPosition = openEpics.has(e.epic)));
   let openCount = openPositions.length;
@@ -234,45 +213,29 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
         size,
         entry: e.price,
         status: "open",
-        dryRun: cfg.dryRun,
+        dryRun: false,
         reason: e.signal.reason,
       };
-      // stops "virtuales" para el simulador
-      (trade as any).sl =
-        e.signal.type === "BUY" ? e.price - stopDist : e.price + stopDist;
-      (trade as any).tp =
-        e.signal.type === "BUY" ? e.price + tpDist : e.price - tpDist;
 
-      if (cfg.dryRun) {
+      try {
+        const r = await openPosition({
+          epic: e.epic,
+          direction: e.signal.type,
+          size,
+          stopDistance: stopDist,
+          profitDistance: tpDist,
+        });
+        trade.dealId = r.dealReference;
         await recordTrade(trade);
         b.stats.tradesOpened++;
         openCount++;
         opened++;
         openEpics.add(e.epic);
-        logN("trade", `📝 PAPER ${e.signal.type} ${size.toFixed(2)} ${e.epic} @${e.price.toFixed(2)} (SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)})`, e.epic);
+        logN("trade", `✅ ABIERTA ${e.signal.type} ${size.toFixed(2)} ${e.epic} @${e.price.toFixed(2)} (SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)})`, e.epic);
         if (cfg.notify.onTrade)
-          await notify(`📝 *PAPER* ${e.signal.type} ${e.epic} @${e.price.toFixed(2)} · size ${size.toFixed(2)}`);
-      } else {
-        try {
-          const r = await openPosition({
-            epic: e.epic,
-            direction: e.signal.type,
-            size,
-            stopDistance: stopDist,
-            profitDistance: tpDist,
-          });
-          trade.dealId = r.dealReference;
-          await recordTrade(trade);
-          b.stats.tradesOpened++;
-          openCount++;
-          opened++;
-          openEpics.add(e.epic);
-          logN("trade", `✅ ABIERTA ${e.signal.type} ${size.toFixed(2)} ${e.epic} @${e.price.toFixed(2)} (SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)})`, e.epic);
-          if (cfg.notify.onTrade)
-            await notify(`✅ *LIVE* ${e.signal.type} ${e.epic} @${e.price.toFixed(2)} · size ${size.toFixed(2)} · SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)}`);
-        } catch (err: any) {
-          logN("error", `No se pudo abrir ${e.epic}: ${err.message}`, e.epic);
-        }
+          await notify(`✅ ${e.signal.type} ${e.epic} @${e.price.toFixed(2)} · size ${size.toFixed(2)} · SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)}`);
+      } catch (err: any) {
+        logN("error", `No se pudo abrir ${e.epic}: ${err.message}`, e.epic);
       }
     }
   }
@@ -288,7 +251,6 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
     configured: true,
     enabled: cfg.enabled,
     armed: autopilotArmed(),
-    dryRun: cfg.dryRun,
     killedToday,
     cooldownUntil: b.cooldownUntil,
     tradesToday,
@@ -333,48 +295,6 @@ async function sizeFor(
   return size;
 }
 
-function floating(t: TradeRecord, price: number): number {
-  if (!price) return 0;
-  const dir = t.direction === "BUY" ? 1 : -1;
-  return (price - t.entry) * dir * t.size;
-}
-
-function managePaperTrades(candlesByEpic: Map<string, Candle[]>) {
-  const b = bot();
-  const cfg = b.config;
-  for (const t of b.trades) {
-    if (t.status !== "open" || !t.dryRun) continue;
-    const candles = candlesByEpic.get(t.epic);
-    if (!candles || candles.length === 0) continue;
-    const last = candles[candles.length - 1];
-    const sl = (t as any).sl as number;
-    const tp = (t as any).tp as number;
-    let exit: number | null = null;
-    if (t.direction === "BUY") {
-      if (last.low <= sl) exit = sl;
-      else if (last.high >= tp) exit = tp;
-    } else {
-      if (last.high >= sl) exit = sl;
-      else if (last.low <= tp) exit = tp;
-    }
-    if (exit !== null) {
-      const dir = t.direction === "BUY" ? 1 : -1;
-      const pnl = (exit - t.entry) * dir * t.size;
-      t.exit = exit;
-      t.pnl = pnl;
-      t.status = "closed";
-      t.closedTs = Date.now();
-      b.stats.tradesClosed++;
-      void updateTrade(t.id, { exit, pnl, status: "closed", closedTs: t.closedTs });
-      const win = pnl >= 0;
-      logN("trade", `${win ? "🟢" : "🔴"} PAPER cierre ${t.epic} @${exit.toFixed(2)} · PnL ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`, t.epic);
-      if (!win) b.cooldownUntil = Date.now() + cfg.risk.cooldownMin * 60_000;
-      if (cfg.notify.onTrade)
-        void notify(`${win ? "🟢" : "🔴"} *PAPER cierre* ${t.epic} · PnL ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`);
-    }
-  }
-}
-
 function realToOpen(p: Position): OpenPos {
   return {
     key: p.dealId,
@@ -383,19 +303,7 @@ function realToOpen(p: Position): OpenPos {
     size: p.size,
     entry: p.level,
     upl: p.upl,
-    paper: false,
     dealId: p.dealId,
-  };
-}
-function paperToOpen(t: TradeRecord, price: number): OpenPos {
-  return {
-    key: t.id,
-    epic: t.epic,
-    direction: t.direction,
-    size: t.size,
-    entry: t.entry,
-    upl: floating(t, price),
-    paper: true,
   };
 }
 
@@ -414,7 +322,6 @@ function base(
     configured,
     enabled: b.config.enabled,
     armed: autopilotArmed(),
-    dryRun: b.config.dryRun,
     killedToday: false,
     cooldownUntil,
     tradesToday,

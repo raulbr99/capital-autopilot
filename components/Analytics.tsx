@@ -57,13 +57,12 @@ export default function Analytics({
               </thead>
               <tbody>
                 {trades.map((t) => (
-                  <tr key={t.id} className="border-b border-industrial/50 hover:bg-[#121212]">
+                  <tr key={t.id} className="border-b border-industrial/50 hover:bg-raised">
                     <td className="px-3 py-2 text-muted">
                       {new Date(t.ts).toLocaleTimeString("es-ES", { hour12: false })}
                     </td>
                     <td className="px-3 py-2 text-white">
                       {t.epic}
-                      {t.dryRun && <span className="ml-1 text-[8px] text-volt">P</span>}
                     </td>
                     <td className="px-3 py-2">
                       <span className={t.direction === "BUY" ? "text-long" : "text-short"}>

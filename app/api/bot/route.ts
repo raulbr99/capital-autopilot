@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { bot, log, DEFAULT_RESOLUTION } from "@/lib/store";
-import { loadConfig, saveConfig, appendLog, clearEquity } from "@/lib/db";
+import { loadConfig, saveConfig, appendLog } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +18,6 @@ export async function PATCH(req: Request) {
   if (typeof body.enabled === "boolean") {
     cfg.enabled = body.enabled;
     log("info", cfg.enabled ? "🟢 Piloto ACTIVADO (sesión)" : "🔴 Piloto PARADO (sesión)");
-    void appendLog(bot().logs[0]);
-  }
-  if (typeof body.dryRun === "boolean") {
-    const changed = body.dryRun !== cfg.dryRun;
-    cfg.dryRun = body.dryRun;
-    if (changed) await clearEquity(); // la curva arranca limpia para el nuevo modo
-    log("info", cfg.dryRun ? "📝 Modo PAPER (dry-run)" : "💸 Modo LIVE — opera de verdad");
     void appendLog(bot().logs[0]);
   }
   if (typeof body.aiFilter === "boolean") {

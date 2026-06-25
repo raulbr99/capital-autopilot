@@ -8,13 +8,10 @@ import { fmt, pf, SectionHead } from "./ui";
 import EquityChart from "./EquityChart";
 import ThemeToggle from "./ThemeToggle";
 
-type Mode = "all" | "live" | "paper";
-
 export default function AnalyticsPage() {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState("--:--:--");
-  const [mode, setMode] = useState<Mode>("all");
   const [epic, setEpic] = useState<string>("");
 
   useEffect(() => {
@@ -47,13 +44,8 @@ export default function AnalyticsPage() {
   );
 
   const filtered = useMemo(
-    () =>
-      trades.filter(
-        (t) =>
-          (mode === "all" || (mode === "live" ? !t.dryRun : t.dryRun)) &&
-          (!epic || t.epic === epic)
-      ),
-    [trades, mode, epic]
+    () => trades.filter((t) => !epic || t.epic === epic),
+    [trades, epic]
   );
 
   const a = useMemo(() => analyze(filtered), [filtered]);
@@ -99,25 +91,10 @@ export default function AnalyticsPage() {
           <div>
             <h1 className="font-display text-2xl font-semibold tracking-tight text-white">Analítica</h1>
             <p className="mt-1 text-sm text-dim">
-              Rendimiento de {a.closed} operaciones cerradas
-              {mode !== "all" && ` · ${mode === "live" ? "real" : "paper"}`}
-              {epic && ` · ${epic}`}
+              Rendimiento de {a.closed} operaciones cerradas{epic && ` · ${epic}`}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-lg border border-industrial p-0.5">
-              {(["all", "live", "paper"] as Mode[]).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                    mode === m ? "bg-accent text-onaccent" : "text-muted hover:text-dim"
-                  }`}
-                >
-                  {m === "all" ? "Todo" : m === "live" ? "Real" : "Paper"}
-                </button>
-              ))}
-            </div>
             <select
               value={epic}
               onChange={(e) => setEpic(e.target.value)}
@@ -280,7 +257,6 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
           <tr className="border-b border-industrial text-muted">
             <th className="px-4 py-2.5 font-normal">Cierre</th>
             <th className="px-4 py-2.5 font-normal">Activo</th>
-            <th className="px-4 py-2.5 font-normal">Modo</th>
             <th className="px-4 py-2.5 font-normal">Dir</th>
             <th className="px-4 py-2.5 font-normal">Entrada → Salida</th>
             <th className="px-4 py-2.5 text-right font-normal">PnL</th>
@@ -295,11 +271,6 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
                 })}
               </td>
               <td className="px-4 py-2.5 text-white">{t.epic}</td>
-              <td className="px-4 py-2.5">
-                <span className={`rounded px-1.5 py-0.5 text-[9px] ${t.dryRun ? "bg-accent/10 text-accent" : "bg-long/10 text-long"}`}>
-                  {t.dryRun ? "PAPER" : "LIVE"}
-                </span>
-              </td>
               <td className="px-4 py-2.5">
                 <span className={t.direction === "BUY" ? "text-long" : "text-short"}>
                   {t.direction === "BUY" ? "▲" : "▼"}

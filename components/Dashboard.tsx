@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Snapshot, OpenPos, Analytics as A, TradeRecord } from "./types";
-import { fmt, SectionHead, StatCard, Toggle } from "./ui";
+import { fmt, SectionHead, StatCard } from "./ui";
 import EquityChart from "./EquityChart";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -110,8 +110,7 @@ export default function Dashboard() {
   const closePos = async (p: OpenPos) => {
     setBusy(true);
     try {
-      const qs = p.paper ? `paperId=${p.key}` : `dealId=${p.dealId}`;
-      await fetch(`/api/capital/positions?${qs}`, { method: "DELETE" });
+      await fetch(`/api/capital/positions?dealId=${p.dealId}`, { method: "DELETE" });
       await tick(false);
       await loadTrades();
     } finally {
@@ -128,7 +127,6 @@ export default function Dashboard() {
   const lastEquity = equity.length ? equity[equity.length - 1].equity : 0;
   const configured = snap?.configured ?? true;
   const enabled = cfg?.enabled ?? false;
-  const dryRun = cfg?.dryRun ?? true;
 
   const markers = trades
     .filter((t) => t.status === "closed" && t.closedTs)
@@ -136,7 +134,6 @@ export default function Dashboard() {
 
   const commands: Command[] = [
     { id: "toggle", label: enabled ? "Detener piloto" : "Activar piloto", hint: "ENGINE", run: () => patch({ enabled: !enabled }) },
-    { id: "mode", label: dryRun ? "Cambiar a LIVE (opera de verdad)" : "Cambiar a PAPER (dry-run)", hint: "MODE", run: () => patch({ dryRun: !dryRun }) },
     { id: "bt", label: "Ir a Backtest", hint: "SCROLL", run: () => document.getElementById("backtest")?.scrollIntoView({ behavior: "smooth" }) },
     { id: "wf", label: "Ir a Walk-Forward (validación)", hint: "SCROLL", run: () => document.getElementById("walkforward")?.scrollIntoView({ behavior: "smooth" }) },
     { id: "perf", label: "Ir a Performance", hint: "SCROLL", run: () => document.getElementById("perf")?.scrollIntoView({ behavior: "smooth" }) },
@@ -178,7 +175,9 @@ export default function Dashboard() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <ModeBadge dryRun={dryRun} />
+          <span className="rounded-md bg-short/15 px-2.5 py-1 text-[11px] font-semibold text-short">
+            LIVE · real
+          </span>
           {snap?.killedToday && (
             <span className="border border-short bg-short/10 px-2 py-1 font-mono text-[10px] text-short">
               🛑 KILL-SWITCH
@@ -213,13 +212,10 @@ export default function Dashboard() {
               </span>
             </div>
             <p className="mt-2 max-w-[280px] text-xs leading-relaxed text-muted">
-              {dryRun
-                ? "Modo PAPER: simula entradas/salidas y mide el rendimiento SIN arriesgar. Ideal para ver al bot operar antes de armarlo."
-                : "Modo LIVE: abre operaciones reales en tu cuenta DEMO de Capital.com."}
+              Opera en tu cuenta real de Capital.com con las señales validadas. Las órdenes son reales.
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <Toggle on={dryRun} busy={busy} labelOn="PAPER" labelOff="LIVE" onClick={() => patch({ dryRun: !dryRun })} />
               <span className="flex items-center gap-1.5 rounded-lg border border-industrial px-3 py-2 text-xs font-medium text-dim">
                 Cron 24/7
                 <span className={`h-2 w-2 rounded-full ${snap?.armed ? "animate-pulseDot bg-long" : "bg-muted"}`} />
@@ -256,7 +252,7 @@ export default function Dashboard() {
           <div className="rounded-xl border border-industrial bg-soft p-5">
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <p className="tag">Equity · {dryRun ? "paper" : "live"}</p>
+                <p className="tag">Equity</p>
                 <p className="mt-1.5 font-mono text-3xl font-medium tracking-tight text-white">
                   {fmt(lastEquity)} <span className="text-sm font-normal text-muted">{acc?.currency}</span>
                 </p>
@@ -300,7 +296,7 @@ export default function Dashboard() {
 
         <footer className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-industrial py-6 text-[11px] text-muted sm:flex-row">
           <p>Capital Autopilot</p>
-          <p>Cuenta real · modo PAPER · no es consejo financiero</p>
+          <p>Cuenta real · órdenes reales · no es consejo financiero</p>
         </footer>
       </main>
     </div>
@@ -374,18 +370,6 @@ function ConnBadge({ configured, enabled }: { configured: boolean; enabled: bool
   );
 }
 
-function ModeBadge({ dryRun }: { dryRun: boolean }) {
-  return (
-    <span
-      className={`rounded-md px-2.5 py-1 text-[11px] font-medium ${
-        dryRun ? "bg-accent/10 text-accent" : "bg-short/15 text-short"
-      }`}
-    >
-      {dryRun ? "Paper" : "Live"}
-    </span>
-  );
-}
-
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-soft py-3.5">
@@ -415,7 +399,7 @@ function ConfigWarning() {
       <p className="mt-2 text-xs leading-relaxed text-dim">
         Copia <code className="rounded bg-industrial px-1 font-mono text-accent">.env.local.example</code> a{" "}
         <code className="rounded bg-industrial px-1 font-mono text-accent">.env.local</code> con tus credenciales de Capital.com.
-        El panel funciona en modo PAPER local hasta entonces.
+        El panel no podrá operar hasta entonces.
       </p>
     </div>
   );

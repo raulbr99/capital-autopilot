@@ -25,7 +25,6 @@ export default function PositionsTable({
             <thead>
               <tr className="border-b border-industrial text-muted">
                 <th className="px-4 py-2 font-normal">ACTIVO</th>
-                <th className="px-4 py-2 font-normal">MODO</th>
                 <th className="px-4 py-2 font-normal">DIR</th>
                 <th className="px-4 py-2 font-normal">SIZE</th>
                 <th className="px-4 py-2 font-normal">ENTRADA</th>
@@ -35,17 +34,8 @@ export default function PositionsTable({
             </thead>
             <tbody>
               {positions.map((p) => (
-                <tr key={p.key} className="border-b border-industrial/60 hover:bg-[#121212]">
+                <tr key={p.key} className="border-b border-industrial/60 hover:bg-raised">
                   <td className="px-4 py-3 text-white">{p.epic}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-1.5 py-0.5 text-[9px] ${
-                        p.paper ? "bg-volt/10 text-volt" : "bg-long/10 text-long"
-                      }`}
-                    >
-                      {p.paper ? "PAPER" : "LIVE"}
-                    </span>
-                  </td>
                   <td className="px-4 py-3">
                     <span className={p.direction === "BUY" ? "text-long" : "text-short"}>
                       {p.direction === "BUY" ? "▲ LONG" : "▼ SHORT"}
