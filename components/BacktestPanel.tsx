@@ -52,6 +52,7 @@ export default function BacktestPanel() {
           <div className="flex items-center gap-2">
             <select
               value={resolution}
+              aria-label="Resolución de velas"
               onChange={(e) => setResolution(e.target.value)}
               className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim focus:outline-none"
             >

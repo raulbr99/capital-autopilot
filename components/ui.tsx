@@ -26,7 +26,7 @@ export function Clock({ className }: { className?: string }) {
 export function SectionHead({ label, right }: { label: string; right?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
-      <span className="tag">{label}</span>
+      <h2 className="tag">{label}</h2>
       {right ?? <span className="h-1.5 w-1.5 rounded-full bg-accent/70" />}
     </div>
   );

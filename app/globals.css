@@ -18,7 +18,7 @@
   --short: 242 86 122;
   --white: 231 233 238;
   --dim: 160 167 180;
-  --muted: 107 114 128;
+  --muted: 122 130 142; /* ≥4.5:1 sobre superficie oscura (AA) */
 }
 
 :root[data-theme="light"] {

@@ -53,7 +53,7 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
                       {new Date(l.ts).toLocaleTimeString("es-ES", { hour12: false })}
                     </span>
                   </div>
-                  <p className={`mt-1 text-[12px] leading-snug ${s.text}`}>{l.message}</p>
+                  <p className={`mt-1 text-[12px] leading-snug [overflow-wrap:anywhere] ${s.text}`}>{l.message}</p>
                 </div>
               </div>
             );

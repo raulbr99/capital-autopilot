@@ -94,7 +94,7 @@ export default function JournalPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-[13px] leading-relaxed text-dim">{e.thesis || "—"}</p>
+                  <p className="text-[13px] leading-relaxed text-dim [overflow-wrap:anywhere]">{e.thesis || "—"}</p>
                   {Array.isArray(e.actions) && e.actions.length > 0 && (
                     <div className="mt-3 space-y-1.5 border-t border-industrial pt-3">
                       {e.actions.map((a: JournalAction, i: number) => (
@@ -109,7 +109,7 @@ export default function JournalPage() {
                               {a.riskPct ? ` ${a.riskPct}%` : ""}
                             </span>
                           )}
-                          <span className="text-muted">{a.reason}</span>
+                          <span className="min-w-0 text-muted [overflow-wrap:anywhere]">{a.reason}</span>
                         </div>
                       ))}
                     </div>

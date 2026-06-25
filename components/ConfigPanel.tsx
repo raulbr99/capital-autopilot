@@ -52,8 +52,9 @@ export default function ConfigPanel({
                 <select
                   value={i.resolution}
                   disabled={busy}
+                  aria-label={`Resolución de ${i.epic}`}
                   onChange={(e) => setRes(i.epic, e.target.value)}
-                  className="border border-cement bg-ink px-1.5 py-1.5 font-mono text-[10px] text-volt focus:outline-none"
+                  className="rounded-md border border-cement bg-ink px-1.5 py-1.5 font-mono text-[10px] text-accent focus:outline-none"
                 >
                   {RESOLUTIONS.map((r) => (
                     <option key={r} value={r}>{r}</option>
@@ -62,9 +63,10 @@ export default function ConfigPanel({
                 <button
                   onClick={() => toggleRegime(i.epic)}
                   disabled={busy}
+                  aria-pressed={!!i.regimeFilter}
                   title="Filtro de régimen ADX para este activo"
-                  className={`border px-1.5 py-1.5 font-mono text-[9px] ${
-                    i.regimeFilter ? "border-volt text-volt" : "border-cement text-muted"
+                  className={`rounded-md border px-1.5 py-1.5 font-mono text-[9px] ${
+                    i.regimeFilter ? "border-accent text-accent" : "border-cement text-muted"
                   }`}
                 >
                   ADX
@@ -72,7 +74,8 @@ export default function ConfigPanel({
                 <button
                   onClick={() => remove(i.epic)}
                   disabled={busy}
-                  className="border border-cement px-2 py-1.5 font-mono text-[11px] text-muted hover:border-short hover:text-short"
+                  aria-label={`Quitar ${i.epic}`}
+                  className="rounded-md border border-cement px-2 py-1.5 font-mono text-[11px] text-muted hover:border-short hover:text-short"
                 >
                   ✕
                 </button>
@@ -87,7 +90,7 @@ export default function ConfigPanel({
               placeholder="EPIC ej. NZDUSD"
               className="w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-volt focus:outline-none"
             />
-            <button onClick={add} disabled={busy} className="bg-volt px-3 font-display text-xs text-onaccent disabled:opacity-40">
+            <button onClick={add} disabled={busy} aria-label="Añadir instrumento" className="rounded-lg bg-accent px-3 font-display text-xs text-onaccent disabled:opacity-40">
               +
             </button>
           </div>
