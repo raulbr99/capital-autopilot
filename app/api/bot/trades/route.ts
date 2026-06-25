@@ -27,18 +27,22 @@ export async function GET() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   let trades: TradeRecord[] = [];
+  let dbg: any = { urlLen: url?.length ?? 0, keyLen: key?.length ?? 0 };
   if (url && key) {
     try {
       const c = createClient(url, key, { auth: { persistSession: false } });
-      const { data } = await c
+      const { data, error, count } = await c
         .from("ap_trades")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("ts", { ascending: false })
-        .limit(300);
+        .limit(100);
+      dbg.rows = data?.length ?? null;
+      dbg.count = count ?? null;
+      dbg.error = error?.message ?? null;
       trades = (data ?? []).map(tradeFromRow);
-    } catch {
-      /* noop */
+    } catch (e: any) {
+      dbg.threw = e.message;
     }
   }
-  return NextResponse.json({ trades, analytics: analyze(trades) });
+  return NextResponse.json({ trades, analytics: analyze(trades), _dbg: dbg });
 }
