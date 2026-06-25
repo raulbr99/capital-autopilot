@@ -30,6 +30,7 @@ import {
   deleteTrade,
   updateTrade,
   getTrades,
+  getLogs,
   appendEquity,
   getEquity,
   appendLog,
@@ -88,6 +89,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   const b = bot();
   await loadConfig();
   await loadRuntime();
+  b.logs = await getLogs(60); // hidrata logs persistidos (memoria vacía en instancias frías)
   const cfg = b.config;
   b.lastTick = Date.now();
   const today = todayKey();

@@ -431,3 +431,27 @@ export async function appendLog(entry: LogEntry): Promise<void> {
     /* noop */
   }
 }
+
+// Lee los logs persistidos (el navegador pega a instancias frías sin memoria).
+export async function getLogs(limit = 60): Promise<LogEntry[]> {
+  const s = await supa();
+  if (!s) return bot().logs.slice(0, limit);
+  try {
+    const { data } = await s
+      .from("ap_logs")
+      .select("*")
+      .order("ts", { ascending: false })
+      .limit(limit);
+    if (Array.isArray(data))
+      return data.map((r: any, i: number) => ({
+        id: r.id != null ? String(r.id) : `${new Date(r.ts).getTime()}-${i}`,
+        ts: new Date(r.ts).getTime(),
+        level: r.level,
+        epic: r.epic ?? undefined,
+        message: r.message,
+      }));
+  } catch {
+    /* noop */
+  }
+  return bot().logs.slice(0, limit);
+}
