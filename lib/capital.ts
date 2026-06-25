@@ -255,6 +255,7 @@ export type MarketDetails = {
   minDealSize: number;
   sizeStep: number;
   maxDealSize: number;
+  marketStatus: string; // TRADEABLE | CLOSED | EDITS_ONLY ... (importante para acciones)
 };
 
 const mdCache = new Map<string, { d: MarketDetails; t: number }>();
@@ -264,10 +265,10 @@ function ruleVal(o: any): number | null {
   return typeof v === "number" ? v : null;
 }
 
-/** Reglas de tamaño del instrumento (min, step, max) — cacheadas 1h. */
+/** Reglas de tamaño + estado del mercado — caché 5 min (el estado cambia al abrir/cerrar bolsa). */
 export async function getMarketDetails(epic: string): Promise<MarketDetails> {
   const c = mdCache.get(epic);
-  if (c && Date.now() - c.t < 3_600_000) return c.d;
+  if (c && Date.now() - c.t < 300_000) return c.d;
   const data = await json<any>(
     await authed(`/api/v1/markets/${encodeURIComponent(epic)}`)
   );
@@ -278,6 +279,7 @@ export async function getMarketDetails(epic: string): Promise<MarketDetails> {
     minDealSize,
     sizeStep: ruleVal(r.minSizeIncrement) ?? minDealSize,
     maxDealSize: ruleVal(r.maxDealSize) ?? Number.MAX_SAFE_INTEGER,
+    marketStatus: data.snapshot?.marketStatus ?? "TRADEABLE",
   };
   mdCache.set(epic, { d, t: Date.now() });
   return d;

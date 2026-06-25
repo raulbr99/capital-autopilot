@@ -539,6 +539,16 @@ async function executeOpen(p: {
   logMsg: string;
 }): Promise<boolean> {
   const b = bot();
+  // No abrir si el mercado no está operativo (acciones fuera de horario de bolsa, etc.)
+  try {
+    const md = await getMarketDetails(p.epic);
+    if (md.marketStatus && md.marketStatus !== "TRADEABLE") {
+      logN("info", `⏸️ ${p.epic}: mercado ${md.marketStatus} — no se abre ahora`, p.epic);
+      return false;
+    }
+  } catch {
+    /* si la consulta falla, no bloqueamos (forex/cripto 24/7) */
+  }
   const trade: TradeRecord = {
     id: `${Date.now()}-${p.epic}`,
     ts: Date.now(),
