@@ -7,6 +7,7 @@
  * Ver supabase/schema.sql.
  */
 
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   bot,
   BotConfig,
@@ -18,12 +19,7 @@ import {
   DEFAULT_RESOLUTION,
 } from "./store";
 
-type SupaClient = {
-  from: (t: string) => any;
-};
-
-let client: SupaClient | null = null;
-let triedInit = false;
+let client: SupabaseClient | null = null;
 
 export function dbEnabled(): boolean {
   return Boolean(
@@ -31,19 +27,20 @@ export function dbEnabled(): boolean {
   );
 }
 
-async function supa(): Promise<SupaClient | null> {
+// Import estático (Supabase siempre presente) -> evita fallos de import dinámico
+// por-ruta que dejaban el cliente en null y la analítica vacía.
+async function supa(): Promise<SupabaseClient | null> {
   if (!dbEnabled()) return null;
-  if (client || triedInit) return client;
-  triedInit = true;
-  try {
-    const { createClient } = await import("@supabase/supabase-js");
-    client = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    ) as unknown as SupaClient;
-  } catch (e) {
-    client = null;
+  if (!client) {
+    try {
+      client = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+      );
+    } catch {
+      return null;
+    }
   }
   return client;
 }
