@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Snapshot, OpenPos, Analytics as A, TradeRecord } from "./types";
+import type { Snapshot, OpenPos, Analytics as A, TradeRecord, Instrument } from "./types";
 import { fmt, SectionHead, StatCard, Clock } from "./ui";
 import EquityChart from "./EquityChart";
 import SignalMatrix from "./SignalMatrix";
@@ -14,6 +14,7 @@ import Analytics from "./Analytics";
 import LogFeed from "./LogFeed";
 import CommandPalette, { type Command } from "./CommandPalette";
 import ThemeToggle from "./ThemeToggle";
+import Nav from "./Nav";
 import Link from "next/link";
 
 const TICK_MS = 6000;
@@ -161,15 +162,9 @@ export default function Dashboard() {
               <p className="mt-1 text-[11px] text-muted">Trading autónomo · Capital.com</p>
             </div>
           </div>
-          <nav className="hidden items-center gap-1 rounded-lg border border-industrial p-0.5 md:flex">
-            <span className="rounded-md bg-raised px-3 py-1.5 text-[13px] font-medium text-white">Panel</span>
-            <Link href="/analytics" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">
-              Analítica
-            </Link>
-            <Link href="/journal" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">
-              Diario IA
-            </Link>
-          </nav>
+          <div className="hidden md:block">
+            <Nav active="/" />
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <span className="rounded-md bg-short/15 px-2.5 py-1 text-[11px] font-semibold text-short">
@@ -268,6 +263,9 @@ export default function Dashboard() {
           <StatCard label="Posiciones" value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`} />
         </section>
 
+        {/* LAS 4 MESAS */}
+        <DesksOverview evals={evals} positions={positions} instruments={cfg?.instruments ?? []} />
+
         {/* MAIN GRID */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
           <div className="space-y-4">
@@ -336,6 +334,73 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "lon
       <span className="text-muted">{label}</span>
       <span className={c}>{value}</span>
     </div>
+  );
+}
+
+const DESK_META = [
+  { key: "forex", label: "Forex", icon: "💱" },
+  { key: "crypto", label: "Crypto", icon: "₿" },
+  { key: "stocks", label: "Stocks", icon: "📈" },
+  { key: "commodities", label: "Commodities", icon: "🛢️" },
+] as const;
+
+function DesksOverview({
+  evals,
+  positions,
+  instruments,
+}: {
+  evals: Snapshot["evals"];
+  positions: OpenPos[];
+  instruments: Instrument[];
+}) {
+  const catOf = (epic: string) => instruments.find((i) => i.epic === epic)?.category;
+  return (
+    <section className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {DESK_META.map((d) => {
+        const ev = evals.filter((e) => catOf(e.epic) === d.key);
+        const pos = positions.filter((p) => catOf(p.epic) === d.key);
+        const pnl = pos.reduce((s, p) => s + (p.upl || 0), 0);
+        const longs = ev.filter((e) => e.signal?.type === "BUY").length;
+        const shorts = ev.filter((e) => e.signal?.type === "SELL").length;
+        return (
+          <Link
+            key={d.key}
+            href={`/${d.key}`}
+            className="group rounded-xl border border-industrial bg-soft p-4 transition-colors hover:border-cement"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-display text-sm font-semibold text-white">
+                <span className="mr-1.5">{d.icon}</span>
+                {d.label}
+              </span>
+              <span className="font-mono text-[10px] text-muted transition-colors group-hover:text-accent">
+                {ev.length} activos →
+              </span>
+            </div>
+            <div className="mt-3 flex items-end justify-between">
+              <div>
+                <p className="tag">Posiciones</p>
+                <p className="mt-0.5 font-mono text-lg font-medium text-white">{pos.length}</p>
+              </div>
+              <div className="text-right">
+                <p className="tag">P&amp;L</p>
+                <p className={`mt-0.5 font-mono text-lg font-medium ${pnl >= 0 ? "text-long" : "text-short"}`}>
+                  {pnl >= 0 ? "+" : ""}
+                  {fmt(pnl)}
+                </p>
+              </div>
+            </div>
+            {(longs > 0 || shorts > 0) && (
+              <p className="mt-2 font-mono text-[10px] text-muted">
+                {longs > 0 && <span className="text-long">{longs}▲ </span>}
+                {shorts > 0 && <span className="text-short">{shorts}▼ </span>}
+                señales
+              </p>
+            )}
+          </Link>
+        );
+      })}
+    </section>
   );
 }
 

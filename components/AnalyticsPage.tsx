@@ -7,6 +7,7 @@ import { analyze } from "./analytics-util";
 import { fmt, pf, SectionHead, Clock } from "./ui";
 import EquityChart from "./EquityChart";
 import ThemeToggle from "./ThemeToggle";
+import Nav from "./Nav";
 
 export default function AnalyticsPage() {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
@@ -59,17 +60,7 @@ export default function AnalyticsPage() {
               Capital Autopilot
             </span>
           </Link>
-          <nav className="flex items-center gap-1 rounded-lg border border-industrial p-0.5">
-            <Link href="/" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">
-              Panel
-            </Link>
-            <span className="rounded-md bg-raised px-3 py-1.5 text-[13px] font-medium text-white">
-              Analítica
-            </span>
-            <Link href="/journal" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">
-              Diario IA
-            </Link>
-          </nav>
+          <Nav active="/analytics" />
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />

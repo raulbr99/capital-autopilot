@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { JournalEntry, JournalAction } from "./types";
 import ThemeToggle from "./ThemeToggle";
+import Nav from "./Nav";
 import { Clock } from "./ui";
 
 const ACT: Record<string, { label: string; cls: string }> = {
@@ -45,11 +46,7 @@ export default function JournalPage() {
               Capital Autopilot
             </span>
           </Link>
-          <nav className="flex items-center gap-1 rounded-lg border border-industrial p-0.5">
-            <Link href="/" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">Panel</Link>
-            <Link href="/analytics" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">Analítica</Link>
-            <span className="rounded-md bg-raised px-3 py-1.5 text-[13px] font-medium text-white">Diario IA</span>
-          </nav>
+          <Nav active="/journal" />
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
