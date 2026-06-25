@@ -123,15 +123,32 @@ export default function ConfigPanel({
           </div>
         </div>
 
-        <div className="border-t border-industrial pt-3">
+        <div className="space-y-2 border-t border-industrial pt-3">
+          <button
+            disabled={busy}
+            onClick={() => patch({ pmMode: !cfg.pmMode })}
+            className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] font-medium ${
+              cfg.pmMode ? "border-accent/50 bg-accent/10 text-accent ring-accent" : "border-cement text-muted"
+            }`}
+          >
+            🧠 GESTOR DE CARTERA IA — la IA decide
+            <span>{cfg.pmMode ? "ON" : "OFF"}</span>
+          </button>
+          {cfg.pmMode && (
+            <p className="text-[10px] leading-snug text-muted">
+              La IA lee mercado + noticias y decide abrir/cerrar (dentro de tus límites de riesgo); el motor
+              técnico queda en pausa. Mira el{" "}
+              <a href="/journal" className="text-accent underline">Diario IA</a>.
+            </p>
+          )}
           <button
             disabled={busy}
             onClick={() => patch({ aiFilter: !cfg.aiFilter })}
-            className={`flex w-full items-center justify-between border px-3 py-2 font-mono text-[11px] ${
-              cfg.aiFilter ? "border-volt text-volt" : "border-cement text-muted"
+            className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-[11px] font-medium ${
+              cfg.aiFilter ? "border-accent/40 bg-accent/10 text-accent" : "border-cement text-muted"
             }`}
           >
-            🤖 CAPA IA — Claude revisa/veta cada señal
+            🤖 Capa IA (filtro) — revisa/veta cada señal
             <span>{cfg.aiFilter ? "ON" : "OFF"}</span>
           </button>
         </div>

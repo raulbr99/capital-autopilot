@@ -103,6 +103,7 @@ export type BotConfig = {
   enabled: boolean;
   aiFilter: boolean;
   aiCooldownMin: number;
+  pmMode: boolean;
   instruments: Instrument[];
   watchlist: string[];
   sizePerTrade: number;
@@ -137,6 +138,23 @@ export type Snapshot = {
   evals: EpicEval[];
   state: State;
   opened: number;
+};
+
+export type JournalAction = {
+  action: "OPEN" | "CLOSE" | "HOLD";
+  epic?: string;
+  direction?: "BUY" | "SELL";
+  riskPct?: number;
+  reason: string;
+};
+
+export type JournalEntry = {
+  id: number;
+  ts: string;
+  thesis: string;
+  confidence: number;
+  actions: JournalAction[];
+  snapshot: { equity?: number; dailyPnlPct?: number; positions?: number };
 };
 
 export type Analytics = {

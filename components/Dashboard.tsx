@@ -172,6 +172,9 @@ export default function Dashboard() {
             <Link href="/analytics" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">
               Analítica
             </Link>
+            <Link href="/journal" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">
+              Diario IA
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">

@@ -25,6 +25,11 @@ export async function PATCH(req: Request) {
     log("info", cfg.aiFilter ? "🤖 Capa IA ACTIVADA" : "🤖 Capa IA desactivada");
     void appendLog(bot().logs[0]);
   }
+  if (typeof body.pmMode === "boolean") {
+    cfg.pmMode = body.pmMode;
+    log("info", cfg.pmMode ? "🧠 Gestor de Cartera IA ACTIVADO" : "🧠 Gestor IA desactivado (vuelve a modo técnico)");
+    void appendLog(bot().logs[0]);
+  }
   // instruments: lista de {epic, resolution}
   if (Array.isArray(body.instruments)) {
     cfg.instruments = body.instruments

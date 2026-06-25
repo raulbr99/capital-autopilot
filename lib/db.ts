@@ -332,6 +332,45 @@ export async function getEquity(limit = 300): Promise<EquityPoint[]> {
   return bot().equity.slice(-limit);
 }
 
+/* ---------------- JOURNAL (Gestor IA) ---------------- */
+
+export async function recordJournal(entry: {
+  thesis: string;
+  confidence: number;
+  actions: any[];
+  snapshot: any;
+}): Promise<void> {
+  const s = await supa();
+  if (!s) return;
+  try {
+    await s.from("ap_journal").insert({
+      ts: new Date().toISOString(),
+      thesis: entry.thesis,
+      confidence: entry.confidence,
+      actions: entry.actions,
+      snapshot: entry.snapshot,
+    });
+  } catch {
+    /* noop */
+  }
+}
+
+export async function getJournal(limit = 50): Promise<any[]> {
+  const s = await supa();
+  if (!s) return [];
+  try {
+    const { data } = await s
+      .from("ap_journal")
+      .select("*")
+      .order("ts", { ascending: false })
+      .limit(limit);
+    if (Array.isArray(data)) return data;
+  } catch {
+    /* noop */
+  }
+  return [];
+}
+
 /* ---------------- LOGS ---------------- */
 
 export async function appendLog(entry: LogEntry): Promise<void> {

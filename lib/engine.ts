@@ -14,6 +14,7 @@ import {
   getPositions,
   getPrices,
   openPosition,
+  closePosition,
   getMarketDetails,
   capitalConfigured,
   type Position,
@@ -30,9 +31,12 @@ import {
   appendEquity,
   getEquity,
   appendLog,
+  recordJournal,
 } from "./db";
 import { notify, notifyConfigured } from "./notify";
 import { reviewSignal, type AiVerdict } from "./ai";
+import { askPortfolioManager, type PmContext } from "./pm";
+import { getEconomicEvents, currenciesFor } from "./calendar";
 
 export type EpicEval = {
   epic: string;
@@ -160,8 +164,21 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   let openCount = openPositions.length;
   let opened = 0;
 
-  // ---- abrir nuevas posiciones ----
-  if (effectiveAllow) {
+  // ---- decisión: Gestor de Cartera IA, o motor técnico ----
+  if (cfg.pmMode && allowTradesIntent && cfg.enabled) {
+    opened += await runPmCycle({
+      equity,
+      dailyPnlPct,
+      account,
+      evals,
+      openPositions,
+      openEpics,
+      openCount,
+      tradesToday,
+      killedToday,
+      cooldownActive,
+    });
+  } else if (effectiveAllow) {
     for (const e of evals) {
       if (e.signal.type === "FLAT" || openEpics.has(e.epic)) continue;
       if (openCount >= cfg.maxOpenPositions) break;
@@ -281,18 +298,185 @@ async function sizeFor(
   if (cfg.risk.sizingMode !== "percent" || stopDist <= 0) {
     return cfg.sizePerTrade;
   }
-  // Riesgo fijo en €: con PnL = size · movimiento, size = riesgo / distancia_stop.
-  const riskAmount = (equity * cfg.risk.riskPercent) / 100;
-  let size = riskAmount / stopDist;
+  return sizeForRisk(equity, stopDist, epic, cfg.risk.riskPercent);
+}
+
+// Riesgo fijo en €: con PnL = size · movimiento, size = riesgo / distancia_stop.
+// Respeta el min/step del instrumento (Capital).
+async function sizeForRisk(
+  equity: number,
+  stopDist: number,
+  epic: string,
+  riskPct: number
+): Promise<number> {
+  if (stopDist <= 0) return 0;
+  let size = (equity * riskPct) / 100 / stopDist;
   try {
     const md = await getMarketDetails(epic);
     const step = md.sizeStep > 0 ? md.sizeStep : md.minDealSize;
-    size = Math.round(size / step) * step; // ajustar al incremento del instrumento
-    size = Math.max(md.minDealSize, Math.min(size, md.maxDealSize)); // respetar min/max
+    size = Math.round(size / step) * step;
+    size = Math.max(md.minDealSize, Math.min(size, md.maxDealSize));
   } catch {
     size = Math.max(0.01, Math.round(size * 100) / 100);
   }
   return size;
+}
+
+/* ---------------- Gestor de Cartera IA ---------------- */
+
+async function buildPmEvents(epics: string[]): Promise<string> {
+  try {
+    const currencies = new Set<string>();
+    epics.forEach((e) => currenciesFor(e).forEach((c) => currencies.add(c)));
+    const now = Date.now();
+    const ev = (await getEconomicEvents())
+      .filter(
+        (e) =>
+          e.impact === "High" &&
+          currencies.has(e.currency) &&
+          e.time >= now - 1_800_000 &&
+          e.time <= now + 21_600_000
+      )
+      .sort((a, b) => a.time - b.time)
+      .slice(0, 5)
+      .map((e) => `${e.currency} ${e.title} (${Math.round((e.time - now) / 60000)}min)`);
+    return ev.length ? ev.join("; ") : "Sin eventos de alto impacto en las próximas 6h.";
+  } catch {
+    return "Calendario no disponible.";
+  }
+}
+
+async function runPmCycle(p: {
+  equity: number;
+  dailyPnlPct: number;
+  account: Awaited<ReturnType<typeof getAccount>>;
+  evals: EpicEval[];
+  openPositions: OpenPos[];
+  openEpics: Set<string>;
+  openCount: number;
+  tradesToday: number;
+  killedToday: boolean;
+  cooldownActive: boolean;
+}): Promise<number> {
+  const b = bot();
+  const cfg = b.config;
+
+  const ctx: PmContext = {
+    account: {
+      equity: p.equity,
+      available: p.account.available,
+      dailyPnlPct: p.dailyPnlPct,
+      currency: p.account.currency,
+    },
+    constraints: {
+      maxOpenPositions: cfg.maxOpenPositions,
+      openNow: p.openCount,
+      maxRiskPct: cfg.risk.riskPercent,
+      maxTradesPerDay: cfg.risk.maxTradesPerDay,
+      tradesToday: p.tradesToday,
+      killSwitchPct: cfg.risk.maxDailyLossPct,
+    },
+    positions: p.openPositions.map((o) => ({
+      epic: o.epic,
+      direction: o.direction,
+      size: o.size,
+      entry: o.entry,
+      upl: o.upl,
+    })),
+    instruments: p.evals.map((e) => ({
+      epic: e.epic,
+      resolution: e.resolution,
+      price: e.price,
+      signal: e.signal.type,
+      smaFast: e.signal.indicators.smaFast,
+      smaSlow: e.signal.indicators.smaSlow,
+      rsi: e.signal.indicators.rsi,
+      adx: e.signal.indicators.adx,
+      atr: e.atr,
+      hasPosition: e.hasPosition,
+    })),
+    events: await buildPmEvents(p.evals.map((e) => e.epic)),
+  };
+
+  const decision = await askPortfolioManager(ctx);
+  if (!decision) {
+    logN("info", "🧠 Gestor IA: sin respuesta este ciclo");
+    return 0;
+  }
+
+  await recordJournal({
+    thesis: decision.thesis,
+    confidence: decision.confidence,
+    actions: decision.actions,
+    snapshot: { equity: p.equity, dailyPnlPct: p.dailyPnlPct, positions: ctx.positions.length },
+  });
+  logN("info", `🧠 Gestor IA (${(decision.confidence * 100).toFixed(0)}%): ${decision.thesis.slice(0, 150)}`);
+
+  let opened = 0;
+  let openCount = p.openCount;
+  let tradesToday = p.tradesToday;
+
+  for (const act of decision.actions) {
+    if (act.action === "CLOSE") {
+      const pos = p.openPositions.find((o) => o.epic === act.epic && o.dealId);
+      if (!pos || !pos.dealId) continue;
+      try {
+        await closePosition(pos.dealId);
+        b.stats.tradesClosed++;
+        p.openEpics.delete(pos.epic);
+        openCount = Math.max(0, openCount - 1);
+        logN("trade", `🧠 GESTOR cierra ${pos.epic}: ${act.reason}`, pos.epic);
+        if (cfg.notify.onTrade) await notify(`🧠 *Gestor* cierra ${pos.epic} · ${act.reason}`);
+      } catch (err: any) {
+        logN("error", `Gestor no pudo cerrar ${act.epic}: ${err.message}`, act.epic);
+      }
+    } else if (act.action === "OPEN") {
+      if (!act.epic || !act.direction) continue;
+      if (p.killedToday || p.cooldownActive) continue;
+      if (openCount >= cfg.maxOpenPositions) continue;
+      if (tradesToday >= cfg.risk.maxTradesPerDay) continue;
+      if (p.openEpics.has(act.epic)) continue;
+      const e = p.evals.find((x) => x.epic === act.epic);
+      if (!e || e.price <= 0) continue;
+      const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
+      const riskPct = Math.max(0.25, Math.min(act.riskPct ?? cfg.risk.riskPercent, cfg.risk.riskPercent));
+      const size = await sizeForRisk(p.equity, stopDist, act.epic, riskPct);
+      if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) continue;
+      const trade: TradeRecord = {
+        id: `${Date.now()}-${act.epic}`,
+        ts: Date.now(),
+        epic: act.epic,
+        direction: act.direction,
+        size,
+        entry: e.price,
+        status: "open",
+        dryRun: false,
+        reason: `IA: ${act.reason}`,
+      };
+      try {
+        const r = await openPosition({
+          epic: act.epic,
+          direction: act.direction,
+          size,
+          stopDistance: stopDist,
+          profitDistance: tpDist,
+        });
+        trade.dealId = r.dealReference;
+        await recordTrade(trade);
+        b.stats.tradesOpened++;
+        openCount++;
+        tradesToday++;
+        opened++;
+        p.openEpics.add(act.epic);
+        logN("trade", `🧠 GESTOR abre ${act.direction} ${size.toFixed(2)} ${act.epic} @${e.price.toFixed(2)} (riesgo ${riskPct}%): ${act.reason}`, act.epic);
+        if (cfg.notify.onTrade)
+          await notify(`🧠 *Gestor* ${act.direction} ${act.epic} @${e.price.toFixed(2)} · ${act.reason}`);
+      } catch (err: any) {
+        logN("error", `Gestor no pudo abrir ${act.epic}: ${err.message}`, act.epic);
+      }
+    }
+  }
+  return opened;
 }
 
 function realToOpen(p: Position): OpenPos {
