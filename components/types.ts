@@ -15,7 +15,8 @@ export type EpicEval = {
   spark: number[];
 };
 
-export type Instrument = { epic: string; resolution: string; regimeFilter?: boolean };
+export type DeskCategory = "forex" | "crypto" | "stocks" | "commodities";
+export type Instrument = { epic: string; resolution: string; regimeFilter?: boolean; category?: DeskCategory };
 export const RESOLUTIONS = [
   "MINUTE",
   "MINUTE_5",

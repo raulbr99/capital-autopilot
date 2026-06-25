@@ -433,20 +433,35 @@ type PmExecCtx = {
  * El motor corre cada 15 min, así que la decisión se ejecuta en <15 min.
  */
 async function drainPmQueue(p: PmExecCtx): Promise<number> {
-  const pending = await getPendingPmDecisions();
+  const pending = await getPendingPmDecisions(); // más recientes primero
   if (!pending.length) return 0;
-  await markPmConsumed(pending.map((d) => d.id)); // consume todas; solo actuamos sobre la última
-  const latest = pending[0];
-  logN("info", `☁️ Gestor en la nube: ejecuto su última decisión (${pending.length} en cola)`);
-  return executePmDecision(
-    { thesis: latest.thesis, confidence: latest.confidence, actions: latest.actions },
-    p
-  );
+  await markPmConsumed(pending.map((d) => d.id));
+  // Una decisión por mesa: la más reciente de cada desk (las viejas se descartan).
+  const seen = new Set<string>();
+  const latestPerDesk = pending.filter((d) => {
+    const k = d.desk || "global";
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  let opened = 0;
+  for (const dec of latestPerDesk) {
+    logN("info", `☁️ Gestor ${dec.desk || "global"}: ejecuto su decisión`);
+    opened += await executePmDecision(
+      { thesis: dec.thesis, confidence: dec.confidence, actions: dec.actions, desk: dec.desk },
+      p
+    );
+  }
+  return opened;
 }
 
-// Ejecuta una decisión del Gestor (venga de OpenRouter o de la nube): diario + acciones con guardarraíles.
+/**
+ * Ejecuta una decisión del Gestor (OpenRouter o nube): diario + acciones con
+ * guardarraíles. MUTA p.openCount/p.tradesToday para que los límites GLOBALES
+ * se respeten aunque varias mesas decidan en el mismo ciclo.
+ */
 async function executePmDecision(
-  decision: { thesis: string; confidence: number; actions: any[] },
+  decision: { thesis: string; confidence: number; actions: any[]; desk?: string | null },
   p: PmExecCtx
 ): Promise<number> {
   const b = bot();
@@ -457,12 +472,12 @@ async function executePmDecision(
     confidence: decision.confidence,
     actions: decision.actions,
     snapshot: { equity: p.equity, dailyPnlPct: p.dailyPnlPct, positions: p.openPositions.length },
+    desk: decision.desk ?? null,
   });
-  logN("info", `🧠 Gestor IA (${(decision.confidence * 100).toFixed(0)}%): ${(decision.thesis || "").slice(0, 150)}`);
+  const tag = decision.desk ? `[${decision.desk}] ` : "";
+  logN("info", `🧠 ${tag}Gestor (${(decision.confidence * 100).toFixed(0)}%): ${(decision.thesis || "").slice(0, 140)}`);
 
   let opened = 0;
-  let openCount = p.openCount;
-  let tradesToday = p.tradesToday;
 
   for (const act of decision.actions || []) {
     if (act.action === "CLOSE") {
@@ -471,17 +486,17 @@ async function executePmDecision(
       try {
         await closePosition(pos.dealId);
         p.openEpics.delete(pos.epic);
-        openCount = Math.max(0, openCount - 1);
-        logN("trade", `🧠 GESTOR cierra ${pos.epic}: ${act.reason}`, pos.epic);
-        if (cfg.notify.onTrade) await notify(`🧠 *Gestor* cierra ${pos.epic} · ${act.reason}`);
+        p.openCount = Math.max(0, p.openCount - 1);
+        logN("trade", `🧠 ${tag}cierra ${pos.epic}: ${act.reason}`, pos.epic);
+        if (cfg.notify.onTrade) await notify(`🧠 *Gestor ${decision.desk || ""}* cierra ${pos.epic} · ${act.reason}`);
       } catch (err: any) {
         logN("error", `Gestor no pudo cerrar ${act.epic}: ${err.message}`, act.epic);
       }
     } else if (act.action === "OPEN") {
       if (!act.epic || !act.direction) continue;
       if (p.killedToday || p.cooldownActive) continue;
-      if (openCount >= cfg.maxOpenPositions) continue;
-      if (tradesToday >= cfg.risk.maxTradesPerDay) continue;
+      if (p.openCount >= cfg.maxOpenPositions) continue;
+      if (p.tradesToday >= cfg.risk.maxTradesPerDay) continue;
       if (p.openEpics.has(act.epic)) continue;
       const e = p.evals.find((x) => x.epic === act.epic);
       if (!e || e.price <= 0) continue;
@@ -497,11 +512,11 @@ async function executePmDecision(
         tpDist,
         price: e.price,
         reason: `IA: ${act.reason}`,
-        logMsg: `🧠 GESTOR abre ${act.direction} ${size.toFixed(2)} ${act.epic} @${e.price.toFixed(2)} (riesgo ${riskPct}%): ${act.reason}`,
+        logMsg: `🧠 ${tag}abre ${act.direction} ${size.toFixed(2)} ${act.epic} @${e.price.toFixed(2)} (riesgo ${riskPct}%): ${act.reason}`,
       });
       if (did) {
-        openCount++;
-        tradesToday++;
+        p.openCount++;
+        p.tradesToday++;
         opened++;
         p.openEpics.add(act.epic);
       }

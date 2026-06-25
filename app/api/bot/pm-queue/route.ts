@@ -30,6 +30,7 @@ export async function POST(req: Request) {
       thesis: String(body.thesis || "").slice(0, 2000),
       confidence: typeof body.confidence === "number" ? body.confidence : 0.5,
       actions: body.actions,
+      desk: typeof body.desk === "string" ? body.desk.slice(0, 20) : null,
       status: "pending",
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

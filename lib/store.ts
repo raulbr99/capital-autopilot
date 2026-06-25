@@ -30,10 +30,13 @@ export const DEFAULT_RISK: RiskConfig = {
   cooldownMin: 30,
 };
 
+export type DeskCategory = "forex" | "crypto" | "stocks" | "commodities";
+
 export type Instrument = {
   epic: string;
   resolution: string;
   regimeFilter?: boolean; // override por activo del filtro ADX (undefined = usa el global)
+  category?: DeskCategory; // mesa a la que pertenece (forex/crypto/stocks/commodities)
 };
 
 export const RESOLUTIONS = [
@@ -86,22 +89,29 @@ export const DEFAULT_CONFIG: BotConfig = {
   pmMode: false, // Gestor IA inline (OpenRouter) off — sustituido por cloudPm
   cloudPm: false, // Gestor en la nube off por defecto
   instruments: [
-    { epic: "NZDUSD", resolution: "DAY", regimeFilter: false },
-    { epic: "EURUSD", resolution: "HOUR_4", regimeFilter: true },
-    { epic: "GOLD", resolution: "HOUR_4", regimeFilter: false },
-    { epic: "GBPJPY", resolution: "DAY", regimeFilter: false },
-    { epic: "EURJPY", resolution: "DAY", regimeFilter: false },
-    { epic: "USDCHF", resolution: "HOUR_4", regimeFilter: true },
-    { epic: "BTCUSD", resolution: "HOUR_4", regimeFilter: true },
-    { epic: "ETHUSD", resolution: "DAY", regimeFilter: true },
-    // Acciones US (solo operan en horario NY ~15:30-22:00 Madrid; el motor las salta si están CLOSED)
-    { epic: "AAPL", resolution: "DAY", regimeFilter: true },
-    { epic: "NVDA", resolution: "DAY", regimeFilter: true },
-    { epic: "TSLA", resolution: "DAY", regimeFilter: true },
-    { epic: "MSFT", resolution: "DAY", regimeFilter: true },
-    { epic: "AMZN", resolution: "DAY", regimeFilter: true },
+    // 💱 Forex
+    { epic: "NZDUSD", resolution: "DAY", regimeFilter: false, category: "forex" },
+    { epic: "EURUSD", resolution: "HOUR_4", regimeFilter: true, category: "forex" },
+    { epic: "GBPJPY", resolution: "DAY", regimeFilter: false, category: "forex" },
+    { epic: "EURJPY", resolution: "DAY", regimeFilter: false, category: "forex" },
+    { epic: "USDCHF", resolution: "HOUR_4", regimeFilter: true, category: "forex" },
+    // ₿ Crypto
+    { epic: "BTCUSD", resolution: "HOUR_4", regimeFilter: true, category: "crypto" },
+    { epic: "ETHUSD", resolution: "DAY", regimeFilter: true, category: "crypto" },
+    // 📈 Stocks US (solo horario NY ~15:30-22:00 Madrid; el motor las salta si están CLOSED)
+    { epic: "AAPL", resolution: "DAY", regimeFilter: true, category: "stocks" },
+    { epic: "NVDA", resolution: "DAY", regimeFilter: true, category: "stocks" },
+    { epic: "TSLA", resolution: "DAY", regimeFilter: true, category: "stocks" },
+    { epic: "MSFT", resolution: "DAY", regimeFilter: true, category: "stocks" },
+    { epic: "AMZN", resolution: "DAY", regimeFilter: true, category: "stocks" },
+    // 🛢️ Commodities
+    { epic: "GOLD", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
+    { epic: "SILVER", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
+    { epic: "OIL_CRUDE", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
+    { epic: "NATURALGAS", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
+    { epic: "COPPER", resolution: "DAY", regimeFilter: false, category: "commodities" },
   ],
-  watchlist: ["NZDUSD", "EURUSD", "GOLD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "NVDA", "TSLA", "MSFT", "AMZN"],
+  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
   maxOpenPositions: 3,
   stopDistance: 150,

@@ -135,6 +135,7 @@ function mergeConfig(base: BotConfig, override: any): BotConfig {
         epic: String(i.epic).toUpperCase().trim(),
         resolution: i.resolution || DEFAULT_RESOLUTION,
         ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
+        ...(i.category ? { category: i.category } : {}),
       }));
   } else if (Array.isArray(override.watchlist)) {
     instruments = override.watchlist.map((epic: string) => ({
@@ -383,6 +384,7 @@ export async function recordJournal(entry: {
   confidence: number;
   actions: any[];
   snapshot: any;
+  desk?: string | null;
 }): Promise<void> {
   const s = await supa();
   if (!s) return;
@@ -393,6 +395,7 @@ export async function recordJournal(entry: {
       confidence: entry.confidence,
       actions: entry.actions,
       snapshot: entry.snapshot,
+      desk: entry.desk ?? null,
     });
   } catch {
     /* noop */
@@ -423,6 +426,7 @@ export type PmQueueRow = {
   thesis: string;
   confidence: number;
   actions: any[];
+  desk: string | null;
 };
 
 export async function getPendingPmDecisions(): Promise<PmQueueRow[]> {
@@ -440,6 +444,7 @@ export async function getPendingPmDecisions(): Promise<PmQueueRow[]> {
         thesis: r.thesis ?? "",
         confidence: typeof r.confidence === "number" ? r.confidence : 0.5,
         actions: Array.isArray(r.actions) ? r.actions : [],
+        desk: r.desk ?? null,
       }));
   } catch {
     /* noop */
