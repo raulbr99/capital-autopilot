@@ -292,12 +292,12 @@ export default function Dashboard() {
 
         {/* ACTIVIDAD + RIESGO (el detalle por activo vive en las mesas; las herramientas en /lab) */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <PositionsTable positions={positions} onClose={closePos} busy={busy} />
             <LogFeed logs={snap?.state.logs ?? []} />
           </div>
 
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             {cfg && <RiskPanel cfg={cfg} busy={busy} patch={patch} />}
             <Link
               href="/lab"
