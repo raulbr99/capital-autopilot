@@ -138,6 +138,7 @@ export type BotState = {
   trades: TradeRecord[];
   dayAnchor: DayAnchor | null;
   killedDate: string | null; // si === hoy, kill-switch activo (no opera)
+  prevBalance: number; // balance del tick anterior (para atribuir P&L de cierres)
   aiReviewedAt: Record<string, number>; // epic -> ts última revisión IA (cooldown)
   lastTick: number;
   cooldownUntil: number; // timestamp; no abrir hasta pasarlo
@@ -157,6 +158,7 @@ function init(): BotState {
     trades: [],
     dayAnchor: null,
     killedDate: null,
+    prevBalance: 0,
     aiReviewedAt: {},
     lastTick: 0,
     cooldownUntil: 0,

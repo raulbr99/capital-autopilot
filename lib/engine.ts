@@ -28,6 +28,7 @@ import {
   saveRuntime,
   recordTrade,
   updateTrade,
+  getTrades,
   appendEquity,
   getEquity,
   appendLog,
@@ -126,6 +127,11 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       logN("error", `Error evaluando ${epic} (${res}): ${err.message}`, epic);
     }
   }
+
+  // ---- reconciliar cierres (SL/TP de Capital o cierres de la IA) ----
+  const priceByEpic = new Map(evals.map((e) => [e.epic, e.price]));
+  await reconcileClosedTrades(positions, priceByEpic, account.balance);
+
   // ---- equity ----
   const equity = account.balance + (account.pnl || 0);
 
@@ -422,7 +428,6 @@ async function runPmCycle(p: {
       if (!pos || !pos.dealId) continue;
       try {
         await closePosition(pos.dealId);
-        b.stats.tradesClosed++;
         p.openEpics.delete(pos.epic);
         openCount = Math.max(0, openCount - 1);
         logN("trade", `🧠 GESTOR cierra ${pos.epic}: ${act.reason}`, pos.epic);
@@ -489,6 +494,44 @@ function realToOpen(p: Position): OpenPos {
     upl: p.upl,
     dealId: p.dealId,
   };
+}
+
+/**
+ * Reconcilia: nuestros trades "abiertos" cuya posición ya no existe en Capital
+ * (cerrada por SL/TP o por la IA) se marcan cerrados, atribuyendo el P&L por el
+ * cambio de balance entre ticks (cerrar realiza el P&L en el balance).
+ */
+async function reconcileClosedTrades(
+  positions: Position[],
+  priceByEpic: Map<string, number>,
+  balance: number
+): Promise<void> {
+  const b = bot();
+  const openEpics = new Set(positions.map((p) => p.epic));
+  let ourOpen: TradeRecord[] = [];
+  try {
+    ourOpen = (await getTrades(200)).filter((t) => t.status === "open");
+  } catch {
+    return;
+  }
+  const closed = ourOpen.filter((t) => !openEpics.has(t.epic));
+  if (closed.length === 0) {
+    b.prevBalance = balance;
+    return;
+  }
+  const prev = b.prevBalance > 0 ? b.prevBalance : balance;
+  const per = Math.round(((balance - prev) / closed.length) * 100) / 100;
+  for (const t of closed) {
+    const exit = priceByEpic.get(t.epic) ?? t.entry;
+    await updateTrade(t.id, { status: "closed", exit, pnl: per, closedTs: Date.now() });
+    b.stats.tradesClosed++;
+    logN(
+      "trade",
+      `${per >= 0 ? "🟢" : "🔴"} Cerrada ${t.epic} · PnL ${per >= 0 ? "+" : ""}${per.toFixed(2)}`,
+      t.epic
+    );
+  }
+  b.prevBalance = balance;
 }
 
 function base(
