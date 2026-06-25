@@ -26,7 +26,8 @@ import {
   loadConfig,
   loadRuntime,
   saveRuntime,
-  recordTrade,
+  claimTradeOpen,
+  deleteTrade,
   updateTrade,
   getTrades,
   appendEquity,
@@ -153,8 +154,10 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       await notify(`🛑 *KILL-SWITCH* — pérdida diaria ${dailyPnlPct.toFixed(2)}%. Autopilot detenido por hoy.`, true);
   }
 
-  // ---- contadores / cooldown ----
-  const tradesToday = b.trades.filter((t) => todayKey(t.ts) === today).length;
+  // ---- contadores / cooldown (desde BD, no memoria: válido entre instancias) ----
+  const ourTrades = await getTrades(200);
+  const tradesToday = ourTrades.filter((t) => todayKey(t.ts) === today).length;
+  const ourOpenEpics = ourTrades.filter((t) => t.status === "open").map((t) => t.epic);
   const cooldownActive = Date.now() < b.cooldownUntil;
   const effectiveAllow =
     allowTradesIntent &&
@@ -163,9 +166,9 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
     !cooldownActive &&
     tradesToday < cfg.risk.maxTradesPerDay;
 
-  // ---- posiciones abiertas ----
+  // ---- posiciones abiertas (Capital + nuestros registros abiertos) ----
   const openPositions: OpenPos[] = positions.map((p) => realToOpen(p));
-  const openEpics = new Set(openPositions.map((o) => o.epic));
+  const openEpics = new Set([...openPositions.map((o) => o.epic), ...ourOpenEpics]);
   evals.forEach((e) => (e.hasPosition = openEpics.has(e.epic)));
   let openCount = openPositions.length;
   let opened = 0;
@@ -188,6 +191,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
     for (const e of evals) {
       if (e.signal.type === "FLAT" || openEpics.has(e.epic)) continue;
       if (openCount >= cfg.maxOpenPositions) break;
+      if (tradesToday + opened >= cfg.risk.maxTradesPerDay) break;
 
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
       const size = await sizeFor(cfg, equity, stopDist, e.epic);
@@ -228,37 +232,20 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
         logN("info", `🤖 IA OK ${e.epic}: ${verdict.reason}`, e.epic);
       }
 
-      const trade: TradeRecord = {
-        id: `${Date.now()}-${e.epic}`,
-        ts: Date.now(),
+      const did = await executeOpen({
         epic: e.epic,
         direction: e.signal.type,
         size,
-        entry: e.price,
-        status: "open",
-        dryRun: false,
+        stopDist,
+        tpDist,
+        price: e.price,
         reason: e.signal.reason,
-      };
-
-      try {
-        const r = await openPosition({
-          epic: e.epic,
-          direction: e.signal.type,
-          size,
-          stopDistance: stopDist,
-          profitDistance: tpDist,
-        });
-        trade.dealId = r.dealReference;
-        await recordTrade(trade);
-        b.stats.tradesOpened++;
+        logMsg: `✅ ABIERTA ${e.signal.type} ${size.toFixed(2)} ${e.epic} @${e.price.toFixed(2)} (SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)})`,
+      });
+      if (did) {
         openCount++;
         opened++;
         openEpics.add(e.epic);
-        logN("trade", `✅ ABIERTA ${e.signal.type} ${size.toFixed(2)} ${e.epic} @${e.price.toFixed(2)} (SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)})`, e.epic);
-        if (cfg.notify.onTrade)
-          await notify(`✅ ${e.signal.type} ${e.epic} @${e.price.toFixed(2)} · size ${size.toFixed(2)} · SL ${stopDist.toFixed(1)} / TP ${tpDist.toFixed(1)}`);
-      } catch (err: any) {
-        logN("error", `No se pudo abrir ${e.epic}: ${err.message}`, e.epic);
       }
     }
   }
@@ -447,37 +434,21 @@ async function runPmCycle(p: {
       const riskPct = Math.max(0.25, Math.min(act.riskPct ?? cfg.risk.riskPercent, cfg.risk.riskPercent));
       const size = await sizeForRisk(p.equity, stopDist, act.epic, riskPct);
       if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) continue;
-      const trade: TradeRecord = {
-        id: `${Date.now()}-${act.epic}`,
-        ts: Date.now(),
+      const did = await executeOpen({
         epic: act.epic,
         direction: act.direction,
         size,
-        entry: e.price,
-        status: "open",
-        dryRun: false,
+        stopDist,
+        tpDist,
+        price: e.price,
         reason: `IA: ${act.reason}`,
-      };
-      try {
-        const r = await openPosition({
-          epic: act.epic,
-          direction: act.direction,
-          size,
-          stopDistance: stopDist,
-          profitDistance: tpDist,
-        });
-        trade.dealId = r.dealReference;
-        await recordTrade(trade);
-        b.stats.tradesOpened++;
+        logMsg: `🧠 GESTOR abre ${act.direction} ${size.toFixed(2)} ${act.epic} @${e.price.toFixed(2)} (riesgo ${riskPct}%): ${act.reason}`,
+      });
+      if (did) {
         openCount++;
         tradesToday++;
         opened++;
         p.openEpics.add(act.epic);
-        logN("trade", `🧠 GESTOR abre ${act.direction} ${size.toFixed(2)} ${act.epic} @${e.price.toFixed(2)} (riesgo ${riskPct}%): ${act.reason}`, act.epic);
-        if (cfg.notify.onTrade)
-          await notify(`🧠 *Gestor* ${act.direction} ${act.epic} @${e.price.toFixed(2)} · ${act.reason}`);
-      } catch (err: any) {
-        logN("error", `Gestor no pudo abrir ${act.epic}: ${err.message}`, act.epic);
       }
     }
   }
@@ -494,6 +465,60 @@ function realToOpen(p: Position): OpenPos {
     upl: p.upl,
     dealId: p.dealId,
   };
+}
+
+/**
+ * Apertura segura: RECLAMA el activo en la BD (índice único parcial) ANTES de
+ * mandar la orden a Capital. Si otro tick solapado ya lo reclamó -> no abre
+ * (evita duplicados aunque Capital tarde en registrar la posición). Si Capital
+ * rechaza la orden -> libera el reclamo. Devuelve true si abrió.
+ */
+async function executeOpen(p: {
+  epic: string;
+  direction: "BUY" | "SELL";
+  size: number;
+  stopDist: number;
+  tpDist: number;
+  price: number;
+  reason: string;
+  logMsg: string;
+}): Promise<boolean> {
+  const b = bot();
+  const trade: TradeRecord = {
+    id: `${Date.now()}-${p.epic}`,
+    ts: Date.now(),
+    epic: p.epic,
+    direction: p.direction,
+    size: p.size,
+    entry: p.price,
+    status: "open",
+    dryRun: false,
+    reason: p.reason,
+  };
+  const claimed = await claimTradeOpen(trade);
+  if (!claimed) {
+    logN("info", `⏭️ ${p.epic}: ya hay posición abierta — duplicado evitado`, p.epic);
+    return false;
+  }
+  try {
+    const r = await openPosition({
+      epic: p.epic,
+      direction: p.direction,
+      size: p.size,
+      stopDistance: p.stopDist,
+      profitDistance: p.tpDist,
+    });
+    await updateTrade(trade.id, { dealId: r.dealReference });
+    b.stats.tradesOpened++;
+    logN("trade", p.logMsg, p.epic);
+    if (b.config.notify.onTrade)
+      await notify(`✅ ${p.direction} ${p.epic} @${p.price.toFixed(2)} · ${p.reason}`);
+    return true;
+  } catch (err: any) {
+    await deleteTrade(trade.id); // libera el reclamo si la orden falla
+    logN("error", `No se pudo abrir ${p.epic}: ${err.message}`, p.epic);
+    return false;
+  }
 }
 
 /**

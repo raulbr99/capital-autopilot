@@ -211,6 +211,46 @@ export async function recordTrade(t: TradeRecord): Promise<void> {
   }
 }
 
+/**
+ * Reclama (atómicamente) la apertura de un activo ANTES de mandar la orden a
+ * Capital. Inserta el trade con status 'open'; el índice único parcial
+ * `ap_trades_one_open_per_epic` hace que solo UN tick gane si varios se solapan
+ * (los demás reciben 23505 -> false). Evita posiciones duplicadas del mismo activo.
+ */
+export async function claimTradeOpen(t: TradeRecord): Promise<boolean> {
+  const b = bot();
+  // guard rápido en memoria (mismo proceso)
+  if (b.trades.some((x) => x.epic === t.epic && x.status === "open")) return false;
+  const s = await supa();
+  if (!s) {
+    b.trades.unshift(t);
+    return true;
+  }
+  try {
+    const { error } = await s.from("ap_trades").insert(rowFromTrade(t));
+    if (error) return false; // 23505 (índice único) u otro conflicto -> no reclamado
+  } catch {
+    return false;
+  }
+  b.trades.unshift(t);
+  if (b.trades.length > 500) b.trades.length = 500;
+  return true;
+}
+
+// Borra un trade (libera el reclamo si Capital rechaza la orden tras el claim).
+export async function deleteTrade(id: string): Promise<void> {
+  const b = bot();
+  const i = b.trades.findIndex((x) => x.id === id);
+  if (i >= 0) b.trades.splice(i, 1);
+  const s = await supa();
+  if (!s) return;
+  try {
+    await s.from("ap_trades").delete().eq("id", id);
+  } catch {
+    /* noop */
+  }
+}
+
 export async function updateTrade(
   id: string,
   patch: Partial<TradeRecord>
