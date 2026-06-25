@@ -1,28 +1,44 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getTrades } from "@/lib/db";
 import { analyze } from "@/lib/analytics";
+import type { TradeRecord } from "@/components/types";
 
 export const dynamic = "force-dynamic";
 
-// GET -> historial de trades + analitica calculada
+function tradeFromRow(r: any): TradeRecord {
+  return {
+    id: r.id,
+    ts: new Date(r.ts).getTime(),
+    closedTs: r.closed_ts ? new Date(r.closed_ts).getTime() : undefined,
+    epic: r.epic,
+    direction: r.direction,
+    size: r.size,
+    entry: r.entry,
+    exit: r.exit ?? undefined,
+    pnl: r.pnl ?? undefined,
+    status: r.status,
+    dryRun: r.dry_run,
+    reason: r.reason,
+  };
+}
+
+// GET -> historial de trades + analítica calculada (lectura directa, sin db.ts)
 export async function GET() {
-  const trades = await getTrades(300);
-  let fresh = -1;
-  try {
-    const c = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    );
-    const { data } = await c.from("ap_trades").select("*").order("ts", { ascending: false }).limit(300);
-    fresh = data?.length ?? -2;
-  } catch {
-    fresh = -3;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  let trades: TradeRecord[] = [];
+  if (url && key) {
+    try {
+      const c = createClient(url, key, { auth: { persistSession: false } });
+      const { data } = await c
+        .from("ap_trades")
+        .select("*")
+        .order("ts", { ascending: false })
+        .limit(300);
+      trades = (data ?? []).map(tradeFromRow);
+    } catch {
+      /* noop */
+    }
   }
-  return NextResponse.json({
-    trades,
-    analytics: analyze(trades),
-    _dbg: { getTrades: trades.length, fresh },
-  });
+  return NextResponse.json({ trades, analytics: analyze(trades) });
 }
