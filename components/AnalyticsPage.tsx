@@ -1,18 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import type { TradeRecord } from "./types";
+import type { TradeRecord, DeskCategory } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Clock } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead } from "./ui";
 import EquityChart from "./EquityChart";
-import ThemeToggle from "./ThemeToggle";
-import Nav from "./Nav";
+import AppHeader from "./AppHeader";
+
+const DESK_OF: Record<string, DeskCategory> = {
+  NZDUSD: "forex", EURUSD: "forex", GBPJPY: "forex", EURJPY: "forex", USDCHF: "forex",
+  BTCUSD: "crypto", ETHUSD: "crypto",
+  AAPL: "stocks", NVDA: "stocks", TSLA: "stocks", MSFT: "stocks", AMZN: "stocks",
+  GOLD: "commodities", SILVER: "commodities", OIL_CRUDE: "commodities", NATURALGAS: "commodities", COPPER: "commodities",
+};
+const DESK_FILTERS = [
+  { key: "", label: "Todas" },
+  { key: "forex", label: "Forex" },
+  { key: "crypto", label: "Crypto" },
+  { key: "stocks", label: "Stocks" },
+  { key: "commodities", label: "Commodities" },
+];
 
 export default function AnalyticsPage() {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [epic, setEpic] = useState<string>("");
+  const [desk, setDesk] = useState<string>("");
 
   useEffect(() => {
     const load = async () => {
@@ -37,8 +50,8 @@ export default function AnalyticsPage() {
   );
 
   const filtered = useMemo(
-    () => trades.filter((t) => !epic || t.epic === epic),
-    [trades, epic]
+    () => trades.filter((t) => (!epic || t.epic === epic) && (!desk || DESK_OF[t.epic] === desk)),
+    [trades, epic, desk]
   );
 
   const a = useMemo(() => analyze(filtered), [filtered]);
@@ -49,27 +62,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen">
-      {/* HEADER */}
-      <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between border-b border-industrial bg-ink/80 px-5 backdrop-blur md:px-8">
-        <div className="flex items-center gap-5">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
-              <span className="font-display text-base font-bold leading-none">A</span>
-            </div>
-            <span className="hidden font-display text-[15px] font-semibold tracking-tight text-white sm:block">
-              Capital Autopilot
-            </span>
-          </Link>
-          <Nav active="/analytics" />
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <div className="hidden text-right lg:block">
-            <Clock className="font-mono text-sm text-white" />
-            <p className="tag">Rendimiento</p>
-          </div>
-        </div>
-      </header>
+      <AppHeader active="/analytics" />
 
       <main className="mx-auto max-w-[1400px] px-5 py-6 md:px-8">
         {/* título + filtros */}
@@ -81,6 +74,19 @@ export default function AnalyticsPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-1">
+              {DESK_FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setDesk(f.key)}
+                  className={`rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
+                    desk === f.key ? "bg-accent text-onaccent" : "border border-industrial text-muted hover:text-dim"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
             <select
               value={epic}
               onChange={(e) => setEpic(e.target.value)}

@@ -53,7 +53,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
                 setOpen(false);
                 setQ("");
               }}
-              className="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-[13px] text-dim hover:bg-industrial hover:text-volt"
+              className="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-[13px] text-dim hover:bg-industrial hover:text-accent"
             >
               {c.label}
               {c.hint && <span className="text-[10px] text-muted">{c.hint}</span>}

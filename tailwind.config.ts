@@ -16,7 +16,6 @@ const config: Config = {
         industrial: "rgb(var(--industrial) / <alpha-value>)",
         cement: "rgb(var(--cement) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
-        volt: "rgb(var(--accent) / <alpha-value>)", // alias heredado
         onaccent: "rgb(var(--onaccent) / <alpha-value>)", // texto sobre acento
         long: "rgb(var(--long) / <alpha-value>)",
         short: "rgb(var(--short) / <alpha-value>)",

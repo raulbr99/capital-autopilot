@@ -88,7 +88,7 @@ export default function ConfigPanel({
               onChange={(e) => setW(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && add()}
               placeholder="EPIC ej. NZDUSD"
-              className="w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-volt focus:outline-none"
+              className="w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-accent focus:outline-none"
             />
             <button onClick={add} disabled={busy} aria-label="Añadir instrumento" className="rounded-lg bg-accent px-3 font-display text-xs text-onaccent disabled:opacity-40">
               +
@@ -112,7 +112,7 @@ export default function ConfigPanel({
             disabled={busy}
             onClick={() => patch({ strategy: { useRegimeFilter: !cfg.strategy.useRegimeFilter } })}
             className={`mb-2 flex w-full items-center justify-between border px-3 py-2 font-mono text-[11px] ${
-              cfg.strategy.useRegimeFilter ? "border-volt text-volt" : "border-cement text-muted"
+              cfg.strategy.useRegimeFilter ? "border-accent text-accent" : "border-cement text-muted"
             }`}
           >
             FILTRO RÉGIMEN (ADX) — solo opera en tendencia
@@ -199,7 +199,7 @@ function NotifyRow({
       disabled={busy || !env}
       title={env ? "" : "Configura las variables de entorno"}
       className={`flex items-center justify-between border px-3 py-2 font-mono text-[11px] disabled:opacity-40 ${
-        on && env ? "border-volt text-volt" : "border-cement text-muted"
+        on && env ? "border-accent text-accent" : "border-cement text-muted"
       }`}
     >
       {label}

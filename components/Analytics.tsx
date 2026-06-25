@@ -77,7 +77,7 @@ export default function Analytics({
                       {t.pnl != null ? `${t.pnl >= 0 ? "+" : ""}${fmt(t.pnl)}` : "—"}
                     </td>
                     <td className="px-3 py-2">
-                      <span className={t.status === "open" ? "text-volt" : "text-muted"}>
+                      <span className={t.status === "open" ? "text-accent" : "text-muted"}>
                         {t.status === "open" ? "ABIERTA" : "CERRADA"}
                       </span>
                     </td>

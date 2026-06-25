@@ -65,7 +65,7 @@ export default function BacktestPanel() {
             <button
               onClick={run}
               disabled={loading}
-              className="bg-volt px-3 py-1 font-display text-[11px] text-onaccent disabled:opacity-40"
+              className="bg-accent px-3 py-1 font-display text-[11px] text-onaccent disabled:opacity-40"
             >
               {loading ? "…" : "▶ RUN"}
             </button>

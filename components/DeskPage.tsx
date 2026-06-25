@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, Clock, DeskGlyph } from "./ui";
-import Nav from "./Nav";
-import ThemeToggle from "./ThemeToggle";
+import { pnlFmt, DeskGlyph } from "./ui";
+import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
 
@@ -74,20 +72,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between gap-3 border-b border-industrial bg-ink/80 px-5 backdrop-blur md:px-8">
-        <div className="flex min-w-0 items-center gap-4">
-          <Link href="/" className="hidden shrink-0 items-center gap-3 sm:flex">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
-              <span className="font-display text-base font-bold leading-none">A</span>
-            </div>
-          </Link>
-          <Nav active={`/${category}`} />
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <ThemeToggle />
-          <Clock className="hidden font-mono text-sm text-white lg:block" />
-        </div>
-      </header>
+      <AppHeader active={`/${category}`} />
 
       <main className="mx-auto max-w-[1100px] px-5 py-6 md:px-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">

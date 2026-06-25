@@ -86,7 +86,7 @@ function SignalCard({ e }: { e: EpicEval }) {
         </div>
       </div>
       {e.hasPosition && (
-        <p className="mt-2 inline-block bg-volt/10 px-2 py-0.5 font-mono text-[9px] text-volt">
+        <p className="mt-2 inline-block bg-accent/10 px-2 py-0.5 font-mono text-[9px] text-accent">
           POSICIÓN_ABIERTA
         </p>
       )}

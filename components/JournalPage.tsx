@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import type { JournalEntry, JournalAction } from "./types";
-import ThemeToggle from "./ThemeToggle";
-import Nav from "./Nav";
-import { Clock } from "./ui";
+import AppHeader from "./AppHeader";
 
 const ACT: Record<string, { label: string; cls: string }> = {
   OPEN: { label: "ABRE", cls: "bg-long/15 text-long" },
@@ -13,9 +10,18 @@ const ACT: Record<string, { label: string; cls: string }> = {
   HOLD: { label: "ESPERA", cls: "bg-industrial text-muted" },
 };
 
+const DESK_FILTERS = [
+  { key: "all", label: "Todas" },
+  { key: "forex", label: "Forex" },
+  { key: "crypto", label: "Crypto" },
+  { key: "stocks", label: "Stocks" },
+  { key: "commodities", label: "Commodities" },
+];
+
 export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [desk, setDesk] = useState("all");
 
   useEffect(() => {
     const load = async () => {
@@ -34,37 +40,37 @@ export default function JournalPage() {
     return () => clearInterval(t1);
   }, []);
 
+  const shown = entries.filter((e) => desk === "all" || (e as any).desk === desk);
+
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between border-b border-industrial bg-ink/80 px-5 backdrop-blur md:px-8">
-        <div className="flex items-center gap-5">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
-              <span className="font-display text-base font-bold leading-none">A</span>
-            </div>
-            <span className="hidden font-display text-[15px] font-semibold tracking-tight text-white sm:block">
-              Capital Autopilot
-            </span>
-          </Link>
-          <Nav active="/journal" />
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Clock className="hidden font-mono text-sm text-white lg:block" />
-        </div>
-      </header>
+      <AppHeader active="/journal" />
 
-      <main className="mx-auto max-w-[820px] px-5 py-6 md:px-8">
-        <div className="mb-6">
+      <main className="mx-auto max-w-[960px] px-5 py-6 md:px-8">
+        <div className="mb-5">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-white">Diario del Gestor IA</h1>
           <p className="mt-1 text-sm text-dim">
             La tesis de mercado y las decisiones de la IA en cada ciclo. Lee cómo piensa.
           </p>
         </div>
 
+        <div className="mb-6 flex flex-wrap gap-1.5">
+          {DESK_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setDesk(f.key)}
+              className={`rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
+                desk === f.key ? "bg-accent text-onaccent" : "border border-industrial text-muted hover:text-dim"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <p className="text-center text-sm text-muted">Cargando…</p>
-        ) : entries.length === 0 ? (
+        ) : shown.length === 0 ? (
           <div className="rounded-xl border border-industrial bg-soft p-16 text-center">
             <p className="text-base font-medium text-dim">El gestor IA aún no ha escrito nada</p>
             <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
@@ -74,11 +80,16 @@ export default function JournalPage() {
           </div>
         ) : (
           <div className="relative space-y-4 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-industrial">
-            {entries.map((e) => (
+            {shown.map((e) => (
               <article key={e.id} className="relative pl-7">
                 <span className="absolute left-0 top-2 h-3.5 w-3.5 rounded-full border-2 border-ink bg-accent" />
                 <div className="rounded-xl border border-industrial bg-soft p-4">
                   <div className="mb-2 flex items-center gap-2">
+                    {(e as any).desk && (
+                      <span className="rounded bg-industrial px-1.5 py-0.5 text-[10px] font-medium uppercase text-dim">
+                        {(e as any).desk}
+                      </span>
+                    )}
                     <span className="font-mono text-[11px] text-muted">
                       {new Date(e.ts).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}
                     </span>

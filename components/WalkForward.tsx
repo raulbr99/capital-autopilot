@@ -30,7 +30,7 @@ type WFResult = {
 
 const VERDICT: Record<string, { label: string; cls: string }> = {
   edge: { label: "VENTAJA PROBABLE", cls: "bg-long/15 text-long border-long/40" },
-  weak: { label: "VENTAJA DÉBIL", cls: "bg-volt/15 text-volt border-volt/40" },
+  weak: { label: "VENTAJA DÉBIL", cls: "bg-accent/15 text-accent border-accent/40" },
   none: { label: "SIN VENTAJA", cls: "bg-short/15 text-short border-short/40" },
 };
 
@@ -87,7 +87,7 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
             <button
               onClick={run}
               disabled={loading}
-              className="bg-volt px-3 py-1 font-display text-[11px] text-onaccent disabled:opacity-40"
+              className="bg-accent px-3 py-1 font-display text-[11px] text-onaccent disabled:opacity-40"
             >
               {loading ? "…" : "▶ VALIDAR"}
             </button>
@@ -101,7 +101,7 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
           <span className="text-white">OOS</span> son la estimación honesta de la ventaja.
         </p>
         {err && <p className="text-xs text-short">{err}</p>}
-        {loading && <p className="font-mono text-[11px] text-volt">Validando {progress}</p>}
+        {loading && <p className="font-mono text-[11px] text-accent">Validando {progress}</p>}
 
         <div className="space-y-2">
           {results.map((r) => (
