@@ -36,7 +36,12 @@ async function supa(): Promise<SupabaseClient | null> {
       client = createClient(
         process.env.SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { persistSession: false } }
+        {
+          auth: { persistSession: false },
+          // Next.js cachea fetch() por defecto -> supabase-js usa fetch ->
+          // lecturas obsoletas. Forzamos no-store en cada request.
+          global: { fetch: (i: any, init: any) => fetch(i, { ...init, cache: "no-store" }) },
+        }
       );
     } catch {
       return null;

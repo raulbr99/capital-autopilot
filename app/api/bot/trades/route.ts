@@ -4,6 +4,7 @@ import { analyze } from "@/lib/analytics";
 import type { TradeRecord } from "@/components/types";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 function tradeFromRow(r: any): TradeRecord {
   return {
@@ -29,7 +30,10 @@ export async function GET() {
   let trades: TradeRecord[] = [];
   if (url && key) {
     try {
-      const c = createClient(url, key, { auth: { persistSession: false } });
+      const c = createClient(url, key, {
+        auth: { persistSession: false },
+        global: { fetch: (i: any, init: any) => fetch(i, { ...init, cache: "no-store" }) },
+      });
       const { data } = await c
         .from("ap_trades")
         .select("*", { count: "exact" })
