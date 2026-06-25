@@ -25,6 +25,11 @@ export async function PATCH(req: Request) {
     log("info", cfg.aiFilter ? "🤖 Capa IA ACTIVADA" : "🤖 Capa IA desactivada");
     void appendLog(bot().logs[0]);
   }
+  if (typeof body.cloudPm === "boolean") {
+    cfg.cloudPm = body.cloudPm;
+    log("info", cfg.cloudPm ? "☁️ Gestor en la NUBE activado (decide la routine cada hora)" : "☁️ Gestor en la nube desactivado");
+    void appendLog(bot().logs[0]);
+  }
   if (typeof body.pmMode === "boolean") {
     cfg.pmMode = body.pmMode;
     log("info", cfg.pmMode ? "🧠 Gestor de Cartera IA ACTIVADO" : "🧠 Gestor IA desactivado (vuelve a modo técnico)");

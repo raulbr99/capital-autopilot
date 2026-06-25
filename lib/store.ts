@@ -66,7 +66,8 @@ export type BotConfig = {
   enabled: boolean; // interruptor maestro (Activar/Detener) que respeta el cron
   aiFilter: boolean; // capa IA: revisa/veta cada senal antes de operar
   aiCooldownMin: number; // no re-evaluar el mismo activo con IA dentro de X min
-  pmMode: boolean; // Gestor de Cartera IA: la IA decide las operaciones (no solo filtra)
+  pmMode: boolean; // Gestor de Cartera IA inline (OpenRouter, cada tick) — DEPRECADO por coste
+  cloudPm: boolean; // Gestor en la nube: una routine Claude decide cada hora y deja las acciones en cola; el motor las ejecuta
   instruments: Instrument[]; // activos con su resolucion de senal
   watchlist: string[]; // espejo de instruments[].epic (compat)
   sizePerTrade: number; // unidades (modo fixed)
@@ -82,7 +83,8 @@ export const DEFAULT_CONFIG: BotConfig = {
   enabled: false,
   aiFilter: false, // off por defecto; se enciende cuando hay AI Gateway
   aiCooldownMin: 45, // 1 revisión IA por activo cada 45 min como mucho
-  pmMode: false, // Gestor IA off por defecto (experimental)
+  pmMode: false, // Gestor IA inline (OpenRouter) off — sustituido por cloudPm
+  cloudPm: false, // Gestor en la nube off por defecto
   instruments: [
     { epic: "NZDUSD", resolution: "DAY", regimeFilter: false },
     { epic: "EURUSD", resolution: "HOUR_4", regimeFilter: true },

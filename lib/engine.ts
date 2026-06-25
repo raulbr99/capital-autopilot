@@ -35,6 +35,8 @@ import {
   getEquity,
   appendLog,
   recordJournal,
+  getPendingPmDecisions,
+  markPmConsumed,
 } from "./db";
 import { notify, notifyConfigured } from "./notify";
 import { reviewSignal, type AiVerdict } from "./ai";
@@ -175,8 +177,20 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   let openCount = openPositions.length;
   let opened = 0;
 
-  // ---- decisión: Gestor de Cartera IA, o motor técnico ----
-  if (cfg.pmMode && allowTradesIntent && cfg.enabled) {
+  // ---- decisión: Gestor en la nube (cola) > Gestor inline (OpenRouter) > motor técnico ----
+  if (cfg.cloudPm && allowTradesIntent && cfg.enabled) {
+    opened += await drainPmQueue({
+      equity,
+      dailyPnlPct,
+      evals,
+      openPositions,
+      openEpics,
+      openCount,
+      tradesToday,
+      killedToday,
+      cooldownActive,
+    });
+  } else if (cfg.pmMode && allowTradesIntent && cfg.enabled) {
     opened += await runPmCycle({
       equity,
       dailyPnlPct,
@@ -398,20 +412,59 @@ async function runPmCycle(p: {
     logN("info", "🧠 Gestor IA: sin respuesta este ciclo");
     return 0;
   }
+  return executePmDecision(decision, p);
+}
+
+type PmExecCtx = {
+  equity: number;
+  dailyPnlPct: number;
+  evals: EpicEval[];
+  openPositions: OpenPos[];
+  openEpics: Set<string>;
+  openCount: number;
+  tradesToday: number;
+  killedToday: boolean;
+  cooldownActive: boolean;
+};
+
+/**
+ * Gestor en la nube: drena la cola (ap_pm_queue) que rellena la routine Claude
+ * cada hora y ejecuta su decisión MÁS RECIENTE con los guardarraíles del bot.
+ * El motor corre cada 15 min, así que la decisión se ejecuta en <15 min.
+ */
+async function drainPmQueue(p: PmExecCtx): Promise<number> {
+  const pending = await getPendingPmDecisions();
+  if (!pending.length) return 0;
+  await markPmConsumed(pending.map((d) => d.id)); // consume todas; solo actuamos sobre la última
+  const latest = pending[0];
+  logN("info", `☁️ Gestor en la nube: ejecuto su última decisión (${pending.length} en cola)`);
+  return executePmDecision(
+    { thesis: latest.thesis, confidence: latest.confidence, actions: latest.actions },
+    p
+  );
+}
+
+// Ejecuta una decisión del Gestor (venga de OpenRouter o de la nube): diario + acciones con guardarraíles.
+async function executePmDecision(
+  decision: { thesis: string; confidence: number; actions: any[] },
+  p: PmExecCtx
+): Promise<number> {
+  const b = bot();
+  const cfg = b.config;
 
   await recordJournal({
     thesis: decision.thesis,
     confidence: decision.confidence,
     actions: decision.actions,
-    snapshot: { equity: p.equity, dailyPnlPct: p.dailyPnlPct, positions: ctx.positions.length },
+    snapshot: { equity: p.equity, dailyPnlPct: p.dailyPnlPct, positions: p.openPositions.length },
   });
-  logN("info", `🧠 Gestor IA (${(decision.confidence * 100).toFixed(0)}%): ${decision.thesis.slice(0, 150)}`);
+  logN("info", `🧠 Gestor IA (${(decision.confidence * 100).toFixed(0)}%): ${(decision.thesis || "").slice(0, 150)}`);
 
   let opened = 0;
   let openCount = p.openCount;
   let tradesToday = p.tradesToday;
 
-  for (const act of decision.actions) {
+  for (const act of decision.actions || []) {
     if (act.action === "CLOSE") {
       const pos = p.openPositions.find((o) => o.epic === act.epic && o.dealId);
       if (!pos || !pos.dealId) continue;

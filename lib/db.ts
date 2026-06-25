@@ -415,6 +415,51 @@ export async function getJournal(limit = 50): Promise<any[]> {
   return [];
 }
 
+/* ---------------- COLA DEL GESTOR EN LA NUBE ---------------- */
+// La routine Claude (cada hora) inserta sus decisiones aquí; el motor las drena.
+
+export type PmQueueRow = {
+  id: number;
+  thesis: string;
+  confidence: number;
+  actions: any[];
+};
+
+export async function getPendingPmDecisions(): Promise<PmQueueRow[]> {
+  const s = await supa();
+  if (!s) return [];
+  try {
+    const { data } = await s
+      .from("ap_pm_queue")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    if (Array.isArray(data))
+      return data.map((r: any) => ({
+        id: r.id,
+        thesis: r.thesis ?? "",
+        confidence: typeof r.confidence === "number" ? r.confidence : 0.5,
+        actions: Array.isArray(r.actions) ? r.actions : [],
+      }));
+  } catch {
+    /* noop */
+  }
+  return [];
+}
+
+export async function markPmConsumed(ids: number[]): Promise<void> {
+  const s = await supa();
+  if (!s || !ids.length) return;
+  try {
+    await s
+      .from("ap_pm_queue")
+      .update({ status: "consumed", consumed_at: new Date().toISOString() })
+      .in("id", ids);
+  } catch {
+    /* noop */
+  }
+}
+
 /* ---------------- LOGS ---------------- */
 
 export async function appendLog(entry: LogEntry): Promise<void> {
