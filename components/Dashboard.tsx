@@ -202,7 +202,7 @@ export default function Dashboard() {
         <Nav active="/" />
       </div>
 
-      <main className="mx-auto max-w-[1400px] px-5 py-6 md:px-8">
+      <main className="mx-auto max-w-[1400px] overflow-x-clip px-5 py-6 md:px-8">
         {!configured && <ConfigWarning />}
 
         {/* HERO */}
@@ -390,15 +390,15 @@ function DesksOverview({
           <Link
             key={d.key}
             href={`/${d.key}`}
-            className="group rounded-xl border border-industrial bg-soft p-4 transition-colors hover:border-cement"
+            className="group min-w-0 rounded-xl border border-industrial bg-soft p-4 transition-colors hover:border-cement"
           >
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-display text-sm font-semibold text-white">
-                <DeskGlyph cat={d.key} className="h-4 w-4 text-accent" />
-                {d.label}
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-1.5 font-display text-sm font-semibold text-white">
+                <DeskGlyph cat={d.key} className="h-4 w-4 shrink-0 text-accent" />
+                <span className="truncate">{d.label}</span>
               </span>
-              <span className="font-mono text-[10px] text-muted transition-colors group-hover:text-accent">
-                {ev.length} activos →
+              <span className="shrink-0 font-mono text-[10px] text-muted transition-colors group-hover:text-accent">
+                {ev.length} →
               </span>
             </div>
             <div className="mt-3 flex items-end justify-between">
