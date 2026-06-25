@@ -11,6 +11,41 @@ export const fmt = (n: number, d = 2) =>
 export const pf = (n: number) =>
   n === Infinity ? "∞" : Number.isFinite(n) ? n.toFixed(2) : "—";
 
+// P&L: el cero es NEUTRO (ni verde ni "+"), solo color con signo real.
+const EPS = 0.005;
+export const pnlClass = (v: number) =>
+  v > EPS ? "text-long" : v < -EPS ? "text-short" : "text-dim";
+export const pnlFmt = (v: number, d = 2) => (v > EPS ? "+" : "") + fmt(v, d);
+
+// Glifos monocromos por mesa (sin emoji multicolor).
+export function DeskGlyph({ cat, className = "h-4 w-4" }: { cat: string; className?: string }) {
+  const paths: Record<string, React.ReactNode> = {
+    forex: <path d="M4 7.5h12l-3-3M16 12.5H4l3 3" />,
+    crypto: <path d="M10 3l6 3.5v7L10 17l-6-3.5v-7z" />,
+    stocks: (
+      <>
+        <path d="M3 14l4-4 3 2 6-7" />
+        <path d="M16 5h1v3" />
+      </>
+    ),
+    commodities: <path d="M10 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-3 2-5 5-9z" />,
+  };
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[cat] ?? null}
+    </svg>
+  );
+}
+
 /** Reloj aislado: solo este componente se re-renderiza cada segundo, no la página. */
 export function Clock({ className }: { className?: string }) {
   const [now, setNow] = useState("--:--:--");
@@ -154,7 +189,7 @@ export function Sparkline({
   h?: number;
 }) {
   if (!data || data.length < 2)
-    return <div style={{ width: w, height: h }} className="rounded bg-industrial/40" />;
+    return <div style={{ height: h }} className="w-full rounded bg-industrial/40" />;
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
@@ -163,10 +198,25 @@ export function Sparkline({
   const line = data.map((d, i) => `${x(i).toFixed(1)},${y(d).toFixed(1)}`).join(" ");
   const isUp = up ?? data[data.length - 1] >= data[0];
   const c = isUp ? "#34C98A" : "#F2567A";
+  // Fluido: viewBox como sistema de coordenadas interno + width 100% para que
+  // llene su contenedor (antes el ancho fijo desbordaba las tarjetas en móvil).
   return (
-    <svg width={w} height={h} className="overflow-visible">
-      <polyline points={line} fill="none" stroke={c} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={x(data.length - 1)} cy={y(data[data.length - 1])} r="2" fill={c} />
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      width="100%"
+      height={h}
+      preserveAspectRatio="none"
+      className="block w-full overflow-visible"
+    >
+      <polyline
+        points={line}
+        fill="none"
+        stroke={c}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }

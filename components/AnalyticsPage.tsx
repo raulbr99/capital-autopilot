@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { TradeRecord } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, SectionHead, Clock } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Clock } from "./ui";
 import EquityChart from "./EquityChart";
 import ThemeToggle from "./ThemeToggle";
 import Nav from "./Nav";
@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
           <>
             {/* KPIs */}
             <section className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
-              <Kpi label="PnL neto" value={fmt(a.netPnl)} tone={a.netPnl >= 0 ? "long" : "short"} big />
+              <Kpi label="PnL neto" value={pnlFmt(a.netPnl)} tone={Math.abs(a.netPnl) < 0.005 ? undefined : a.netPnl > 0 ? "long" : "short"} big />
               <Kpi label="Win rate" value={`${a.winRate.toFixed(0)}%`} tone="accent" big />
               <Kpi label="Profit factor" value={pf(a.profitFactor)} big />
               <Kpi label="Max drawdown" value={fmt(a.maxDrawdown)} tone="short" big />
@@ -201,7 +201,7 @@ function ByInstrument({ rows }: { rows: { epic: string; pnl: number; trades: num
               />
             </div>
           </div>
-          <span className={`w-16 shrink-0 text-right font-mono text-[13px] ${r.pnl >= 0 ? "text-long" : "text-short"}`}>
+          <span className={`w-16 shrink-0 text-right font-mono text-[13px] ${pnlClass(r.pnl)}`}>
             {r.pnl >= 0 ? "+" : ""}
             {fmt(r.pnl)}
           </span>
@@ -266,7 +266,7 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
                 {fmt(t.entry)}
                 {t.exit != null ? ` → ${fmt(t.exit)}` : ""}
               </td>
-              <td className={`px-4 py-2.5 text-right ${(t.pnl || 0) >= 0 ? "text-long" : "text-short"}`}>
+              <td className={`px-4 py-2.5 text-right ${pnlClass(t.pnl || 0)}`}>
                 {t.pnl != null ? `${t.pnl >= 0 ? "+" : ""}${fmt(t.pnl)}` : "—"}
               </td>
             </tr>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Snapshot, OpenPos, Analytics as A, TradeRecord, Instrument } from "./types";
-import { fmt, SectionHead, StatCard, Clock } from "./ui";
+import { fmt, pnlFmt, pnlClass, SectionHead, StatCard, Clock, DeskGlyph } from "./ui";
 import EquityChart from "./EquityChart";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -167,7 +167,8 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="rounded-md bg-short/15 px-2.5 py-1 text-[11px] font-semibold text-short">
+          <span className="flex items-center gap-1.5 rounded-md bg-accent/12 px-2.5 py-1 text-[11px] font-semibold text-accent">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulseDot" />
             LIVE · real
           </span>
           {snap?.killedToday && (
@@ -254,7 +255,6 @@ export default function Dashboard() {
                   {fmt(lastEquity)} <span className="text-sm font-normal text-muted">{acc?.currency}</span>
                 </p>
               </div>
-              <PnlPill value={floatPnl} currency={acc?.currency} />
             </div>
             <EquityChart data={equity} markers={markers} />
           </div>
@@ -264,7 +264,7 @@ export default function Dashboard() {
         <section className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
           <StatCard label="Balance" value={acc ? fmt(acc.balance) : "—"} unit={acc?.currency} />
           <StatCard label="Disponible" value={acc ? fmt(acc.available) : "—"} unit={acc?.currency} />
-          <StatCard label="PnL flotante" value={fmt(floatPnl)} unit={acc?.currency} tone={floatPnl >= 0 ? "long" : "short"} />
+          <StatCard label="PnL flotante" value={pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < 0.005 ? undefined : floatPnl > 0 ? "long" : "short"} />
           <StatCard label="Posiciones" value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`} />
         </section>
 
@@ -343,10 +343,10 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "lon
 }
 
 const DESK_META = [
-  { key: "forex", label: "Forex", icon: "💱" },
-  { key: "crypto", label: "Crypto", icon: "₿" },
-  { key: "stocks", label: "Stocks", icon: "📈" },
-  { key: "commodities", label: "Commodities", icon: "🛢️" },
+  { key: "forex", label: "Forex" },
+  { key: "crypto", label: "Crypto" },
+  { key: "stocks", label: "Stocks" },
+  { key: "commodities", label: "Commodities" },
 ] as const;
 
 function DesksOverview({
@@ -374,8 +374,8 @@ function DesksOverview({
             className="group rounded-xl border border-industrial bg-soft p-4 transition-colors hover:border-cement"
           >
             <div className="flex items-center justify-between">
-              <span className="font-display text-sm font-semibold text-white">
-                <span className="mr-1.5">{d.icon}</span>
+              <span className="flex items-center gap-1.5 font-display text-sm font-semibold text-white">
+                <DeskGlyph cat={d.key} className="h-4 w-4 text-accent" />
                 {d.label}
               </span>
               <span className="font-mono text-[10px] text-muted transition-colors group-hover:text-accent">
@@ -389,10 +389,7 @@ function DesksOverview({
               </div>
               <div className="text-right">
                 <p className="tag">P&amp;L</p>
-                <p className={`mt-0.5 font-mono text-lg font-medium ${pnl >= 0 ? "text-long" : "text-short"}`}>
-                  {pnl >= 0 ? "+" : ""}
-                  {fmt(pnl)}
-                </p>
+                <p className={`mt-0.5 font-mono text-lg font-medium ${pnlClass(pnl)}`}>{pnlFmt(pnl)}</p>
               </div>
             </div>
             {(longs > 0 || shorts > 0) && (

@@ -73,6 +73,20 @@ body {
   box-shadow: 0 0 0 1px rgb(var(--accent) / 0.5), 0 0 0 4px rgb(var(--accent) / 0.1);
 }
 
+/* Rejilla tenue de fondo de página (estructura, no decoración) */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgb(var(--industrial) / 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--industrial) / 0.35) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Textura de puntos para estados vacíos (evita la caja plana que parece rota) */
+.dotgrid {
+  background-image: radial-gradient(rgb(var(--cement) / 0.5) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
 @layer base {
   button,
   input,

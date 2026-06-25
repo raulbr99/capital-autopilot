@@ -45,7 +45,7 @@ function SignalCard({ e }: { e: EpicEval }) {
       </div>
 
       <div className="mt-2">
-        <Sparkline data={e.spark} w={240} h={36} />
+        <Sparkline data={e.spark} h={36} />
       </div>
 
       <div className="mt-2 h-1.5 w-full bg-industrial">
@@ -61,7 +61,7 @@ function SignalCard({ e }: { e: EpicEval }) {
 
       <p className="mt-2 text-[11px] leading-snug text-dim">{s.reason}</p>
 
-      <div className="mt-3 grid grid-cols-4 gap-2 border-t border-industrial pt-3 font-mono text-[10px]">
+      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-industrial pt-3 font-mono text-[10px] sm:grid-cols-4 sm:gap-2">
         <Ind label="SMA-F" v={s.indicators.smaFast} />
         <Ind label="SMA-S" v={s.indicators.smaSlow} />
         <Ind label="RSI" v={s.indicators.rsi} d={0} />

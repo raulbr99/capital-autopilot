@@ -3,17 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { fmt, Clock } from "./ui";
+import { pnlFmt, Clock, DeskGlyph } from "./ui";
 import Nav from "./Nav";
 import ThemeToggle from "./ThemeToggle";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
 
-const DESKS: Record<DeskCategory, { label: string; icon: string; blurb: string }> = {
-  forex: { label: "Forex", icon: "💱", blurb: "Divisas · operan 24/5" },
-  crypto: { label: "Crypto", icon: "₿", blurb: "Cripto · 24/7" },
-  stocks: { label: "Stocks", icon: "📈", blurb: "Acciones US · horario NY (15:30–22:00 Madrid)" },
-  commodities: { label: "Commodities", icon: "🛢️", blurb: "Materias primas" },
+const DESKS: Record<DeskCategory, { label: string; blurb: string }> = {
+  forex: { label: "Forex", blurb: "Divisas · operan 24/5" },
+  crypto: { label: "Crypto", blurb: "Cripto · 24/7" },
+  stocks: { label: "Stocks", blurb: "Acciones US · horario NY (15:30–22:00 Madrid)" },
+  commodities: { label: "Commodities", blurb: "Materias primas" },
 };
 
 function Kpi({ label, value, tone }: { label: string; value: string; tone?: "long" | "short" }) {
@@ -92,8 +92,9 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
       <main className="mx-auto max-w-[1100px] px-5 py-6 md:px-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
-              <span className="mr-2">{meta.icon}</span>Mesa {meta.label}
+            <h1 className="flex items-center gap-2.5 font-display text-2xl font-semibold tracking-tight text-white">
+              <DeskGlyph cat={category} className="h-6 w-6 text-accent" />
+              Mesa {meta.label}
             </h1>
             <p className="mt-1 text-sm text-dim">{meta.blurb}</p>
           </div>
@@ -102,8 +103,8 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             <Kpi label="Posiciones" value={String(positions.length)} />
             <Kpi
               label="P&L flotante"
-              value={`${deskPnl >= 0 ? "+" : ""}${fmt(deskPnl)}`}
-              tone={deskPnl >= 0 ? "long" : "short"}
+              value={pnlFmt(deskPnl)}
+              tone={Math.abs(deskPnl) < 0.005 ? undefined : deskPnl > 0 ? "long" : "short"}
             />
           </div>
         </div>
