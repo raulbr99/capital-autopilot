@@ -46,6 +46,8 @@ body {
 body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* clip (no hidden) corta el scroll horizontal accidental sin romper position:sticky */
+  overflow-x: clip;
 }
 
 .font-display,
