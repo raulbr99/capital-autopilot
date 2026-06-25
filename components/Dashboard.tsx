@@ -190,6 +190,11 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Nav en móvil (en escritorio va en el header) */}
+      <div className="sticky top-[64px] z-20 border-b border-industrial bg-ink/80 px-4 py-2 backdrop-blur md:hidden">
+        <Nav active="/" />
+      </div>
+
       <main className="mx-auto max-w-[1400px] px-5 py-6 md:px-8">
         {!configured && <ConfigWarning />}
 
