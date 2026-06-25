@@ -14,6 +14,7 @@ import Analytics from "./Analytics";
 import LogFeed from "./LogFeed";
 import CommandPalette, { type Command } from "./CommandPalette";
 import ThemeToggle from "./ThemeToggle";
+import Link from "next/link";
 
 const TICK_MS = 6000;
 const TRADES_MS = 12000;
@@ -157,16 +158,24 @@ export default function Dashboard() {
 
       {/* HEADER */}
       <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between border-b border-industrial bg-ink/85 px-5 backdrop-blur md:px-8">
-        <div className="flex items-center gap-3">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
-            <span className="font-display text-base font-bold leading-none">A</span>
+        <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
+              <span className="font-display text-base font-bold leading-none">A</span>
+            </div>
+            <div>
+              <h1 className="font-display text-[15px] font-semibold leading-none tracking-tight text-white">
+                Capital Autopilot
+              </h1>
+              <p className="mt-1 text-[11px] text-muted">Trading autónomo · Capital.com</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-display text-[15px] font-semibold leading-none tracking-tight text-white">
-              Capital Autopilot
-            </h1>
-            <p className="mt-1 text-[11px] text-muted">Trading autónomo · Capital.com</p>
-          </div>
+          <nav className="hidden items-center gap-1 rounded-lg border border-industrial p-0.5 md:flex">
+            <span className="rounded-md bg-raised px-3 py-1.5 text-[13px] font-medium text-white">Panel</span>
+            <Link href="/analytics" className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-dim">
+              Analítica
+            </Link>
+          </nav>
         </div>
         <div className="flex items-center gap-3">
           <ModeBadge dryRun={dryRun} />
