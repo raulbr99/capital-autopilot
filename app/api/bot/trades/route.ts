@@ -22,27 +22,23 @@ function tradeFromRow(r: any): TradeRecord {
   };
 }
 
-// GET -> historial de trades + analítica calculada (lectura directa, sin db.ts)
+// GET -> historial de trades + analítica (lectura directa de Supabase)
 export async function GET() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   let trades: TradeRecord[] = [];
-  let dbg: any = { urlLen: url?.length ?? 0, keyLen: key?.length ?? 0 };
   if (url && key) {
     try {
       const c = createClient(url, key, { auth: { persistSession: false } });
-      const { data, error, count } = await c
+      const { data } = await c
         .from("ap_trades")
         .select("*", { count: "exact" })
         .order("ts", { ascending: false })
-        .limit(100);
-      dbg.rows = data?.length ?? null;
-      dbg.count = count ?? null;
-      dbg.error = error?.message ?? null;
+        .limit(300);
       trades = (data ?? []).map(tradeFromRow);
-    } catch (e: any) {
-      dbg.threw = e.message;
+    } catch {
+      /* noop */
     }
   }
-  return NextResponse.json({ trades, analytics: analyze(trades), _dbg: dbg });
+  return NextResponse.json({ trades, analytics: analyze(trades) });
 }
