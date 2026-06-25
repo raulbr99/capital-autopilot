@@ -153,34 +153,36 @@ export default function Dashboard() {
       <Ticker evals={evals} />
 
       {/* HEADER */}
-      <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between border-b border-industrial bg-ink/85 px-5 backdrop-blur md:px-8">
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-3">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
+      <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between gap-2 border-b border-industrial bg-ink/85 px-5 backdrop-blur md:px-8">
+        <div className="flex min-w-0 items-center gap-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent text-onaccent">
               <span className="font-display text-base font-bold leading-none">A</span>
             </div>
-            <div>
-              <h1 className="font-display text-[15px] font-semibold leading-none tracking-tight text-white">
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-[15px] font-semibold leading-none tracking-tight text-white">
                 Capital Autopilot
               </h1>
-              <p className="mt-1 text-[11px] text-muted">Trading autónomo · Capital.com</p>
+              <p className="mt-1 hidden text-[11px] text-muted sm:block">Trading autónomo · Capital.com</p>
             </div>
           </div>
           <div className="hidden md:block">
             <Nav active="/" />
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2.5">
           <span className="flex items-center gap-1.5 rounded-md bg-accent/12 px-2.5 py-1 text-[11px] font-semibold text-accent">
             <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulseDot" />
-            LIVE · real
+            LIVE
           </span>
           {snap?.killedToday && (
-            <span className="border border-short bg-short/10 px-2 py-1 font-mono text-[10px] text-short">
-              🛑 KILL-SWITCH
+            <span className="rounded border border-short bg-short/10 px-2 py-1 font-mono text-[10px] text-short">
+              🛑 KILL
             </span>
           )}
-          <ConnBadge configured={configured} enabled={enabled} />
+          <div className="hidden sm:block">
+            <ConnBadge configured={configured} enabled={enabled} />
+          </div>
           <ThemeToggle />
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
