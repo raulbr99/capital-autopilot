@@ -1,16 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Snapshot, OpenPos, Analytics as A, TradeRecord, Instrument } from "./types";
+import { useRouter } from "next/navigation";
+import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
 import { fmt, pnlFmt, pnlClass, SectionHead, StatCard, Clock, DeskGlyph } from "./ui";
 import EquityChart from "./EquityChart";
-import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
-import ConfigPanel from "./ConfigPanel";
-import BacktestPanel from "./BacktestPanel";
-import WalkForward from "./WalkForward";
-import Analytics from "./Analytics";
 import LogFeed from "./LogFeed";
 import CommandPalette, { type Command } from "./CommandPalette";
 import ThemeToggle from "./ThemeToggle";
@@ -22,12 +18,12 @@ const TRADES_MS = 12000;
 
 export default function Dashboard() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
-  const [analytics, setAnalytics] = useState<A | null>(null);
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<"long" | "short" | null>(null);
   const prevClosed = useRef(0);
   const prevOpened = useRef(0);
+  const router = useRouter();
 
   const tick = useCallback(async (active: boolean) => {
     try {
@@ -44,7 +40,6 @@ export default function Dashboard() {
       const r = await fetch("/api/bot/trades");
       const d = await r.json();
       setTrades(d.trades || []);
-      setAnalytics(d.analytics || null);
     } catch {
       /* */
     }
@@ -129,9 +124,9 @@ export default function Dashboard() {
 
   const commands: Command[] = [
     { id: "toggle", label: enabled ? "Detener piloto" : "Activar piloto", hint: "ENGINE", run: () => patch({ enabled: !enabled }) },
-    { id: "bt", label: "Ir a Backtest", hint: "SCROLL", run: () => document.getElementById("backtest")?.scrollIntoView({ behavior: "smooth" }) },
-    { id: "wf", label: "Ir a Walk-Forward (validación)", hint: "SCROLL", run: () => document.getElementById("walkforward")?.scrollIntoView({ behavior: "smooth" }) },
-    { id: "perf", label: "Ir a Performance", hint: "SCROLL", run: () => document.getElementById("perf")?.scrollIntoView({ behavior: "smooth" }) },
+    { id: "lab", label: "Ir al Lab (estrategia + ajustes)", hint: "PÁGINA", run: () => router.push("/lab") },
+    { id: "perf", label: "Ir a Analítica", hint: "PÁGINA", run: () => router.push("/analytics") },
+    { id: "journal", label: "Ir al Diario IA", hint: "PÁGINA", run: () => router.push("/journal") },
     { id: "atr", label: "Toggle SL/TP por ATR", hint: "RISK", run: () => patch({ risk: { useAtrStops: !cfg?.risk.useAtrStops } }) },
   ];
 
@@ -271,26 +266,26 @@ export default function Dashboard() {
         {/* LAS 4 MESAS */}
         <DesksOverview evals={evals} positions={positions} instruments={cfg?.instruments ?? []} />
 
-        {/* MAIN GRID */}
+        {/* ACTIVIDAD + RIESGO (el detalle por activo vive en las mesas; las herramientas en /lab) */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
           <div className="space-y-4">
-            <SignalMatrix evals={evals} />
             <PositionsTable positions={positions} onClose={closePos} busy={busy} />
-            <div id="backtest">
-              <BacktestPanel />
-            </div>
-            <div id="walkforward">
-              <WalkForward watchlist={cfg?.watchlist ?? []} />
-            </div>
-            <div id="perf">
-              <Analytics a={analytics} trades={trades} />
-            </div>
+            <LogFeed logs={snap?.state.logs ?? []} />
           </div>
 
           <div className="space-y-4">
-            <LogFeed logs={snap?.state.logs ?? []} />
             {cfg && <RiskPanel cfg={cfg} busy={busy} patch={patch} />}
-            {cfg && <ConfigPanel cfg={cfg} busy={busy} patch={patch} notifyEnv={snap?.state.notifyEnv ?? { telegram: false, discord: false }} />}
+            <Link
+              href="/lab"
+              className="block rounded-xl border border-industrial bg-soft p-5 transition-colors hover:border-cement"
+            >
+              <p className="tag">Herramientas</p>
+              <p className="mt-1.5 font-display text-base font-semibold text-white">Lab — estrategia y ajustes</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                Configuración del bot, backtest y validación walk-forward.{" "}
+                <span className="text-accent">Abrir →</span>
+              </p>
+            </Link>
           </div>
         </section>
 

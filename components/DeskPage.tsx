@@ -109,24 +109,29 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+        <div className={`grid gap-5 ${journal.length > 0 ? "lg:grid-cols-[1fr_340px]" : "grid-cols-1"}`}>
           <div className="min-w-0 space-y-5">
             <SignalMatrix evals={evals} />
             <PositionsTable positions={positions} onClose={closePos} busy={busy} />
+            {journal.length === 0 && (
+              <div className="dotgrid rounded-xl border border-industrial bg-soft px-5 py-7 text-center">
+                <p className="text-sm font-medium text-dim">El gestor IA de {meta.label} decide cada hora</p>
+                <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-muted">
+                  Sus tesis de mercado y operaciones aparecerán aquí, y también en el{" "}
+                  <a href="/journal" className="text-accent underline">Diario IA</a>.
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-industrial bg-soft">
-            <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
-              <h2 className="tag">Gestor {meta.label} · decisiones</h2>
-              <span className="h-1.5 w-1.5 rounded-full bg-accent/70" />
-            </div>
-            <div className="max-h-[600px] space-y-2 overflow-y-auto p-3">
-              {journal.length === 0 ? (
-                <p className="px-2 py-10 text-center text-sm text-muted">
-                  La IA de esta mesa aún no ha dejado decisiones. Aparecerán aquí cada hora.
-                </p>
-              ) : (
-                journal.map((e) => (
+          {journal.length > 0 && (
+            <div className="overflow-hidden rounded-xl border border-industrial bg-soft">
+              <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
+                <h2 className="tag">Gestor {meta.label} · decisiones</h2>
+                <span className="h-1.5 w-1.5 rounded-full bg-accent/70" />
+              </div>
+              <div className="max-h-[600px] space-y-2 overflow-y-auto p-3">
+                {journal.map((e) => (
                   <div key={e.id} className="rounded-lg border border-industrial bg-base p-3">
                     <div className="mb-1 flex items-center gap-2">
                       <span className="font-mono text-[10px] text-muted">
@@ -152,10 +157,10 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
                       </div>
                     )}
                   </div>
-                ))
-              )}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
