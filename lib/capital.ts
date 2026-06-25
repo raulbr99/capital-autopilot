@@ -29,6 +29,32 @@ export function capitalConfigured(): boolean {
   );
 }
 
+// POST /session con reintento ante 429 (backoff 800ms -> 1600ms). El resto de
+// status codes se devuelven tal cual para que getSession decida.
+async function loginRequest(): Promise<Response> {
+  const backoffs = [800, 1600];
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(`${BASE_URL}/api/v1/session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CAP-API-KEY": process.env.CAPITAL_API_KEY!,
+      },
+      body: JSON.stringify({
+        identifier: process.env.CAPITAL_IDENTIFIER,
+        password: process.env.CAPITAL_PASSWORD,
+        encryptedPassword: false,
+      }),
+      cache: "no-store",
+    });
+    if (res.status === 429 && attempt < backoffs.length) {
+      await new Promise((r) => setTimeout(r, backoffs[attempt]));
+      continue;
+    }
+    return res;
+  }
+}
+
 export async function getSession(force = false): Promise<Session> {
   if (!capitalConfigured()) {
     throw new Error(
@@ -49,19 +75,11 @@ export async function getSession(force = false): Promise<Session> {
     }
   }
 
-  const res = await fetch(`${BASE_URL}/api/v1/session`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CAP-API-KEY": process.env.CAPITAL_API_KEY!,
-    },
-    body: JSON.stringify({
-      identifier: process.env.CAPITAL_IDENTIFIER,
-      password: process.env.CAPITAL_PASSWORD,
-      encryptedPassword: false,
-    }),
-    cache: "no-store",
-  });
+  // El login es la única llamada que no pasa por authed(): aquí también puede
+  // recibir 429 cuando varias instancias serverless arrancan en frío a la vez
+  // y compiten por loguearse. Reintentamos con backoff (igual que authed) en
+  // lugar de propagar el error y perder el tick entero.
+  const res = await loginRequest();
 
   if (!res.ok) {
     const text = await res.text();
