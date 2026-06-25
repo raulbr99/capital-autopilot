@@ -177,21 +177,32 @@ export type Position = {
   upl: number;
   currency: string;
   createdDate: string;
+  stopLevel: number | null;
+  limitLevel: number | null;
+  currentPrice: number | null;
 };
 
 export async function getPositions(): Promise<Position[]> {
   if (positionsCache && Date.now() - positionsCache.t < 8000) return positionsCache.d;
   const data = await json<any>(await authed("/api/v1/positions"));
-  const out: Position[] = (data.positions ?? []).map((p: any) => ({
-    dealId: p.position.dealId,
-    epic: p.market.epic,
-    direction: p.position.direction,
-    size: p.position.size,
-    level: p.position.level,
-    upl: p.position.upl ?? 0,
-    currency: p.position.currency ?? "USD",
-    createdDate: p.position.createdDateUTC ?? p.position.createdDate ?? "",
-  }));
+  const out: Position[] = (data.positions ?? []).map((p: any) => {
+    const bid = typeof p.market?.bid === "number" ? p.market.bid : null;
+    const offer = typeof p.market?.offer === "number" ? p.market.offer : null;
+    const mid = bid != null && offer != null ? (bid + offer) / 2 : bid ?? offer;
+    return {
+      dealId: p.position.dealId,
+      epic: p.market.epic,
+      direction: p.position.direction,
+      size: p.position.size,
+      level: p.position.level,
+      upl: p.position.upl ?? 0,
+      currency: p.position.currency ?? "USD",
+      createdDate: p.position.createdDateUTC ?? p.position.createdDate ?? "",
+      stopLevel: typeof p.position.stopLevel === "number" ? p.position.stopLevel : null,
+      limitLevel: typeof p.position.limitLevel === "number" ? p.position.limitLevel : null,
+      currentPrice: mid ?? null,
+    };
+  });
   positionsCache = { d: out, t: Date.now() };
   return out;
 }

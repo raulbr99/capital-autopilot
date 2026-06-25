@@ -27,13 +27,25 @@ function SignalCard({ e }: { e: EpicEval }) {
   const sell = s.type === "SELL";
   const conf = Math.round((s.confidence ?? 0) * 100);
   const confColor = buy ? "text-long" : sell ? "text-short" : "text-muted";
+  // Cambio sobre la ventana del sparkline (coherente con la línea: mismo origen)
+  const sp = e.spark || [];
+  const chg = sp.length >= 2 && sp[0] ? ((e.price - sp[0]) / sp[0]) * 100 : null;
+  const chgTone = chg == null ? "" : chg > 0.02 ? "text-long" : chg < -0.02 ? "text-short" : "text-muted";
   return (
     <div className="group relative overflow-hidden bg-soft p-4 transition hover:bg-raised">
       <div className="flex items-start justify-between">
         <div>
           <span className="font-display text-base text-white">{e.epic}</span>
           <span className="ml-1.5 rounded bg-industrial px-1 py-0.5 font-mono text-[8px] text-accent">{e.resolution}</span>
-          <p className="font-mono text-[10px] text-muted">@{e.price ? e.price.toFixed(2) : "—"}</p>
+          <p className="font-mono text-[10px] text-muted">
+            @{e.price ? e.price.toFixed(2) : "—"}
+            {chg != null && (
+              <span className={`ml-1.5 ${chgTone}`}>
+                {chg > 0.02 ? "▲" : chg < -0.02 ? "▼" : "•"} {chg > 0 ? "+" : ""}
+                {chg.toFixed(2)}%
+              </span>
+            )}
+          </p>
         </div>
         <span
           className={`px-2 py-0.5 font-mono text-[10px] ${

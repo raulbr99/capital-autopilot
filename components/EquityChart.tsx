@@ -16,8 +16,9 @@ export default function EquityChart({
 
   if (!data || data.length < 2) {
     return (
-      <div className="flex h-[200px] items-center justify-center dotgrid border border-industrial">
-        <span className="tag">ESPERANDO_DATOS_DE_EQUITY…</span>
+      <div className="dotgrid flex h-[200px] flex-col items-center justify-center rounded-lg border border-industrial text-center">
+        <p className="text-sm font-medium text-dim">Sin datos de equity todavía</p>
+        <p className="mt-1 text-xs text-muted">La curva aparece cuando el bot registra movimientos de cuenta.</p>
       </div>
     );
   }
@@ -25,6 +26,7 @@ export default function EquityChart({
   const values = data.map((d) => d.equity);
   const min = Math.min(...values);
   const max = Math.max(...values);
+  const flat = max === min;
   const range = max - min || 1;
   const t0 = data[0].ts;
   const tN = data[data.length - 1].ts || t0 + 1;
@@ -32,7 +34,7 @@ export default function EquityChart({
 
   const x = (i: number) => pad + (i / (data.length - 1)) * (W - pad * 2);
   const xt = (ts: number) => pad + ((ts - t0) / tRange) * (W - pad * 2);
-  const y = (v: number) => H - pad - ((v - min) / range) * (H - pad * 2);
+  const y = (v: number) => (flat ? H / 2 : H - pad - ((v - min) / range) * (H - pad * 2));
 
   const line = data.map((d, i) => `${x(i)},${y(d.equity)}`).join(" ");
   const area = `${pad},${H - pad} ${line} ${W - pad},${H - pad}`;

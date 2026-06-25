@@ -61,6 +61,9 @@ export type OpenPos = {
   entry: number;
   upl: number;
   dealId?: string;
+  stopLevel?: number | null;
+  limitLevel?: number | null;
+  currentPrice?: number | null;
 };
 
 export function autopilotArmed(): boolean {
@@ -534,6 +537,9 @@ function realToOpen(p: Position): OpenPos {
     entry: p.level,
     upl: p.upl,
     dealId: p.dealId,
+    stopLevel: p.stopLevel,
+    limitLevel: p.limitLevel,
+    currentPrice: p.currentPrice,
   };
 }
 

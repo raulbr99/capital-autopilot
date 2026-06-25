@@ -118,6 +118,15 @@ export default function Dashboard() {
   const configured = snap?.configured ?? true;
   const enabled = cfg?.enabled ?? false;
 
+  // Riesgo agregado (para vigilar dinero real)
+  const openRisk = positions.reduce(
+    (s, p) => s + (p.stopLevel != null ? Math.abs(p.entry - p.stopLevel) * p.size : 0),
+    0
+  );
+  const dayPnlPct = snap?.dailyPnlPct ?? 0;
+  const killPct = cfg?.risk.maxDailyLossPct ?? 5;
+  const lossUsed = dayPnlPct < 0 ? Math.min(-dayPnlPct / killPct, 1) : 0; // 0..1 del presupuesto de pérdida diaria
+
   const markers = trades
     .filter((t) => t.status === "closed" && t.closedTs)
     .map((t) => ({ ts: t.closedTs!, dir: t.direction, pnl: t.pnl }));
@@ -236,9 +245,22 @@ export default function Dashboard() {
 
             {/* guardarrailes en vivo */}
             <div className="mt-3 space-y-2 rounded-lg border border-industrial bg-base p-3.5 text-xs">
-              <Row label="PnL hoy" value={`${(snap?.dailyPnlPct ?? 0) >= 0 ? "+" : ""}${(snap?.dailyPnlPct ?? 0).toFixed(2)}%`} tone={(snap?.dailyPnlPct ?? 0) >= 0 ? "long" : "short"} />
+              <Row label="PnL hoy" value={`${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`} tone={Math.abs(dayPnlPct) < 0.005 ? undefined : dayPnlPct > 0 ? "long" : "short"} />
               <Row label="Trades hoy" value={`${snap?.tradesToday ?? 0} / ${cfg?.risk.maxTradesPerDay ?? "—"}`} />
+              <Row label="Riesgo abierto" value={openRisk > 0 ? `≈${fmt(openRisk)} ${acc?.currency ?? ""}` : "—"} />
               <Row label="Cooldown" value={cooldownLabel(snap?.cooldownUntil ?? 0)} />
+              <div className="pt-1.5">
+                <div className="mb-1 flex items-center justify-between text-[10px] text-muted">
+                  <span>Margen al freno diario (−{killPct}%)</span>
+                  <span className={lossUsed > 0.7 ? "text-short" : "text-dim"}>{(lossUsed * 100).toFixed(0)}% usado</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-industrial">
+                  <div
+                    className={`h-full rounded-full transition-all ${lossUsed > 0.7 ? "bg-short" : lossUsed > 0.4 ? "bg-accent" : "bg-long"}`}
+                    style={{ width: `${Math.max(2, lossUsed * 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

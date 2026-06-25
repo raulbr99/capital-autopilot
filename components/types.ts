@@ -36,6 +36,9 @@ export type OpenPos = {
   entry: number;
   upl: number;
   dealId?: string;
+  stopLevel?: number | null;
+  limitLevel?: number | null;
+  currentPrice?: number | null;
 };
 
 export type Account = {
