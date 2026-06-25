@@ -205,7 +205,7 @@ export default function Dashboard() {
 
         {/* HERO */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
-          <div className={`relative overflow-hidden rounded-xl border bg-soft p-6 transition-shadow ${enabled ? "border-accent/40 ring-accent" : "border-industrial"}`}>
+          <div className={`relative min-w-0 overflow-hidden rounded-xl border bg-soft p-6 transition-shadow ${enabled ? "border-accent/40 ring-accent" : "border-industrial"}`}>
             <p className="tag">Motor</p>
             <div className="mt-4 flex items-center gap-2.5">
               <span className={`h-2.5 w-2.5 rounded-full ${enabled ? "animate-pulseDot bg-long" : "bg-muted"}`} />
@@ -264,7 +264,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-industrial bg-soft p-5">
+          <div className="min-w-0 rounded-xl border border-industrial bg-soft p-5">
             <div className="mb-3 flex items-end justify-between">
               <div>
                 <p className="tag">Equity</p>
