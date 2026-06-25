@@ -79,12 +79,24 @@ export async function getSession(force = false): Promise<Session> {
   return cached;
 }
 
+// Throttle global: espacia las llamadas a Capital ~140ms (≈7 req/s) para no
+// superar su límite (429 too-many-requests), clave con 17 instrumentos por tick.
+let nextSlot = 0;
+function throttle(): Promise<void> {
+  const now = Date.now();
+  const slot = Math.max(now, nextSlot);
+  nextSlot = slot + 140;
+  const wait = slot - now;
+  return wait > 0 ? new Promise((r) => setTimeout(r, wait)) : Promise.resolve();
+}
+
 async function authed(
   path: string,
   init: RequestInit = {},
   retry = true
 ): Promise<Response> {
   const s = await getSession();
+  await throttle();
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
@@ -99,6 +111,11 @@ async function authed(
   // Token expirado -> re-login una vez
   if ((res.status === 401 || res.status === 403) && retry) {
     await getSession(true);
+    return authed(path, init, false);
+  }
+  // Rate limit -> esperar y reintentar una vez
+  if (res.status === 429 && retry) {
+    await new Promise((r) => setTimeout(r, 900));
     return authed(path, init, false);
   }
   return res;
