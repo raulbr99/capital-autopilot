@@ -266,7 +266,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="min-w-0 rounded-xl border border-industrial bg-soft p-5">
+          <div className="min-w-0 overflow-hidden rounded-xl border border-industrial bg-soft p-5">
             <div className="mb-3 flex items-end justify-between">
               <div>
                 <p className="tag">Equity</p>
