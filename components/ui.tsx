@@ -11,6 +11,18 @@ export const fmt = (n: number, d = 2) =>
 export const pf = (n: number) =>
   n === Infinity ? "∞" : Number.isFinite(n) ? n.toFixed(2) : "—";
 
+/** Reloj aislado: solo este componente se re-renderiza cada segundo, no la página. */
+export function Clock({ className }: { className?: string }) {
+  const [now, setNow] = useState("--:--:--");
+  useEffect(() => {
+    const tick = () => setNow(new Date().toLocaleTimeString("es-ES", { hour12: false }));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <p className={className}>{now}</p>;
+}
+
 export function SectionHead({ label, right }: { label: string; right?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">

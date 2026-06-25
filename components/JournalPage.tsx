@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { JournalEntry, JournalAction } from "./types";
 import ThemeToggle from "./ThemeToggle";
+import { Clock } from "./ui";
 
 const ACT: Record<string, { label: string; cls: string }> = {
   OPEN: { label: "ABRE", cls: "bg-long/15 text-long" },
@@ -14,7 +15,6 @@ const ACT: Record<string, { label: string; cls: string }> = {
 export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState("--:--:--");
 
   useEffect(() => {
     const load = async () => {
@@ -30,14 +30,7 @@ export default function JournalPage() {
     };
     load();
     const t1 = setInterval(load, 30000);
-    const t2 = setInterval(
-      () => setNow(new Date().toLocaleTimeString("es-ES", { hour12: false })),
-      1000
-    );
-    return () => {
-      clearInterval(t1);
-      clearInterval(t2);
-    };
+    return () => clearInterval(t1);
   }, []);
 
   return (
@@ -60,7 +53,7 @@ export default function JournalPage() {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <p className="hidden font-mono text-sm text-white lg:block">{now}</p>
+          <Clock className="hidden font-mono text-sm text-white lg:block" />
         </div>
       </header>
 

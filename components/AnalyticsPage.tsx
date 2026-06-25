@@ -4,14 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { TradeRecord } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, SectionHead } from "./ui";
+import { fmt, pf, SectionHead, Clock } from "./ui";
 import EquityChart from "./EquityChart";
 import ThemeToggle from "./ThemeToggle";
 
 export default function AnalyticsPage() {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState("--:--:--");
   const [epic, setEpic] = useState<string>("");
 
   useEffect(() => {
@@ -28,14 +27,7 @@ export default function AnalyticsPage() {
     };
     load();
     const t1 = setInterval(load, 20000);
-    const t2 = setInterval(
-      () => setNow(new Date().toLocaleTimeString("es-ES", { hour12: false })),
-      1000
-    );
-    return () => {
-      clearInterval(t1);
-      clearInterval(t2);
-    };
+    return () => clearInterval(t1);
   }, []);
 
   const epics = useMemo(
@@ -82,7 +74,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <div className="hidden text-right lg:block">
-            <p className="font-mono text-sm text-white">{now}</p>
+            <Clock className="font-mono text-sm text-white" />
             <p className="tag">Rendimiento</p>
           </div>
         </div>

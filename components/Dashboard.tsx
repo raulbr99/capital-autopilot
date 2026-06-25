@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Snapshot, OpenPos, Analytics as A, TradeRecord } from "./types";
-import { fmt, SectionHead, StatCard } from "./ui";
+import { fmt, SectionHead, StatCard, Clock } from "./ui";
 import EquityChart from "./EquityChart";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -24,7 +24,6 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState<A | null>(null);
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [busy, setBusy] = useState(false);
-  const [now, setNow] = useState("--:--:--");
   const [flash, setFlash] = useState<"long" | "short" | null>(null);
   const prevClosed = useRef(0);
   const prevOpened = useRef(0);
@@ -59,14 +58,9 @@ export default function Dashboard() {
     // El trading autónomo lo dispara el cron cada 15 min.
     const t1 = setInterval(() => tick(false), TICK_MS);
     const t2 = setInterval(loadTrades, TRADES_MS);
-    const t3 = setInterval(
-      () => setNow(new Date().toLocaleTimeString("es-ES", { hour12: false })),
-      1000
-    );
     return () => {
       clearInterval(t1);
       clearInterval(t2);
-      clearInterval(t3);
     };
   }, [tick, loadTrades]);
 
@@ -195,7 +189,7 @@ export default function Dashboard() {
             ⌘K
           </button>
           <div className="hidden text-right lg:block">
-            <p className="font-mono text-sm text-white">{now}</p>
+            <Clock className="font-mono text-sm text-white" />
             <p className="tag">Capital.com</p>
           </div>
         </div>
@@ -308,10 +302,13 @@ export default function Dashboard() {
 
 /* ---- helpers UI ---- */
 
+let _audioCtx: AudioContext | null = null;
 function beep(freq: number) {
   try {
     const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
-    const ctx = new Ctx();
+    if (!_audioCtx) _audioCtx = new Ctx();
+    const ctx = _audioCtx;
+    if (ctx.state === "suspended") void ctx.resume();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.frequency.value = freq;
