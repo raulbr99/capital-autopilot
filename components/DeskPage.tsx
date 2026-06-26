@@ -31,6 +31,8 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [busy, setBusy] = useState(false);
+  const [firing, setFiring] = useState(false);
+  const [fireMsg, setFireMsg] = useState<{ ok: boolean; text: string; url?: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -61,6 +63,22 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const positions = (snap?.openPositions ?? []).filter((p) => epicCat.get(p.epic) === category);
   const deskPnl = positions.reduce((s, p) => s + (p.upl || 0), 0);
 
+  const runGestor = async () => {
+    if (firing) return;
+    setFiring(true);
+    setFireMsg(null);
+    try {
+      const res = await fetch(`/api/bot/run-gestor?desk=${category}`, { method: "POST" });
+      const d = await res.json();
+      if (d.ok) setFireMsg({ ok: true, text: "Gestor lanzado — decidirá en ~1 min", url: d.sessionUrl });
+      else setFireMsg({ ok: false, text: d.error || "No se pudo lanzar" });
+    } catch (e) {
+      setFireMsg({ ok: false, text: e instanceof Error ? e.message : "Error de red" });
+    } finally {
+      setFiring(false);
+    }
+  };
+
   const closePos = async (p: OpenPos) => {
     if (!p.dealId || busy) return;
     setBusy(true);
@@ -84,6 +102,28 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
               Mesa {meta.label}
             </h1>
             <p className="mt-1 text-sm text-dim">{meta.blurb}</p>
+            <div className="mt-3">
+              <button
+                onClick={runGestor}
+                disabled={firing}
+                className="inline-flex items-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-[13px] font-semibold text-onaccent transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {firing ? "Lanzando…" : "▶ Ejecutar Gestor ahora"}
+              </button>
+              {fireMsg && (
+                <p className={`mt-2 text-xs ${fireMsg.ok ? "text-long" : "text-short"}`}>
+                  {fireMsg.text}
+                  {fireMsg.url && (
+                    <>
+                      {" · "}
+                      <a href={fireMsg.url} target="_blank" rel="noreferrer" className="underline hover:text-accent">
+                        ver sesión
+                      </a>
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex gap-2">
             <Kpi label="Activos" value={String(evals.length)} />
