@@ -141,7 +141,9 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   await reconcileClosedTrades(positions, priceByEpic, account.balance);
 
   // ---- equity ----
-  const equity = account.balance + (account.pnl || 0);
+  // Capital ya incluye el P&L flotante en `balance` (balance = deposit + profitLoss).
+  // Sumar account.pnl otra vez sería doble conteo del flotante.
+  const equity = account.balance;
 
   // ---- ancla del dia / kill-switch ----
   if (!b.dayAnchor || b.dayAnchor.date !== today) {

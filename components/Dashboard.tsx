@@ -281,7 +281,7 @@ export default function Dashboard() {
 
         {/* STATS */}
         <section className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
-          <StatCard label="Balance" value={acc ? fmt(acc.balance) : "—"} unit={acc?.currency} />
+          <StatCard label="Efectivo" value={acc ? fmt(acc.deposit) : "—"} unit={acc?.currency} />
           <StatCard label="Disponible" value={acc ? fmt(acc.available) : "—"} unit={acc?.currency} />
           <StatCard label="PnL flotante" value={pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < 0.005 ? undefined : floatPnl > 0 ? "long" : "short"} />
           <StatCard label="Posiciones" value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`} />

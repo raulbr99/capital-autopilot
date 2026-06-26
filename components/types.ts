@@ -43,9 +43,10 @@ export type OpenPos = {
 
 export type Account = {
   accountId: string;
-  balance: number;
+  balance: number; // = equity (Capital ya incluye el P&L flotante)
   available: number;
-  pnl: number;
+  deposit: number; // efectivo realizado, sin flotante
+  pnl: number; // P&L flotante (profitLoss)
   currency: string;
 };
 
