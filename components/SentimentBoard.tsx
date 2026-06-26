@@ -127,7 +127,7 @@ export default function SentimentBoard({ className = "" }: { className?: string 
             Menciones (buzz) · Δ24h · rank · precio (pre/post)
           </p>
           <div className="space-y-1.5">
-            {stocks.map((s) => (
+            {stocks.slice(0, 14).map((s) => (
               <div key={s.ticker} className="flex items-center gap-3">
                 <span className="w-12 shrink-0 font-mono text-[13px] font-semibold text-white">{s.ticker}</span>
                 <div className="relative h-5 min-w-0 flex-1 overflow-hidden rounded bg-industrial/50">
@@ -151,6 +151,11 @@ export default function SentimentBoard({ className = "" }: { className?: string 
               </div>
             ))}
           </div>
+          {stocks.length > 14 && (
+            <p className="mt-2 font-mono text-[10px] text-muted">
+              +{stocks.length - 14} acciones más en el universo del Gestor (ordenadas por buzz)
+            </p>
+          )}
 
           {/* Trending ahora */}
           {d && d.trending.length > 0 && (

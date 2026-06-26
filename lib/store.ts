@@ -104,6 +104,9 @@ export const DEFAULT_CONFIG: BotConfig = {
     { epic: "TSLA", resolution: "DAY", regimeFilter: true, category: "stocks" },
     { epic: "MSFT", resolution: "DAY", regimeFilter: true, category: "stocks" },
     { epic: "AMZN", resolution: "DAY", regimeFilter: true, category: "stocks" },
+    ...["GOOGL", "META", "NFLX", "AMD", "MU", "AVGO", "QCOM", "SMCI", "ARM", "SNOW", "CRWD", "PLTR", "COIN", "MSTR", "HOOD", "SOFI", "GME", "BABA", "DIS", "BA", "UBER", "PYPL", "ORCL", "CRM", "ADBE", "JPM", "V", "WMT", "XOM", "PFE"].map(
+      (epic) => ({ epic, resolution: "DAY", regimeFilter: true, category: "stocks" as const })
+    ),
     // 🛢️ Commodities
     { epic: "GOLD", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
     { epic: "SILVER", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
@@ -111,7 +114,7 @@ export const DEFAULT_CONFIG: BotConfig = {
     { epic: "NATURALGAS", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
     { epic: "COPPER", resolution: "DAY", regimeFilter: false, category: "commodities" },
   ],
-  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
+  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "NFLX", "AMD", "MU", "AVGO", "QCOM", "SMCI", "ARM", "SNOW", "CRWD", "PLTR", "COIN", "MSTR", "HOOD", "SOFI", "GME", "BABA", "DIS", "BA", "UBER", "PYPL", "ORCL", "CRM", "ADBE", "JPM", "V", "WMT", "XOM", "PFE", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
   maxOpenPositions: 3,
   stopDistance: 150,

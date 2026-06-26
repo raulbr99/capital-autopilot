@@ -11,6 +11,11 @@ const DESK_OF: Record<string, DeskCategory> = {
   NZDUSD: "forex", EURUSD: "forex", GBPJPY: "forex", EURJPY: "forex", USDCHF: "forex",
   BTCUSD: "crypto", ETHUSD: "crypto",
   AAPL: "stocks", NVDA: "stocks", TSLA: "stocks", MSFT: "stocks", AMZN: "stocks",
+  GOOGL: "stocks", META: "stocks", NFLX: "stocks", AMD: "stocks", MU: "stocks", AVGO: "stocks",
+  QCOM: "stocks", SMCI: "stocks", ARM: "stocks", SNOW: "stocks", CRWD: "stocks", PLTR: "stocks",
+  COIN: "stocks", MSTR: "stocks", HOOD: "stocks", SOFI: "stocks", GME: "stocks", BABA: "stocks",
+  DIS: "stocks", BA: "stocks", UBER: "stocks", PYPL: "stocks", ORCL: "stocks", CRM: "stocks",
+  ADBE: "stocks", JPM: "stocks", V: "stocks", WMT: "stocks", XOM: "stocks", PFE: "stocks",
   GOLD: "commodities", SILVER: "commodities", OIL_CRUDE: "commodities", NATURALGAS: "commodities", COPPER: "commodities",
 };
 const DESK_FILTERS = [
