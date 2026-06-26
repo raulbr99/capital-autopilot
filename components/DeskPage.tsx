@@ -7,6 +7,7 @@ import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
 import SentimentBoard from "./SentimentBoard";
+import CotPanel from "./CotPanel";
 
 const DESKS: Record<DeskCategory, { label: string; blurb: string }> = {
   forex: { label: "Forex", blurb: "Divisas · operan 24/5" },
@@ -96,6 +97,9 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
         </div>
 
         {category === "stocks" && <SentimentBoard className="mb-5" />}
+        {(category === "forex" || category === "commodities") && (
+          <CotPanel category={category} className="mb-5" />
+        )}
 
         <div className={`grid gap-5 ${journal.length > 0 ? "lg:grid-cols-[1fr_340px]" : "grid-cols-1"}`}>
           <div className="min-w-0 space-y-5">

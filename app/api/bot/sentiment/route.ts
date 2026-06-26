@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apewisdom, type ApeTicker } from "@/lib/apewisdom";
 import { exaNews, exaConfigured } from "@/lib/exa";
+import { stockQuotes } from "@/lib/prices";
 import { loadConfig } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,9 @@ export async function GET() {
     );
     const trending = all.filter((r) => !ourSet.has(r.ticker)).slice(0, 8);
 
+    // Precios con extendido (pre-market / after-hours) vía Yahoo
+    const prices = await stockQuotes(stockEpics).catch(() => []);
+
     let news: Awaited<ReturnType<typeof exaNews>> = [];
     let exaErr = false;
     if (exaConfigured()) {
@@ -57,6 +61,7 @@ export async function GET() {
       fetchedAt: new Date().toISOString(),
       stocks,
       trending,
+      prices,
       news,
       exaConfigured: exaConfigured(),
       exaErr,

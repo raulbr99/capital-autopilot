@@ -13,14 +13,50 @@ type Ape = {
   notListed?: boolean;
 };
 type News = { title: string; url: string; source: string; publishedDate: string | null; summary?: string };
+type SQ = {
+  symbol: string;
+  marketState: string;
+  regularChangePct: number | null;
+  extPrice: number | null;
+  extChangePct: number | null;
+  extLabel: "pre-market" | "after-hours" | null;
+};
 type Data = {
   fetchedAt: string;
   stocks: Ape[];
   trending: Ape[];
+  prices: SQ[];
   news: News[];
   exaConfigured: boolean;
   exaErr?: boolean;
 };
+
+const STATE_LABEL: Record<string, string> = {
+  PRE: "pre-market",
+  REGULAR: "● abierto",
+  POST: "after-hours",
+  POSTPOST: "after-hours",
+  CLOSED: "cerrado",
+};
+
+function PriceCell({ q }: { q?: SQ }) {
+  if (!q) return <span className="text-muted">—</span>;
+  const useExt = !!q.extLabel && q.extChangePct != null;
+  const pct = useExt ? q.extChangePct : q.regularChangePct;
+  if (pct == null) return <span className="text-muted">—</span>;
+  const label = useExt ? (q.extLabel === "pre-market" ? "pre" : "post") : "ses.";
+  const up = pct > 0.05;
+  const down = pct < -0.05;
+  return (
+    <span className="font-mono text-[11px]">
+      <span className={up ? "text-long" : down ? "text-short" : "text-muted"}>
+        {pct > 0 ? "+" : ""}
+        {pct.toFixed(2)}%
+      </span>
+      <span className="ml-1 text-[8px] text-muted">{label}</span>
+    </span>
+  );
+}
 
 function ago(iso: string | null): string {
   if (!iso) return "";
@@ -67,13 +103,20 @@ export default function SentimentBoard({ className = "" }: { className?: string 
 
   const maxMentions = Math.max(1, ...(d?.stocks ?? []).map((s) => s.mentions));
   const stocks = [...(d?.stocks ?? [])].sort((a, b) => b.mentions - a.mentions);
+  const priceMap = new Map((d?.prices ?? []).map((p) => [p.symbol, p]));
+  const marketState = d?.prices?.[0]?.marketState ?? "";
 
   return (
     <div className={`rounded-xl border border-industrial bg-soft ${className}`}>
       <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
-        <h2 className="tag">Sentimiento &amp; buzz · acciones</h2>
-        <span className="font-mono text-[10px] text-muted">
-          {loading && !d ? "cargando…" : d ? `Reddit · ${ago(d.fetchedAt)}` : ""}
+        <h2 className="tag">Sentimiento, buzz &amp; precio · acciones</h2>
+        <span className="flex items-center gap-2 font-mono text-[10px] text-muted">
+          {marketState && (
+            <span className="rounded bg-industrial px-1.5 py-0.5 text-dim">
+              {STATE_LABEL[marketState] ?? marketState}
+            </span>
+          )}
+          {loading && !d ? "cargando…" : d ? ago(d.fetchedAt) : ""}
         </span>
       </div>
 
@@ -81,7 +124,7 @@ export default function SentimentBoard({ className = "" }: { className?: string 
         {/* Buzz de tus acciones */}
         <div className="min-w-0">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">
-            Menciones (Reddit/WSB) · variación 24 h
+            Menciones (buzz) · Δ24h · rank · precio (pre/post)
           </p>
           <div className="space-y-1.5">
             {stocks.map((s) => (
@@ -96,11 +139,14 @@ export default function SentimentBoard({ className = "" }: { className?: string 
                     {s.notListed ? "sin buzz" : `${s.mentions} menc.`}
                   </span>
                 </div>
-                <span className="w-16 shrink-0 text-right font-mono text-[11px]">
+                <span className="w-14 shrink-0 text-right font-mono text-[11px]">
                   <Delta pct={s.pctChange24h} />
                 </span>
-                <span className="w-10 shrink-0 text-right font-mono text-[10px] text-muted">
+                <span className="w-8 shrink-0 text-right font-mono text-[10px] text-muted">
                   {s.rank ? `#${s.rank}` : "—"}
+                </span>
+                <span className="w-[72px] shrink-0 text-right">
+                  <PriceCell q={priceMap.get(s.ticker)} />
                 </span>
               </div>
             ))}
