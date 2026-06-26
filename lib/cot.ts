@@ -20,8 +20,8 @@ export const COT_MARKETS: Record<string, string> = {
   GOLD: "GOLD",
   SILVER: "SILVER",
   OIL_CRUDE: "CRUDE OIL, LIGHT SWEET",
-  NATURALGAS: "NATURAL GAS",
-  COPPER: "COPPER",
+  NATURALGAS: "NAT GAS NYME",
+  COPPER: "COPPER-GRADE #1",
 };
 
 export type CotData = {
