@@ -10,6 +10,7 @@ type BTResult = {
   wins: number;
   winRate: number;
   netPnl: number;
+  returnPct: number;
   profitFactor: number;
   maxDrawdown: number;
   equityCurve: { i: number; equity: number }[];
@@ -81,15 +82,27 @@ export default function BacktestPanel() {
           </p>
         )}
         {agg && (
-          <div className="mb-3 grid grid-cols-3 gap-px border border-industrial bg-industrial text-center">
-            <Cell label="TRADES" value={String(agg.trades)} />
-            <Cell label="WIN_RATE" value={`${agg.winRate.toFixed(0)}%`} />
-            <Cell
-              label="NET_PNL"
-              value={fmt(agg.netPnl)}
-              tone={agg.netPnl >= 0 ? "long" : "short"}
-            />
-          </div>
+          <>
+            <div className="mb-2 grid grid-cols-4 gap-px border border-industrial bg-industrial text-center">
+              <Cell label="TRADES" value={String(agg.trades)} />
+              <Cell label="WIN_RATE" value={`${agg.winRate.toFixed(0)}%`} />
+              <Cell
+                label="RETORNO"
+                value={`${(agg.returnPct ?? 0) >= 0 ? "+" : ""}${(agg.returnPct ?? 0).toFixed(1)}%`}
+                tone={(agg.returnPct ?? 0) >= 0 ? "long" : "short"}
+              />
+              <Cell
+                label="P&L NOCIONAL"
+                value={fmt(agg.netPnl)}
+                tone={agg.netPnl >= 0 ? "long" : "short"}
+              />
+            </div>
+            <p className="mb-3 text-[10px] leading-relaxed text-muted">
+              Cada trade arriesga el mismo % de un equity nocional de 1.000 € → el P&L es
+              comparable entre activos (BTC ya no se dispara). El <span className="text-dim">retorno %</span> es
+              la métrica fiable; el P&L nocional es solo su traducción a €.
+            </p>
+          </>
         )}
         {res && (
           <div className="space-y-2">
@@ -106,16 +119,22 @@ export default function BacktestPanel() {
                 </div>
                 <Sparkline
                   data={r.equityCurve.map((p) => p.equity)}
-                  up={r.netPnl >= 0}
+                  up={r.returnPct >= 0}
                   w={120}
                   h={34}
                 />
-                <span
-                  className={`font-mono text-sm ${r.netPnl >= 0 ? "text-long" : "text-short"}`}
-                >
-                  {r.netPnl >= 0 ? "+" : ""}
-                  {fmt(r.netPnl)}
-                </span>
+                <div className="shrink-0 text-right">
+                  <span
+                    className={`font-mono text-sm ${r.returnPct >= 0 ? "text-long" : "text-short"}`}
+                  >
+                    {r.returnPct >= 0 ? "+" : ""}
+                    {r.returnPct.toFixed(1)}%
+                  </span>
+                  <p className="font-mono text-[10px] text-muted">
+                    {r.netPnl >= 0 ? "+" : ""}
+                    {fmt(r.netPnl)} €
+                  </p>
+                </div>
               </div>
             ))}
           </div>

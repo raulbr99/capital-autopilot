@@ -11,10 +11,18 @@ export type SimTrade = {
   dir: "BUY" | "SELL";
   entry: number;
   exit: number;
+  size: number;
   pnl: number;
   iEntry: number;
   iExit: number;
 };
+
+/**
+ * Equity nocional para dimensionar por riesgo en el backtest. No es la cuenta
+ * real; sirve para que cada activo arriesgue el MISMO importe por trade y los
+ * resultados sean comparables entre sí (BTC ya no se dispara frente a EURUSD).
+ */
+export const BASE_EQUITY = 1000;
 
 export type SimMetrics = {
   trades: number;
@@ -26,6 +34,7 @@ export type SimMetrics = {
 };
 
 export type SimResult = SimMetrics & {
+  returnPct: number; // netPnl como % del equity nocional (comparable entre activos)
   tradeList: SimTrade[];
   equityCurve: number[];
 };
@@ -69,8 +78,14 @@ export function simulate(
 ): SimResult {
   const warmup = Math.max(strategy.slow, risk.atrPeriod) + 2;
   const start = Math.max(from, warmup);
-  let open: { dir: "BUY" | "SELL"; entry: number; sl: number; tp: number; i: number } | null =
-    null;
+  // Riesgo fijo por trade: en modo "percent" cada operación arriesga el mismo
+  // importe (riskPct% del equity nocional). Así el tamaño se adapta a la
+  // volatilidad de cada activo y los P&L son comparables entre instrumentos.
+  const byRisk = risk.sizingMode === "percent";
+  const riskAmount = BASE_EQUITY * (risk.riskPercent > 0 ? risk.riskPercent / 100 : 0.01);
+  let open:
+    | { dir: "BUY" | "SELL"; entry: number; sl: number; tp: number; size: number; i: number }
+    | null = null;
   const tradeList: SimTrade[] = [];
   const equityCurve: number[] = [];
   let eq = 0;
@@ -90,8 +105,16 @@ export function simulate(
       }
       if (exit !== null) {
         const dir = open.dir === "BUY" ? 1 : -1;
-        const pnl = (exit - open.entry) * dir * sizePerTrade;
-        tradeList.push({ dir: open.dir, entry: open.entry, exit, pnl, iEntry: open.i, iExit: i });
+        const pnl = (exit - open.entry) * dir * open.size;
+        tradeList.push({
+          dir: open.dir,
+          entry: open.entry,
+          exit,
+          size: open.size,
+          pnl,
+          iEntry: open.i,
+          iExit: i,
+        });
         eq += pnl;
         open = null;
       }
@@ -106,11 +129,14 @@ export function simulate(
         const tpDist = useAtr ? a * risk.atrTpMult : risk.atrTpMult;
         if (stopDist > 0 && tpDist > 0) {
           const entry = c.close;
+          // Tamaño tal que (distancia al SL × size) = riskAmount → riesgo constante.
+          const size = byRisk ? riskAmount / stopDist : sizePerTrade;
           open = {
             dir: sig.type,
             entry,
             sl: sig.type === "BUY" ? entry - stopDist : entry + stopDist,
             tp: sig.type === "BUY" ? entry + tpDist : entry - tpDist,
+            size,
             i,
           };
         }
@@ -119,5 +145,11 @@ export function simulate(
     equityCurve.push(eq);
   }
 
-  return { ...metricsOf(tradeList), tradeList, equityCurve };
+  const m = metricsOf(tradeList);
+  return {
+    ...m,
+    returnPct: (m.netPnl / BASE_EQUITY) * 100,
+    tradeList,
+    equityCurve,
+  };
 }

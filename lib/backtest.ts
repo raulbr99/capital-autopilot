@@ -15,6 +15,7 @@ export type BacktestResult = {
   wins: number;
   winRate: number;
   netPnl: number;
+  returnPct: number; // % sobre equity nocional — comparable entre activos
   profitFactor: number;
   maxDrawdown: number;
   equityCurve: { i: number; equity: number }[];
@@ -36,6 +37,7 @@ export function backtest(
     wins: r.wins,
     winRate: r.winRate,
     netPnl: r.netPnl,
+    returnPct: r.returnPct,
     profitFactor: r.profitFactor,
     maxDrawdown: r.maxDrawdown,
     equityCurve: r.equityCurve.map((equity, i) => ({ i, equity })),

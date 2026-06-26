@@ -44,6 +44,10 @@ export async function GET(req: Request) {
       aggregate: {
         ...agg,
         winRate: agg.trades ? (agg.wins / agg.trades) * 100 : 0,
+        // % medio de retorno por activo (cada uno arriesga el mismo nocional)
+        returnPct: results.length
+          ? results.reduce((s, r) => s + r.returnPct, 0) / results.length
+          : 0,
       },
     });
   } catch (err: any) {
