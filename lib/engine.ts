@@ -138,7 +138,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
 
   // ---- reconciliar cierres (SL/TP de Capital o cierres de la IA) ----
   const priceByEpic = new Map(evals.map((e) => [e.epic, e.price]));
-  await reconcileClosedTrades(positions, priceByEpic, account.balance);
+  await reconcileClosedTrades(positions, priceByEpic, account.deposit);
 
   // ---- equity ----
   // Capital ya incluye el P&L flotante en `balance` (balance = deposit + profitLoss).
@@ -617,7 +617,7 @@ async function executeOpen(p: {
 async function reconcileClosedTrades(
   positions: Position[],
   priceByEpic: Map<string, number>,
-  balance: number
+  deposit: number
 ): Promise<void> {
   const b = bot();
   const openEpics = new Set(positions.map((p) => p.epic));
@@ -629,11 +629,14 @@ async function reconcileClosedTrades(
   }
   const closed = ourOpen.filter((t) => !openEpics.has(t.epic));
   if (closed.length === 0) {
-    b.prevBalance = balance;
+    b.prevDeposit = deposit;
     return;
   }
-  const prev = b.prevBalance > 0 ? b.prevBalance : balance;
-  const per = Math.round(((balance - prev) / closed.length) * 100) / 100;
+  // P&L realizado = delta de `deposit` (efectivo) entre ticks. Usamos deposit y NO
+  // balance: balance incluye el P&L flotante de las posiciones aún abiertas, que
+  // contaminaba la atribución (un cierre perdedor podía aparecer como ganancia).
+  const prev = b.prevDeposit > 0 ? b.prevDeposit : deposit;
+  const per = Math.round(((deposit - prev) / closed.length) * 100) / 100;
   for (const t of closed) {
     const exit = priceByEpic.get(t.epic) ?? t.entry;
     await updateTrade(t.id, { status: "closed", exit, pnl: per, closedTs: Date.now() });
@@ -644,7 +647,7 @@ async function reconcileClosedTrades(
       t.epic
     );
   }
-  b.prevBalance = balance;
+  b.prevDeposit = deposit;
 }
 
 function base(
