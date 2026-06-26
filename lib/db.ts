@@ -126,22 +126,30 @@ export async function saveConfig(cfg: BotConfig): Promise<void> {
 }
 
 function mergeConfig(base: BotConfig, override: any): BotConfig {
+  // category por epic desde los defaults — para rellenar configs antiguas que
+  // se guardaron sin category (si no, el filtrado por mesa se rompe).
+  const baseCat = new Map(base.instruments.map((i) => [i.epic.toUpperCase(), i.category]));
   // instruments: usa los guardados; si no hay (config antigua), derívalos del watchlist
   let instruments: Instrument[];
   if (Array.isArray(override.instruments) && override.instruments.length) {
     instruments = override.instruments
       .filter((i: any) => i && i.epic)
-      .map((i: any) => ({
-        epic: String(i.epic).toUpperCase().trim(),
-        resolution: i.resolution || DEFAULT_RESOLUTION,
-        ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
-        ...(i.category ? { category: i.category } : {}),
-      }));
+      .map((i: any) => {
+        const epic = String(i.epic).toUpperCase().trim();
+        const category = i.category || baseCat.get(epic);
+        return {
+          epic,
+          resolution: i.resolution || DEFAULT_RESOLUTION,
+          ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
+          ...(category ? { category } : {}),
+        };
+      });
   } else if (Array.isArray(override.watchlist)) {
-    instruments = override.watchlist.map((epic: string) => ({
-      epic: String(epic).toUpperCase().trim(),
-      resolution: DEFAULT_RESOLUTION,
-    }));
+    instruments = override.watchlist.map((epic: string) => {
+      const e = String(epic).toUpperCase().trim();
+      const category = baseCat.get(e);
+      return { epic: e, resolution: DEFAULT_RESOLUTION, ...(category ? { category } : {}) };
+    });
   } else {
     instruments = base.instruments;
   }
