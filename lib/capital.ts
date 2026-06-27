@@ -49,19 +49,32 @@ export async function getSession(force = false): Promise<Session> {
     }
   }
 
-  const res = await fetch(`${BASE_URL}/api/v1/session`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CAP-API-KEY": process.env.CAPITAL_API_KEY!,
-    },
-    body: JSON.stringify({
-      identifier: process.env.CAPITAL_IDENTIFIER,
-      password: process.env.CAPITAL_PASSWORD,
-      encryptedPassword: false,
-    }),
-    cache: "no-store",
-  });
+  // Login con reintentos acotados: al crear sesión Capital.com devuelve a veces
+  // 429 (too-many-requests) o 5xx (p.ej. 503 service.temporarily-unavailable)
+  // de forma transitoria. Sin reintento, un blip puntual tira el tick entero
+  // con un 500. Reintentamos SOLO errores transitorios, con backoff (respeta el
+  // límite ~1 req/s de creación de sesión). No reintenta 401/invalid.api.key:
+  // reintentar no arregla unas credenciales inválidas.
+  const MAX_LOGIN_ATTEMPTS = 3;
+  let res!: Response;
+  for (let attempt = 1; ; attempt++) {
+    res = await fetch(`${BASE_URL}/api/v1/session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CAP-API-KEY": process.env.CAPITAL_API_KEY!,
+      },
+      body: JSON.stringify({
+        identifier: process.env.CAPITAL_IDENTIFIER,
+        password: process.env.CAPITAL_PASSWORD,
+        encryptedPassword: false,
+      }),
+      cache: "no-store",
+    });
+    const transient = res.status === 429 || res.status >= 500;
+    if (res.ok || !transient || attempt >= MAX_LOGIN_ATTEMPTS) break;
+    await new Promise((r) => setTimeout(r, 700 * attempt)); // 700ms, 1400ms
+  }
 
   if (!res.ok) {
     const text = await res.text();
