@@ -8,6 +8,7 @@ import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
 import LogFeed from "./LogFeed";
+import ExpectancyPanel from "./ExpectancyPanel";
 import CommandPalette, { type Command } from "./CommandPalette";
 import ThemeToggle from "./ThemeToggle";
 import Nav from "./Nav";
@@ -286,6 +287,9 @@ export default function Dashboard() {
           <StatCard label="PnL flotante" value={pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < 0.005 ? undefined : floatPnl > 0 ? "long" : "short"} />
           <StatCard label="Posiciones" value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`} />
         </section>
+
+        {/* EXPECTATIVA REAL (con tus trades cerrados) */}
+        <ExpectancyPanel className="mt-4" />
 
         {/* LAS 4 MESAS */}
         <DesksOverview evals={evals} positions={positions} instruments={cfg?.instruments ?? []} />
