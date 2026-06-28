@@ -95,6 +95,12 @@ export type RiskConfig = {
   maxDailyLossPct: number;
   maxTradesPerDay: number;
   cooldownMin: number;
+  activeManage?: boolean;
+  breakevenAtr?: number;
+  trailAtr?: number;
+  trailDistAtr?: number;
+  scaleOutAtr?: number;
+  scaleOutPct?: number;
 };
 
 export type NotifyConfig = {

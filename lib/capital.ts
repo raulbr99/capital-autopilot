@@ -243,6 +243,43 @@ export async function closePosition(
   return r;
 }
 
+/** Amendar una posición abierta (mover SL/TP). Para trailing stop + breakeven. */
+export async function updatePosition(
+  dealId: string,
+  body: { stopLevel?: number; limitLevel?: number }
+): Promise<{ dealReference: string }> {
+  const r = await json<{ dealReference: string }>(
+    await authed(`/api/v1/positions/${dealId}`, { method: "PUT", body: JSON.stringify(body) })
+  );
+  invalidateCaches();
+  return r;
+}
+
+/**
+ * Cierre PARCIAL: orden opuesta de `size` con forceOpen:false → Capital netea y
+ * reduce la posición existente (no abre una nueva). Para scaling out.
+ */
+export async function reducePosition(
+  epic: string,
+  positionDir: "BUY" | "SELL",
+  size: number
+): Promise<{ dealReference: string }> {
+  const r = await json<{ dealReference: string }>(
+    await authed("/api/v1/positions", {
+      method: "POST",
+      body: JSON.stringify({
+        epic,
+        direction: positionDir === "BUY" ? "SELL" : "BUY",
+        size,
+        forceOpen: false,
+        guaranteedStop: false,
+      }),
+    })
+  );
+  invalidateCaches();
+  return r;
+}
+
 export type Candle = { time: string; open: number; high: number; low: number; close: number };
 
 export async function getPrices(

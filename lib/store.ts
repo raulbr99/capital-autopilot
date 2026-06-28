@@ -16,6 +16,13 @@ export type RiskConfig = {
   maxDailyLossPct: number; // kill-switch: si el equity cae este % en el dia -> desarma
   maxTradesPerDay: number;
   cooldownMin: number; // minutos de pausa tras una operacion perdedora
+  // --- Gestión activa de posiciones abiertas (trailing/breakeven/scaling) ---
+  activeManage: boolean; // master toggle de la gestión activa
+  breakevenAtr: number; // mover SL a entrada cuando el profit >= este x ATR
+  trailAtr: number; // empezar a trailing cuando el profit >= este x ATR
+  trailDistAtr: number; // el SL se mantiene a este x ATR por detrás del precio
+  scaleOutAtr: number; // cerrar parte cuando el profit >= este x ATR (0 = off)
+  scaleOutPct: number; // fracción a cerrar en el scaling out (0 = off)
 };
 
 export const DEFAULT_RISK: RiskConfig = {
@@ -28,6 +35,12 @@ export const DEFAULT_RISK: RiskConfig = {
   maxDailyLossPct: 5,
   maxTradesPerDay: 12,
   cooldownMin: 30,
+  activeManage: true,
+  breakevenAtr: 1,
+  trailAtr: 1.5,
+  trailDistAtr: 2,
+  scaleOutAtr: 2,
+  scaleOutPct: 0.5,
 };
 
 export type DeskCategory = "forex" | "crypto" | "stocks" | "commodities";

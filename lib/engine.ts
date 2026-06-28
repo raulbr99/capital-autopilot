@@ -15,6 +15,8 @@ import {
   getPrices,
   openPosition,
   closePosition,
+  updatePosition,
+  reducePosition,
   getMarketDetails,
   capitalConfigured,
   type Position,
@@ -174,6 +176,15 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
     !killedToday &&
     !cooldownActive &&
     tradesToday < cfg.risk.maxTradesPerDay;
+
+  // ---- gestión activa de las posiciones abiertas (trailing stop + breakeven + scaling out) ----
+  if (cfg.enabled) {
+    try {
+      await manageOpenPositions(positions, evals, ourTrades, cfg);
+    } catch (e: any) {
+      logN("error", `Gestión activa: ${e.message}`);
+    }
+  }
 
   // ---- posiciones abiertas (Capital + nuestros registros abiertos) ----
   const openPositions: OpenPos[] = positions.map((p) => realToOpen(p));
@@ -614,6 +625,86 @@ async function executeOpen(p: {
  * (cerrada por SL/TP o por la IA) se marcan cerrados, atribuyendo el P&L por el
  * cambio de balance entre ticks (cerrar realiza el P&L en el balance).
  */
+/* -------- Gestión activa: trailing stop + breakeven + scaling out -------- */
+function decimalsOf(n: number): number {
+  const s = String(n);
+  const i = s.indexOf(".");
+  return i < 0 ? 0 : Math.min(s.length - i - 1, 6);
+}
+function roundTo(n: number, decimals: number): number {
+  const f = Math.pow(10, decimals);
+  return Math.round(n * f) / f;
+}
+function floorStep(n: number, step: number): number {
+  if (step <= 0) return n;
+  return roundTo(Math.floor(n / step + 1e-9) * step, decimalsOf(step));
+}
+
+async function manageOpenPositions(
+  positions: Position[],
+  evals: EpicEval[],
+  ourTrades: TradeRecord[],
+  cfg: ReturnType<typeof bot>["config"]
+): Promise<void> {
+  const r = cfg.risk as any;
+  if (!r.activeManage) return;
+  const atrByEpic = new Map(evals.map((e) => [e.epic, e.atr]));
+  const origSize = new Map<string, number>();
+  for (const t of ourTrades) if (t.status === "open") origSize.set(t.epic, t.size);
+
+  for (const p of positions) {
+    if (!p.dealId) continue;
+    const a = atrByEpic.get(p.epic);
+    const cur = p.currentPrice;
+    if (!a || a <= 0 || !cur || cur <= 0) continue;
+    const isBuy = p.direction === "BUY";
+    const profit = isBuy ? cur - p.level : p.level - cur; // en unidades de precio
+    if (profit <= 0) continue;
+    const inAtr = profit / a;
+    const dec = decimalsOf(cur);
+    // "mejor" = más apretado hacia el precio (sube el SL en BUY, baja en SELL)
+    const tighter = (x: number, ref: number | null) => ref == null || (isBuy ? x > ref : x < ref);
+
+    // ---- breakeven + trailing: solo apretar el SL, nunca aflojar ----
+    let target: number | null = p.stopLevel ?? null;
+    if (inAtr >= r.breakevenAtr && tighter(p.level, target)) target = p.level; // SL a la entrada
+    if (inAtr >= r.trailAtr) {
+      const trail = isBuy ? cur - a * r.trailDistAtr : cur + a * r.trailDistAtr;
+      if (tighter(trail, target)) target = trail;
+    }
+    if (
+      target != null &&
+      tighter(target, p.stopLevel) &&
+      (p.stopLevel == null || Math.abs(target - p.stopLevel) > a * 0.05)
+    ) {
+      try {
+        const sl = roundTo(target, dec);
+        await updatePosition(p.dealId, { stopLevel: sl });
+        logN("trade", `🔧 ${p.epic}: SL → ${sl} (${inAtr >= r.trailAtr ? "trailing" : "breakeven"} +${inAtr.toFixed(1)}×ATR)`, p.epic);
+      } catch (e: any) {
+        logN("info", `${p.epic}: no se pudo mover el SL (${(e.message || "").slice(0, 50)})`, p.epic);
+      }
+    }
+
+    // ---- scaling out: cerrar parte en el primer objetivo (una sola vez) ----
+    const orig = origSize.get(p.epic);
+    if (r.scaleOutPct > 0 && r.scaleOutAtr > 0 && inAtr >= r.scaleOutAtr && orig && p.size >= orig * 0.9) {
+      try {
+        const md = await getMarketDetails(p.epic);
+        const step = md.sizeStep || md.minDealSize || 0.0001;
+        const close = floorStep(p.size * r.scaleOutPct, step);
+        const remainder = roundTo(p.size - close, decimalsOf(step));
+        if (close >= md.minDealSize && remainder >= md.minDealSize) {
+          await reducePosition(p.epic, p.direction, close);
+          logN("trade", `💰 ${p.epic}: scaling out — cerrado ${close} a +${inAtr.toFixed(1)}×ATR, dejo ${remainder} corriendo`, p.epic);
+        }
+      } catch (e: any) {
+        logN("info", `${p.epic}: scaling out no aplicado (${(e.message || "").slice(0, 50)})`, p.epic);
+      }
+    }
+  }
+}
+
 async function reconcileClosedTrades(
   positions: Position[],
   priceByEpic: Map<string, number>,
