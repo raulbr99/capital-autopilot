@@ -118,6 +118,14 @@ async function authed(
     await new Promise((r) => setTimeout(r, 900));
     return authed(path, init, false);
   }
+  // Glitch transitorio de Capital: 5xx (cualquier método) o 404 en GET idempotente
+  // (p.ej. error.not-found.epic en /prices tras un mantenimiento) -> reintentar una vez.
+  // Los POST/PUT/DELETE NO se reintentan en 404 para no arriesgar doble ejecución.
+  const method = (init.method || "GET").toUpperCase();
+  if (retry && (res.status >= 500 || (res.status === 404 && method === "GET"))) {
+    await new Promise((r) => setTimeout(r, 500));
+    return authed(path, init, false);
+  }
   return res;
 }
 
