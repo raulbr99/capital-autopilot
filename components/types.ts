@@ -86,8 +86,9 @@ export type StrategyConfig = {
 };
 
 export type RiskConfig = {
-  sizingMode: "fixed" | "percent";
+  sizingMode: "fixed" | "percent" | "margin";
   riskPercent: number;
+  marginPct?: number;
   useAtrStops: boolean;
   atrPeriod: number;
   atrStopMult: number;

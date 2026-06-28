@@ -7,8 +7,9 @@
 import { DEFAULT_STRATEGY, StrategyConfig } from "./strategy";
 
 export type RiskConfig = {
-  sizingMode: "fixed" | "percent"; // unidades fijas o % de equity arriesgado
+  sizingMode: "fixed" | "percent" | "margin"; // unidades fijas | % de equity arriesgado | % de equity como margen
   riskPercent: number; // % de equity arriesgado por trade (modo percent)
+  marginPct: number; // % de equity reservado como MARGEN por trade (modo margin)
   useAtrStops: boolean; // SL/TP por ATR (volatilidad) en vez de puntos fijos
   atrPeriod: number;
   atrStopMult: number; // SL = atrStopMult * ATR
@@ -26,8 +27,9 @@ export type RiskConfig = {
 };
 
 export const DEFAULT_RISK: RiskConfig = {
-  sizingMode: "percent",
+  sizingMode: "margin",
   riskPercent: 1,
+  marginPct: 10,
   useAtrStops: true,
   atrPeriod: 14,
   atrStopMult: 2,

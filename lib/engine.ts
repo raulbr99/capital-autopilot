@@ -348,6 +348,43 @@ async function sizeForRisk(
   return size;
 }
 
+// Apalancamiento por activo (Capital retail). MEDIDO en posiciones reales: cripto 2:1,
+// petróleo 10:1. El resto son los estándar de Capital: forex 30:1, oro 20:1, acciones 5:1,
+// resto de commodities 10:1. (Tunear aquí si Capital cambia el apalancamiento de la cuenta.)
+const LEVERAGE_BY_EPIC: Record<string, number> = { GOLD: 20 };
+const LEVERAGE_BY_CATEGORY: Record<string, number> = {
+  forex: 30,
+  crypto: 2,
+  stocks: 5,
+  commodities: 10,
+};
+function instrumentLeverage(epic: string, category?: string): number {
+  return LEVERAGE_BY_EPIC[epic] ?? (category ? LEVERAGE_BY_CATEGORY[category] : undefined) ?? 5;
+}
+
+// Margen FIJO: cada posición reserva marginPct% del equity como margen.
+// margen = nocional / leverage  ->  size = (equity·marginPct/100)·leverage / precio.
+// Respeta el min/step del instrumento (Capital).
+async function sizeForMargin(
+  equity: number,
+  epic: string,
+  price: number,
+  marginPct: number,
+  leverage: number
+): Promise<number> {
+  if (price <= 0 || leverage <= 0) return 0;
+  let size = ((equity * marginPct) / 100) * leverage / price;
+  try {
+    const md = await getMarketDetails(epic);
+    const step = md.sizeStep > 0 ? md.sizeStep : md.minDealSize;
+    size = Math.round(size / step) * step;
+    size = Math.max(md.minDealSize, Math.min(size, md.maxDealSize));
+  } catch {
+    size = Math.max(0.01, Math.round(size * 100) / 100);
+  }
+  return size;
+}
+
 /* ---------------- Gestor de Cartera IA ---------------- */
 
 async function buildPmEvents(epics: string[]): Promise<string> {
@@ -518,8 +555,19 @@ async function executePmDecision(
       const e = p.evals.find((x) => x.epic === act.epic);
       if (!e || e.price <= 0) continue;
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
-      const riskPct = Math.max(0.25, Math.min(act.riskPct ?? cfg.risk.riskPercent, cfg.risk.riskPercent));
-      const size = await sizeForRisk(p.equity, stopDist, act.epic, riskPct);
+      // Tamaño: modo MARGEN (reserva marginPct% del equity, ignora el riskPct del Gestor)
+      // o modo RIESGO (riskPct del Gestor). En margen, riskPct se calcula como el riesgo
+      // efectivo (size·stopDist/equity) solo para mostrarlo al comité.
+      let size: number;
+      let riskPct: number;
+      if (cfg.risk.sizingMode === "margin") {
+        const cat = cfg.instruments.find((i) => i.epic === act.epic)?.category;
+        size = await sizeForMargin(p.equity, act.epic, e.price, cfg.risk.marginPct, instrumentLeverage(act.epic, cat));
+        riskPct = stopDist > 0 && p.equity > 0 ? ((size * stopDist) / p.equity) * 100 : 0;
+      } else {
+        riskPct = Math.max(0.25, Math.min(act.riskPct ?? cfg.risk.riskPercent, cfg.risk.riskPercent));
+        size = await sizeForRisk(p.equity, stopDist, act.epic, riskPct);
+      }
       if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) continue;
       // ---- comité IA: varios modelos votan antes de abrir ----
       if ((cfg as any).committee) {
