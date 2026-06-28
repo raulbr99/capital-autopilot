@@ -785,6 +785,14 @@ async function reconcileClosedTrades(
   } catch {
     return;
   }
+  // Guard anti-glitch: si Capital devuelve 0 posiciones mientras tenemos 2+ registradas
+  // abiertas, es casi seguro un fallo transitorio (no se cierran varias a la vez en el
+  // mismo tick). NO cerramos en falso; esperamos al siguiente tick con datos buenos.
+  // (No tocamos prevDeposit: el delta del próximo tick bueno captura el P&L del hueco.)
+  if (positions.length === 0 && ourOpen.length >= 2) {
+    logN("info", `Reconciliación en pausa: Capital devolvió 0 posiciones con ${ourOpen.length} abiertas (glitch probable, no cierro en falso).`);
+    return;
+  }
   const closed = ourOpen.filter((t) => !openEpics.has(t.epic));
   if (closed.length === 0) {
     b.prevDeposit = deposit;
