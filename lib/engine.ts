@@ -114,6 +114,13 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   // ---- precios + ATR + señal por activo (cada uno a SU resolución) ----
   const candlesByEpic = new Map<string, Candle[]>();
   const evals: EpicEval[] = [];
+  // Epics que Capital.com no reconoce (error.not-found.epic): condición
+  // permanente de configuración, no un error operativo. Se agregan en una
+  // sola línea informativa al final del bucle en vez de emitir un `error`
+  // por instrumento en cada tick (eran ~40, inundaban el feed y enmascaraban
+  // errores reales de red/auth/rate-limit). El instrumento se omite igual que
+  // antes: sin candles no hay eval ni señal ni trade.
+  const unavailable: string[] = [];
   for (const inst of instruments) {
     const epic = inst.epic;
     const res = inst.resolution || DEFAULT_RESOLUTION;
@@ -132,8 +139,21 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       evals.push({ epic, resolution: res, signal, hasPosition: false, price, atr: a, spark });
       if (signal.type !== "FLAT") b.stats.signals++;
     } catch (err: any) {
-      logN("error", `Error evaluando ${epic} (${res}): ${err.message}`, epic);
+      const msg = String(err?.message ?? err);
+      if (/not-found\.epic/.test(msg)) {
+        unavailable.push(`${epic} (${res})`);
+      } else {
+        logN("error", `Error evaluando ${epic} (${res}): ${msg}`, epic);
+      }
     }
+  }
+  if (unavailable.length) {
+    logN(
+      "info",
+      `Instrumentos no disponibles en Capital.com (epic no encontrado), se omiten: ${unavailable.join(
+        ", "
+      )} — revisar epics en la config (usar /api/capital/markets para resolver los correctos).`
+    );
   }
 
   // ---- reconciliar cierres (SL/TP de Capital o cierres de la IA) ----
