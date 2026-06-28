@@ -26,7 +26,7 @@ export const DEFAULT_RISK: RiskConfig = {
   atrStopMult: 2,
   atrTpMult: 3,
   maxDailyLossPct: 5,
-  maxTradesPerDay: 6,
+  maxTradesPerDay: 12,
   cooldownMin: 30,
 };
 
