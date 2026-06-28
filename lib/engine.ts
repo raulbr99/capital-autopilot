@@ -22,6 +22,7 @@ import {
   type Position,
   type Candle,
 } from "./capital";
+import { committeeVote } from "./committee";
 import { evaluate, atr, type Signal } from "./strategy";
 import { bot, log, pushEquity, todayKey, TradeRecord, DEFAULT_RESOLUTION, type Instrument, type EquityPoint } from "./store";
 import {
@@ -520,6 +521,24 @@ async function executePmDecision(
       const riskPct = Math.max(0.25, Math.min(act.riskPct ?? cfg.risk.riskPercent, cfg.risk.riskPercent));
       const size = await sizeForRisk(p.equity, stopDist, act.epic, riskPct);
       if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) continue;
+      // ---- comité IA: varios modelos votan antes de abrir ----
+      if ((cfg as any).committee) {
+        const verdict = await committeeVote({
+          epic: act.epic,
+          direction: act.direction,
+          thesis: decision.thesis || act.reason || "",
+          riskPct,
+          desk: decision.desk ?? undefined,
+          price: e.price,
+          indicators: e.signal?.indicators,
+        });
+        if (!verdict.approved) {
+          const no = verdict.votes.find((v) => !v.approve);
+          logN("trade", `🚫 Comité RECHAZA ${act.direction} ${act.epic} (${verdict.summary})${no ? `: ${no.reason}` : ""}`, act.epic);
+          continue;
+        }
+        logN("info", `✅ Comité aprueba ${act.epic} (${verdict.summary})`, act.epic);
+      }
       const did = await executeOpen({
         epic: act.epic,
         direction: act.direction,

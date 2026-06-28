@@ -84,6 +84,7 @@ export type BotConfig = {
   aiCooldownMin: number; // no re-evaluar el mismo activo con IA dentro de X min
   pmMode: boolean; // Gestor de Cartera IA inline (OpenRouter, cada tick) — DEPRECADO por coste
   cloudPm: boolean; // Gestor en la nube: una routine Claude decide cada hora y deja las acciones en cola; el motor las ejecuta
+  committee: boolean; // comité IA: varios modelos (OpenRouter) votan antes de cada apertura
   instruments: Instrument[]; // activos con su resolucion de senal
   watchlist: string[]; // espejo de instruments[].epic (compat)
   sizePerTrade: number; // unidades (modo fixed)
@@ -101,6 +102,7 @@ export const DEFAULT_CONFIG: BotConfig = {
   aiCooldownMin: 45, // 1 revisión IA por activo cada 45 min como mucho
   pmMode: false, // Gestor IA inline (OpenRouter) off — sustituido por cloudPm
   cloudPm: false, // Gestor en la nube off por defecto
+  committee: true, // comité IA vota antes de abrir (ON)
   instruments: [
     // 💱 Forex
     { epic: "NZDUSD", resolution: "DAY", regimeFilter: false, category: "forex" },
