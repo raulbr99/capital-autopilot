@@ -116,7 +116,7 @@ export const DEFAULT_CONFIG: BotConfig = {
   ],
   watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "NFLX", "AMD", "MU", "AVGO", "QCOM", "SMCI", "ARM", "SNOW", "CRWD", "PLTR", "COIN", "MSTR", "HOOD", "SOFI", "GME", "BABA", "DIS", "BA", "UBER", "PYPL", "ORCL", "CRM", "ADBE", "JPM", "V", "WMT", "XOM", "PFE", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
-  maxOpenPositions: 3,
+  maxOpenPositions: 6,
   stopDistance: 150,
   profitDistance: 300,
   strategy: { ...DEFAULT_STRATEGY },
