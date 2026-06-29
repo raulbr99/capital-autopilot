@@ -1,14 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  createChart,
+  ColorType,
+  CrosshairMode,
+  LineStyle,
+  type IChartApi,
+  type ISeriesApi,
+} from "lightweight-charts";
 import type { OpenPos } from "./types";
 import { fmt, pnlClass, pnlFmt } from "./ui";
 
 type Candle = { time: string; open: number; high: number; low: number; close: number };
+
 const RES = [
-  { k: "HOUR", label: "1H" },
-  { k: "HOUR_4", label: "4H" },
-  { k: "DAY", label: "1D" },
+  { k: "MINUTE_5", label: "5m", max: 200 },
+  { k: "MINUTE_15", label: "15m", max: 200 },
+  { k: "MINUTE_30", label: "30m", max: 200 },
+  { k: "HOUR", label: "1H", max: 200 },
+  { k: "HOUR_4", label: "4H", max: 180 },
+  { k: "DAY", label: "1D", max: 200 },
+  { k: "WEEK", label: "1W", max: 150 },
 ];
 
 function pdec(n: number) {
@@ -18,32 +31,111 @@ function pdec(n: number) {
 
 export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose: () => void }) {
   const [res, setRes] = useState("HOUR_4");
-  const [candles, setCandles] = useState<Candle[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [empty, setEmpty] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
+  const dec = pdec(pos.entry);
+  const cur = pos.currentPrice ?? pos.entry;
+  const curFavor = cur === pos.entry ? 0 : pos.direction === "BUY" ? cur - pos.entry : pos.entry - cur;
+  const curTone = curFavor > 0 ? "text-long" : curFavor < 0 ? "text-short" : "text-dim";
+
+  // crear el chart una vez (pos es estable durante la vida del modal)
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const chart = createChart(el, {
+      width: el.clientWidth || 760,
+      height: 360,
+      layout: {
+        background: { type: ColorType.Solid, color: "transparent" },
+        textColor: "#8b94a3",
+        fontFamily: "ui-monospace, SFMono-Regular, monospace",
+      },
+      grid: {
+        vertLines: { color: "rgba(255,255,255,0.04)" },
+        horzLines: { color: "rgba(255,255,255,0.04)" },
+      },
+      crosshair: { mode: CrosshairMode.Normal },
+      rightPriceScale: { borderColor: "#252525" },
+      timeScale: { borderColor: "#252525", timeVisible: true, secondsVisible: false },
+    });
+    const series = chart.addCandlestickSeries({
+      upColor: "#34C98A",
+      downColor: "#F2567A",
+      wickUpColor: "#34C98A",
+      wickDownColor: "#F2567A",
+      borderVisible: false,
+      priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
+    });
+    const mkLine = (price: number | null | undefined, color: string, title: string, dashed = false) =>
+      price == null
+        ? null
+        : series.createPriceLine({
+            price,
+            color,
+            lineWidth: 1,
+            lineStyle: dashed ? LineStyle.Dashed : LineStyle.Solid,
+            axisLabelVisible: true,
+            title,
+          });
+    mkLine(pos.entry, "#9aa3b2", "Entrada", true);
+    mkLine(pos.stopLevel, "#F2567A", "SL");
+    mkLine(pos.limitLevel, "#6E7CF7", "TP");
+
+    chartRef.current = chart;
+    seriesRef.current = series;
+
+    const onResize = () => chartRef.current && el && chart.applyOptions({ width: el.clientWidth });
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // cargar velas al cambiar de temporalidad
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    fetch(`/api/bot/candles?epic=${encodeURIComponent(pos.epic)}&resolution=${res}&max=90`)
-      .then((r) => r.json())
-      .then((d) => alive && Array.isArray(d.candles) && setCandles(d.candles))
-      .catch(() => {})
+    setEmpty(false);
+    const r = RES.find((x) => x.k === res);
+    fetch(`/api/bot/candles?epic=${encodeURIComponent(pos.epic)}&resolution=${res}&max=${r?.max ?? 150}`)
+      .then((rp) => rp.json())
+      .then((d) => {
+        if (!alive || !seriesRef.current) return;
+        const cs: Candle[] = Array.isArray(d.candles) ? d.candles : [];
+        if (!cs.length) {
+          setEmpty(true);
+          seriesRef.current.setData([]);
+          return;
+        }
+        const seen = new Set<number>();
+        const data = cs
+          .map((c) => ({ time: Math.floor(Date.parse(c.time) / 1000), open: c.open, high: c.high, low: c.low, close: c.close }))
+          .filter((c) => Number.isFinite(c.time))
+          .sort((a, b) => a.time - b.time)
+          .filter((c) => (seen.has(c.time) ? false : (seen.add(c.time), true)));
+        seriesRef.current.setData(data as never);
+        chartRef.current?.timeScale().fitContent();
+      })
+      .catch(() => alive && setEmpty(true))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [pos.epic, res]);
+  }, [res, pos.epic]);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [onClose]);
-
-  const dec = pdec(pos.entry);
-  const cur = pos.currentPrice ?? pos.entry;
-  const curFavor = cur === pos.entry ? 0 : pos.direction === "BUY" ? cur - pos.entry : pos.entry - cur;
-  const curTone = curFavor > 0 ? "text-long" : curFavor < 0 ? "text-short" : "text-dim";
 
   return (
     <div
@@ -53,7 +145,7 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
       aria-modal="true"
     >
       <div
-        className="w-full max-w-3xl overflow-hidden rounded-xl border border-industrial bg-soft shadow-2xl"
+        className="w-full max-w-4xl overflow-hidden rounded-xl border border-industrial bg-soft shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
@@ -71,7 +163,7 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
                 <button
                   key={r.k}
                   onClick={() => setRes(r.k)}
-                  className={`px-2.5 py-1 font-mono text-[11px] transition-colors ${
+                  className={`px-2 py-1 font-mono text-[11px] transition-colors ${
                     res === r.k ? "bg-accent text-onaccent" : "text-muted hover:text-dim"
                   }`}
                 >
@@ -90,16 +182,17 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
         </div>
 
         {/* chart */}
-        <div className="p-4">
-          {loading ? (
-            <div className="dotgrid h-[340px] rounded-lg" />
-          ) : !candles || candles.length < 2 ? (
-            <div className="dotgrid flex h-[340px] items-center justify-center rounded-lg text-sm text-muted">
-              Sin datos de precio para esta resolución
+        <div className="relative px-3 py-3">
+          <div ref={wrapRef} className="h-[360px] w-full" />
+          {loading && <div className="dotgrid absolute inset-3 rounded-lg" />}
+          {empty && !loading && (
+            <div className="absolute inset-3 flex items-center justify-center text-sm text-muted">
+              Sin datos para esta temporalidad
             </div>
-          ) : (
-            <Chart candles={candles} pos={pos} cur={cur} dec={dec} />
           )}
+          <p className="mt-1 text-center font-mono text-[10px] text-muted">
+            arrastra para mover · rueda para zoom · doble clic para reencuadrar
+          </p>
         </div>
 
         {/* niveles */}
@@ -111,50 +204,6 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
         </div>
       </div>
     </div>
-  );
-}
-
-function Chart({ candles, pos, cur, dec }: { candles: Candle[]; pos: OpenPos; cur: number; dec: number }) {
-  const W = 760, H = 340, padR = 70, padT = 12, padB = 8, padL = 8;
-  const levels = [pos.entry, cur, pos.stopLevel, pos.limitLevel].filter(
-    (v): v is number => v != null && Number.isFinite(v)
-  );
-  const lo = Math.min(...candles.map((c) => c.low), ...levels);
-  const hi = Math.max(...candles.map((c) => c.high), ...levels);
-  const pad = (hi - lo) * 0.06 || 1;
-  const min = lo - pad, max = hi + pad;
-  const y = (v: number) => padT + (1 - (v - min) / (max - min)) * (H - padT - padB);
-  const cw = (W - padL - padR) / candles.length;
-  const x = (i: number) => padL + i * cw + cw / 2;
-  const bodyW = Math.max(1, cw * 0.62);
-
-  const Level = ({ v, color, dash }: { v: number | null | undefined; color: string; dash?: boolean }) =>
-    v == null ? null : (
-      <g>
-        <line x1={padL} x2={W - padR} y1={y(v)} y2={y(v)} stroke={color} strokeWidth={1} strokeDasharray={dash ? "4 3" : undefined} opacity={0.85} />
-        <rect x={W - padR + 2} y={y(v) - 7.5} width={padR - 3} height={15} fill={color} opacity={0.16} />
-        <text x={W - padR + 6} y={y(v) + 3.5} fontSize={10.5} fill={color} fontFamily="monospace">{fmt(v, dec)}</text>
-      </g>
-    );
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="block overflow-visible">
-      {candles.map((c, i) => {
-        const up = c.close >= c.open;
-        const col = up ? "#34C98A" : "#F2567A";
-        const yo = y(c.open), yc = y(c.close);
-        return (
-          <g key={i}>
-            <line x1={x(i)} x2={x(i)} y1={y(c.high)} y2={y(c.low)} stroke={col} strokeWidth={1} opacity={0.7} />
-            <rect x={x(i) - bodyW / 2} y={Math.min(yo, yc)} width={bodyW} height={Math.max(1, Math.abs(yc - yo))} fill={col} opacity={0.9} />
-          </g>
-        );
-      })}
-      <Level v={pos.limitLevel} color="#6E7CF7" />
-      <Level v={pos.stopLevel} color="#F2567A" />
-      <Level v={pos.entry} color="#9aa3b2" dash />
-      <Level v={cur} color="#E6EAF2" dash />
-    </svg>
   );
 }
 

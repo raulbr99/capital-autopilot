@@ -4,7 +4,7 @@ import { getPrices } from "@/lib/capital";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-const ALLOWED = new Set(["MINUTE_15", "MINUTE_30", "HOUR", "HOUR_4", "DAY"]);
+const ALLOWED = new Set(["MINUTE_5", "MINUTE_15", "MINUTE_30", "HOUR", "HOUR_4", "DAY", "WEEK"]);
 
 /** Velas OHLC de un activo para el gráfico de una posición. ?epic=&resolution=&max= */
 export async function GET(req: Request) {
