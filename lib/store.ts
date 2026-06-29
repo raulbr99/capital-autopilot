@@ -115,7 +115,8 @@ export const DEFAULT_CONFIG: BotConfig = {
     { epic: "EURJPY", resolution: "DAY", regimeFilter: false, category: "forex" },
     { epic: "USDCHF", resolution: "HOUR_4", regimeFilter: true, category: "forex" },
     // ₿ Crypto
-    { epic: "BTCUSD", resolution: "HOUR_4", regimeFilter: true, category: "crypto" },
+    // BTCUSD retirado (afinador 2026-06-29): walk-forward sin edge OOS en HOUR_4 (PF 0.97, -179),
+    // DAY (PF 0.56, -11.720) y HOUR_4+ADX25 (PF 0.94, -243). Pierde consistente fuera de muestra.
     { epic: "ETHUSD", resolution: "DAY", regimeFilter: true, category: "crypto" },
     // 📈 Stocks US (solo horario NY ~15:30-22:00 Madrid; el motor las salta si están CLOSED)
     { epic: "AAPL", resolution: "DAY", regimeFilter: true, category: "stocks" },
@@ -127,13 +128,15 @@ export const DEFAULT_CONFIG: BotConfig = {
       (epic) => ({ epic, resolution: "DAY", regimeFilter: true, category: "stocks" as const })
     ),
     // 🛢️ Commodities
-    { epic: "GOLD", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
+    // GOLD HOUR_4 -> DAY (afinador 2026-06-29): en HOUR_4 sin edge (PF 0.94, -15);
+    // en DAY pasa a edge marginal positivo (PF 1.53, +124, degradación 0.45).
+    { epic: "GOLD", resolution: "DAY", regimeFilter: false, category: "commodities" },
     { epic: "SILVER", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
     { epic: "OIL_CRUDE", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
     { epic: "NATURALGAS", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
     { epic: "COPPER", resolution: "DAY", regimeFilter: false, category: "commodities" },
   ],
-  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "NFLX", "AMD", "MU", "AVGO", "QCOM", "SMCI", "ARM", "SNOW", "CRWD", "PLTR", "COIN", "MSTR", "HOOD", "SOFI", "GME", "BABA", "DIS", "BA", "UBER", "PYPL", "ORCL", "CRM", "ADBE", "JPM", "V", "WMT", "XOM", "PFE", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
+  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "ETHUSD", "AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "NFLX", "AMD", "MU", "AVGO", "QCOM", "SMCI", "ARM", "SNOW", "CRWD", "PLTR", "COIN", "MSTR", "HOOD", "SOFI", "GME", "BABA", "DIS", "BA", "UBER", "PYPL", "ORCL", "CRM", "ADBE", "JPM", "V", "WMT", "XOM", "PFE", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
   maxOpenPositions: 6,
   stopDistance: 150,
