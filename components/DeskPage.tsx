@@ -176,16 +176,29 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
                     <p className="text-[12px] leading-relaxed text-dim [overflow-wrap:anywhere]">{e.thesis}</p>
                     {Array.isArray(e.actions) && e.actions.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {e.actions.map((a: any, i: number) => (
-                          <span
-                            key={i}
-                            className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${
-                              a.action === "OPEN" ? "bg-long/15 text-long" : a.action === "CLOSE" ? "bg-short/15 text-short" : "bg-industrial text-muted"
-                            }`}
-                          >
-                            {a.action === "OPEN" ? "ABRE" : a.action === "CLOSE" ? "CIERRA" : "ESPERA"} {a.epic || ""}
-                          </span>
-                        ))}
+                        {e.actions.map((a: any, i: number) => {
+                          const run = a.outcome === "opened" || a.outcome === "closed";
+                          const blocked = a.outcome === "vetoed" || a.outcome === "skipped" || a.outcome === "error";
+                          const cls = blocked
+                            ? "bg-industrial text-muted"
+                            : a.action === "OPEN"
+                            ? "bg-long/15 text-long"
+                            : a.action === "CLOSE"
+                            ? "bg-short/15 text-short"
+                            : "bg-industrial text-muted";
+                          const label = a.action === "OPEN" ? "ABRE" : a.action === "CLOSE" ? "CIERRA" : "ESPERA";
+                          const mark = run ? "✓ " : a.outcome === "vetoed" ? "✕ " : blocked ? "⊘ " : "";
+                          return (
+                            <span
+                              key={i}
+                              title={a.outcomeNote || ""}
+                              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${cls} ${blocked ? "opacity-70" : ""}`}
+                            >
+                              {mark}
+                              {label} {a.epic || ""}
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

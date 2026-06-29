@@ -521,39 +521,36 @@ async function executePmDecision(
   const b = bot();
   const cfg = b.config;
 
-  await recordJournal({
-    thesis: decision.thesis,
-    confidence: decision.confidence,
-    actions: decision.actions,
-    snapshot: { equity: p.equity, dailyPnlPct: p.dailyPnlPct, positions: p.openPositions.length },
-    desk: decision.desk ?? null,
-  });
   const tag = decision.desk ? `[${decision.desk}] ` : "";
   logN("info", `🧠 ${tag}Gestor (${(decision.confidence * 100).toFixed(0)}%): ${(decision.thesis || "").slice(0, 140)}`);
 
   let opened = 0;
+  const actions = decision.actions || [];
 
-  for (const act of decision.actions || []) {
+  for (const act of actions) {
     if (act.action === "CLOSE") {
       const pos = p.openPositions.find((o) => o.epic === act.epic && o.dealId);
-      if (!pos || !pos.dealId) continue;
+      if (!pos || !pos.dealId) { tagOutcome(act, "skipped", "sin posición abierta"); continue; }
       try {
         await closePosition(pos.dealId);
         p.openEpics.delete(pos.epic);
         p.openCount = Math.max(0, p.openCount - 1);
+        tagOutcome(act, "closed");
         logN("trade", `🧠 ${tag}cierra ${pos.epic}: ${act.reason}`, pos.epic);
         if (cfg.notify.onTrade) await notify(`🧠 *Gestor ${decision.desk || ""}* cierra ${pos.epic} · ${act.reason}`);
       } catch (err: any) {
+        tagOutcome(act, "error", err.message);
         logN("error", `Gestor no pudo cerrar ${act.epic}: ${err.message}`, act.epic);
       }
     } else if (act.action === "OPEN") {
-      if (!act.epic || !act.direction) continue;
-      if (p.killedToday || p.cooldownActive) continue;
-      if (p.openCount >= cfg.maxOpenPositions) continue;
-      if (p.tradesToday >= cfg.risk.maxTradesPerDay) continue;
-      if (p.openEpics.has(act.epic)) continue;
+      if (!act.epic || !act.direction) { tagOutcome(act, "skipped", "acción inválida"); continue; }
+      if (p.killedToday) { tagOutcome(act, "skipped", "kill-switch activo"); continue; }
+      if (p.cooldownActive) { tagOutcome(act, "skipped", "en cooldown"); continue; }
+      if (p.openCount >= cfg.maxOpenPositions) { tagOutcome(act, "skipped", `límite ${cfg.maxOpenPositions} posiciones`); continue; }
+      if (p.tradesToday >= cfg.risk.maxTradesPerDay) { tagOutcome(act, "skipped", `límite ${cfg.risk.maxTradesPerDay} trades/día`); continue; }
+      if (p.openEpics.has(act.epic)) { tagOutcome(act, "skipped", "ya tiene posición"); continue; }
       const e = p.evals.find((x) => x.epic === act.epic);
-      if (!e || e.price <= 0) continue;
+      if (!e || e.price <= 0) { tagOutcome(act, "skipped", "sin precio"); continue; }
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
       // Tamaño: modo MARGEN (reserva marginPct% del equity, ignora el riskPct del Gestor)
       // o modo RIESGO (riskPct del Gestor). En margen, riskPct se calcula como el riesgo
@@ -568,7 +565,7 @@ async function executePmDecision(
         riskPct = Math.max(0.25, Math.min(act.riskPct ?? cfg.risk.riskPercent, cfg.risk.riskPercent));
         size = await sizeForRisk(p.equity, stopDist, act.epic, riskPct);
       }
-      if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) continue;
+      if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) { tagOutcome(act, "skipped", "tamaño/stop inválido"); continue; }
       // ---- comité IA: varios modelos votan antes de abrir ----
       if ((cfg as any).committee) {
         const verdict = await committeeVote({
@@ -582,6 +579,7 @@ async function executePmDecision(
         });
         if (!verdict.approved) {
           const no = verdict.votes.find((v) => !v.approve);
+          tagOutcome(act, "vetoed", `comité ${verdict.summary}${no ? `: ${no.reason}` : ""}`);
           logN("trade", `🚫 Comité RECHAZA ${act.direction} ${act.epic} (${verdict.summary})${no ? `: ${no.reason}` : ""}`, act.epic);
           continue;
         }
@@ -595,17 +593,38 @@ async function executePmDecision(
         tpDist,
         price: e.price,
         reason: `IA: ${act.reason}`,
-        logMsg: `🧠 ${tag}abre ${act.direction} ${size.toFixed(2)} ${act.epic} @${e.price.toFixed(2)} (riesgo ${riskPct}%): ${act.reason}`,
+        logMsg: `🧠 ${tag}abre ${act.direction} ${size.toFixed(2)} ${act.epic} @${e.price.toFixed(2)} (riesgo ${riskPct.toFixed(1)}%): ${act.reason}`,
       });
       if (did) {
         p.openCount++;
         p.tradesToday++;
         opened++;
         p.openEpics.add(act.epic);
+        tagOutcome(act, "opened");
+      } else {
+        tagOutcome(act, "error", "fallo al ejecutar en Capital");
       }
+    } else {
+      tagOutcome(act, "held"); // HOLD u otra acción sin ejecución
     }
   }
+
+  // Registramos el journal CON el resultado de cada acción (abierta/vetada/saltada),
+  // no solo la propuesta — así el journal nunca parece que abrió cuando no lo hizo.
+  await recordJournal({
+    thesis: decision.thesis,
+    confidence: decision.confidence,
+    actions,
+    snapshot: { equity: p.equity, dailyPnlPct: p.dailyPnlPct, positions: p.openPositions.length },
+    desk: decision.desk ?? null,
+  });
   return opened;
+}
+
+/** Etiqueta el resultado de ejecución de una acción del Gestor (para el journal). */
+function tagOutcome(act: any, outcome: string, note?: string) {
+  act.outcome = outcome;
+  if (note) act.outcomeNote = String(note).slice(0, 90);
 }
 
 function realToOpen(p: Position): OpenPos {

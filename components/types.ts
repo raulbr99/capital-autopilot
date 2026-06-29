@@ -160,6 +160,8 @@ export type JournalAction = {
   direction?: "BUY" | "SELL";
   riskPct?: number;
   reason: string;
+  outcome?: "opened" | "closed" | "vetoed" | "skipped" | "error" | "held";
+  outcomeNote?: string;
 };
 
 export type JournalEntry = {

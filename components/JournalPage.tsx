@@ -10,6 +10,15 @@ const ACT: Record<string, { label: string; cls: string }> = {
   HOLD: { label: "ESPERA", cls: "bg-industrial text-muted" },
 };
 
+// Resultado real de la acción (lo que de verdad pasó al ejecutarla).
+const OUTCOME: Record<string, { label: string; cls: string }> = {
+  opened: { label: "✓ ABIERTA", cls: "bg-long/15 text-long" },
+  closed: { label: "✓ CERRADA", cls: "bg-long/15 text-long" },
+  vetoed: { label: "✕ VETADA COMITÉ", cls: "bg-short/15 text-short" },
+  skipped: { label: "⊘ NO EJECUTADA", cls: "bg-industrial text-muted" },
+  error: { label: "⚠ ERROR", cls: "bg-short/15 text-short" },
+};
+
 const DESK_FILTERS = [
   { key: "all", label: "Todas" },
   { key: "forex", label: "Forex" },
@@ -105,21 +114,33 @@ export default function JournalPage() {
                   <p className="text-[13px] leading-relaxed text-dim [overflow-wrap:anywhere]">{e.thesis || "—"}</p>
                   {Array.isArray(e.actions) && e.actions.length > 0 && (
                     <div className="mt-3 space-y-1.5 border-t border-industrial pt-3">
-                      {e.actions.map((a: JournalAction, i: number) => (
-                        <div key={i} className="flex items-start gap-2 text-[12px]">
-                          <span className={`mt-px shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold ${ACT[a.action]?.cls || ACT.HOLD.cls}`}>
-                            {ACT[a.action]?.label || a.action}
-                          </span>
-                          {a.epic && (
-                            <span className="shrink-0 font-mono text-white">
-                              {a.epic}
-                              {a.direction ? ` ${a.direction === "BUY" ? "▲" : "▼"}` : ""}
-                              {a.riskPct ? ` ${a.riskPct}%` : ""}
+                      {e.actions.map((a: JournalAction, i: number) => {
+                        const oc = a.outcome && a.outcome !== "held" ? OUTCOME[a.outcome] : null;
+                        const notRun = !!a.outcome && a.outcome !== "opened" && a.outcome !== "closed" && a.outcome !== "held";
+                        return (
+                          <div key={i} className={`flex flex-wrap items-start gap-2 text-[12px] ${notRun ? "opacity-60" : ""}`}>
+                            <span className={`mt-px shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold ${ACT[a.action]?.cls || ACT.HOLD.cls}`}>
+                              {ACT[a.action]?.label || a.action}
                             </span>
-                          )}
-                          <span className="min-w-0 text-muted [overflow-wrap:anywhere]">{a.reason}</span>
-                        </div>
-                      ))}
+                            {a.epic && (
+                              <span className="shrink-0 font-mono text-white">
+                                {a.epic}
+                                {a.direction ? ` ${a.direction === "BUY" ? "▲" : "▼"}` : ""}
+                                {a.riskPct ? ` ${a.riskPct}%` : ""}
+                              </span>
+                            )}
+                            {oc && (
+                              <span className={`mt-px shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold ${oc.cls}`}>
+                                {oc.label}
+                              </span>
+                            )}
+                            <span className="min-w-0 text-muted [overflow-wrap:anywhere]">
+                              {a.reason}
+                              {notRun && a.outcomeNote ? <span className="text-short/80"> · {a.outcomeNote}</span> : null}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
