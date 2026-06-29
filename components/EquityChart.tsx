@@ -1,15 +1,63 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { pnlClass, pnlFmt } from "./ui";
+
 type Point = { ts: number; equity: number };
 type Marker = { ts: number; dir: "BUY" | "SELL"; pnl?: number };
 
-export default function EquityChart({
-  data,
-  markers = [],
-}: {
-  data: Point[];
-  markers?: Marker[];
-}) {
+const DAY = 86_400_000;
+const RANGES = [
+  { k: "1d", label: "1D", ms: DAY },
+  { k: "1w", label: "1S", ms: 7 * DAY },
+  { k: "1m", label: "1M", ms: 30 * DAY },
+  { k: "all", label: "Todo", ms: Infinity },
+];
+
+export default function EquityChart({ data, markers = [] }: { data: Point[]; markers?: Marker[] }) {
+  const [range, setRange] = useState("all");
+
+  const { filtered, fmarkers } = useMemo(() => {
+    if (!data?.length) return { filtered: [] as Point[], fmarkers: [] as Marker[] };
+    const r = RANGES.find((x) => x.k === range)!;
+    if (!Number.isFinite(r.ms)) return { filtered: data, fmarkers: markers };
+    const cut = data[data.length - 1].ts - r.ms;
+    const f = data.filter((d) => d.ts >= cut);
+    return {
+      filtered: f.length >= 2 ? f : data, // si el rango no tiene suficiente, muestra todo
+      fmarkers: markers.filter((m) => m.ts >= cut),
+    };
+  }, [data, markers, range]);
+
+  const delta = filtered.length >= 2 ? filtered[filtered.length - 1].equity - filtered[0].equity : 0;
+  const deltaPct = filtered.length >= 2 && filtered[0].equity ? (delta / filtered[0].equity) * 100 : 0;
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className={`font-mono text-xs ${pnlClass(delta)}`}>
+          {pnlFmt(delta)}€ <span className="text-muted">({pnlFmt(deltaPct)}%) en el periodo</span>
+        </span>
+        <div className="flex overflow-hidden rounded-md border border-industrial">
+          {RANGES.map((r) => (
+            <button
+              key={r.k}
+              onClick={() => setRange(r.k)}
+              className={`px-2.5 py-1 font-mono text-[11px] transition-colors ${
+                range === r.k ? "bg-accent text-onaccent" : "text-muted hover:text-dim"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <Curve data={filtered} markers={fmarkers} />
+    </div>
+  );
+}
+
+function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
   const W = 720;
   const H = 200;
   const pad = 8;
@@ -17,7 +65,7 @@ export default function EquityChart({
   if (!data || data.length < 2) {
     return (
       <div className="dotgrid flex h-[200px] flex-col items-center justify-center rounded-lg border border-industrial text-center">
-        <p className="text-sm font-medium text-dim">Sin datos de equity todavía</p>
+        <p className="text-sm font-medium text-dim">Sin datos de equity en este rango</p>
         <p className="mt-1 text-xs text-muted">La curva aparece cuando el bot registra movimientos de cuenta.</p>
       </div>
     );
@@ -39,7 +87,6 @@ export default function EquityChart({
   const line = data.map((d, i) => `${x(i)},${y(d.equity)}`).join(" ");
   const area = `${pad},${H - pad} ${line} ${W - pad},${H - pad}`;
 
-  // sombreado de drawdown: zonas por debajo del maximo acumulado
   let peak = values[0];
   const ddPts: string[] = [];
   data.forEach((d, i) => {
@@ -68,13 +115,7 @@ export default function EquityChart({
       <polygon points={area} fill="url(#eqfill)" />
       <polyline points={line} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {markers.map((m, i) => (
-        <circle
-          key={i}
-          cx={xt(m.ts)}
-          cy={H - pad - 4}
-          r="2.5"
-          fill={(m.pnl ?? 0) >= 0 ? "#34C98A" : "#F2567A"}
-        />
+        <circle key={i} cx={xt(m.ts)} cy={H - pad - 4} r="2.5" fill={(m.pnl ?? 0) >= 0 ? "#34C98A" : "#F2567A"} />
       ))}
       <circle cx={x(data.length - 1)} cy={y(values[values.length - 1])} r="3.5" fill={stroke} />
     </svg>
