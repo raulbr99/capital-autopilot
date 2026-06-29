@@ -1,7 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import type { OpenPos } from "./types";
 import { SectionHead, fmt, pnlClass, pnlFmt } from "./ui";
+import PositionChart from "./PositionChart";
+
+const ChartIcon = (
+  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M2 12l3.5-4 2.5 2L13 4" />
+    <path d="M13 4h-2.5M13 4v2.5" />
+  </svg>
+);
 
 // Decimales según la magnitud del precio (forex necesita 5, índices/cripto 1).
 function pdec(n: number) {
@@ -39,7 +48,9 @@ export default function PositionsTable({
   onClose: (p: OpenPos) => void;
   busy: boolean;
 }) {
+  const [chartPos, setChartPos] = useState<OpenPos | null>(null);
   return (
+    <>
     <div className="rounded-xl border border-industrial bg-soft">
       <SectionHead label={`Posiciones abiertas · ${positions.length}`} right={positions.length > 0 ? LiveTag : undefined} />
       {positions.length === 0 ? (
@@ -88,13 +99,22 @@ export default function PositionsTable({
                       <td className="px-4 py-3 text-right text-dim">{risk == null ? "—" : `≈${fmt(risk)}`}</td>
                       <td className={`px-4 py-3 text-right ${pnlClass(p.upl)}`}>{pnlFmt(p.upl)}</td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => onClose(p)}
-                          disabled={busy}
-                          className="rounded-md border border-cement px-3 py-1 text-[10px] text-dim transition hover:border-short hover:text-short disabled:opacity-40"
-                        >
-                          CERRAR
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setChartPos(p)}
+                            title="Ver gráfico"
+                            className="rounded-md border border-cement p-1.5 text-dim transition hover:border-accent hover:text-accent"
+                          >
+                            {ChartIcon}
+                          </button>
+                          <button
+                            onClick={() => onClose(p)}
+                            disabled={busy}
+                            className="rounded-md border border-cement px-3 py-1 text-[10px] text-dim transition hover:border-short hover:text-short disabled:opacity-40"
+                          >
+                            CERRAR
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -124,13 +144,21 @@ export default function PositionsTable({
                     <Cell label="RIESGO" value={risk == null ? "—" : `≈${fmt(risk)}`} />
                     <Cell label="P&L" value={pnlFmt(p.upl)} tone={pnlClass(p.upl)} />
                   </div>
-                  <button
-                    onClick={() => onClose(p)}
-                    disabled={busy}
-                    className="mt-3 min-h-11 w-full rounded-md border border-cement text-[11px] text-dim transition hover:border-short hover:text-short disabled:opacity-40"
-                  >
-                    CERRAR POSICIÓN
-                  </button>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => setChartPos(p)}
+                      className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-cement text-[11px] text-dim transition hover:border-accent hover:text-accent"
+                    >
+                      {ChartIcon} GRÁFICO
+                    </button>
+                    <button
+                      onClick={() => onClose(p)}
+                      disabled={busy}
+                      className="min-h-11 flex-1 rounded-md border border-cement text-[11px] text-dim transition hover:border-short hover:text-short disabled:opacity-40"
+                    >
+                      CERRAR
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -138,6 +166,8 @@ export default function PositionsTable({
         </>
       )}
     </div>
+    {chartPos && <PositionChart pos={chartPos} onClose={() => setChartPos(null)} />}
+    </>
   );
 }
 
