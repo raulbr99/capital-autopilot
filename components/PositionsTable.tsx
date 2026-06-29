@@ -3,8 +3,13 @@
 import type { OpenPos } from "./types";
 import { SectionHead, fmt, pnlClass, pnlFmt } from "./ui";
 
-function fnum(n: number | null | undefined, d = 2) {
-  return n == null ? "—" : fmt(n, d);
+// Decimales según la magnitud del precio (forex necesita 5, índices/cripto 1).
+function pdec(n: number) {
+  const a = Math.abs(n);
+  return a < 10 ? 5 : a < 100 ? 3 : a < 1000 ? 2 : 1;
+}
+function price(n: number | null | undefined) {
+  return n == null ? "—" : fmt(n, pdec(n));
 }
 
 function derive(p: OpenPos) {
@@ -12,8 +17,18 @@ function derive(p: OpenPos) {
   const risk = p.stopLevel != null ? Math.abs(p.entry - p.stopLevel) * p.size : null;
   const distPct = p.stopLevel != null && cur ? (Math.abs(cur - p.stopLevel) / cur) * 100 : null;
   const distTone = distPct == null ? "text-muted" : distPct < 0.5 ? "text-short" : "text-dim";
-  return { risk, distPct, distTone };
+  // ¿el precio actual favorece la posición? (LONG sube / SHORT baja)
+  const favor = cur === p.entry ? 0 : p.direction === "BUY" ? cur - p.entry : p.entry - cur;
+  const curTone = favor > 0 ? "text-long" : favor < 0 ? "text-short" : "text-dim";
+  return { cur, risk, distPct, distTone, curTone };
 }
+
+const LiveTag = (
+  <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-muted">
+    <span className="h-1.5 w-1.5 rounded-full bg-long animate-pulse motion-reduce:animate-none" />
+    En vivo
+  </span>
+);
 
 export default function PositionsTable({
   positions,
@@ -26,7 +41,7 @@ export default function PositionsTable({
 }) {
   return (
     <div className="rounded-xl border border-industrial bg-soft">
-      <SectionHead label={`Posiciones abiertas · ${positions.length}`} />
+      <SectionHead label={`Posiciones abiertas · ${positions.length}`} right={positions.length > 0 ? LiveTag : undefined} />
       {positions.length === 0 ? (
         <div className="dotgrid px-5 py-9 text-center">
           <p className="text-sm font-medium text-dim">Sin posiciones abiertas</p>
@@ -43,6 +58,7 @@ export default function PositionsTable({
                   <th className="px-4 py-2 font-normal">DIR</th>
                   <th className="px-4 py-2 text-right font-normal">SIZE</th>
                   <th className="px-4 py-2 text-right font-normal">ENTRADA</th>
+                  <th className="px-4 py-2 text-right font-normal">PRECIO</th>
                   <th className="px-4 py-2 text-right font-normal">SL · TP</th>
                   <th className="px-4 py-2 text-right font-normal">DIST→SL</th>
                   <th className="px-4 py-2 text-right font-normal">RIESGO</th>
@@ -52,7 +68,7 @@ export default function PositionsTable({
               </thead>
               <tbody>
                 {positions.map((p) => {
-                  const { risk, distPct, distTone } = derive(p);
+                  const { cur, risk, distPct, distTone, curTone } = derive(p);
                   return (
                     <tr key={p.key} className="border-b border-industrial/60 hover:bg-raised">
                       <td className="px-4 py-3 text-white">{p.epic}</td>
@@ -62,10 +78,11 @@ export default function PositionsTable({
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right text-dim">{fmt(p.size)}</td>
-                      <td className="px-4 py-3 text-right text-dim">{fnum(p.entry)}</td>
+                      <td className="px-4 py-3 text-right text-dim">{price(p.entry)}</td>
+                      <td className={`px-4 py-3 text-right font-medium tabular-nums ${curTone}`}>{price(cur)}</td>
                       <td className="px-4 py-3 text-right text-dim">
-                        {p.stopLevel == null ? <span className="text-short">sin SL</span> : fnum(p.stopLevel)}
-                        <span className="text-muted"> · {fnum(p.limitLevel)}</span>
+                        {p.stopLevel == null ? <span className="text-short">sin SL</span> : price(p.stopLevel)}
+                        <span className="text-muted"> · {price(p.limitLevel)}</span>
                       </td>
                       <td className={`px-4 py-3 text-right ${distTone}`}>{distPct == null ? "—" : `${distPct.toFixed(2)}%`}</td>
                       <td className="px-4 py-3 text-right text-dim">{risk == null ? "—" : `≈${fmt(risk)}`}</td>
@@ -89,7 +106,7 @@ export default function PositionsTable({
           {/* Móvil: tarjetas apiladas */}
           <div className="space-y-2 p-3 md:hidden">
             {positions.map((p) => {
-              const { risk, distPct, distTone } = derive(p);
+              const { cur, risk, distPct, distTone, curTone } = derive(p);
               return (
                 <div key={p.key} className="rounded-lg border border-industrial bg-base p-3">
                   <div className="flex items-center justify-between">
@@ -100,8 +117,9 @@ export default function PositionsTable({
                   </div>
                   <div className="mt-2.5 grid grid-cols-3 gap-y-2 font-mono text-[11px]">
                     <Cell label="SIZE" value={fmt(p.size)} />
-                    <Cell label="ENTRADA" value={fnum(p.entry)} />
-                    <Cell label="SL" value={p.stopLevel == null ? "sin SL" : fnum(p.stopLevel)} tone={p.stopLevel == null ? "text-short" : "text-dim"} />
+                    <Cell label="ENTRADA" value={price(p.entry)} />
+                    <Cell label="PRECIO" value={price(cur)} tone={curTone} />
+                    <Cell label="SL" value={p.stopLevel == null ? "sin SL" : price(p.stopLevel)} tone={p.stopLevel == null ? "text-short" : "text-dim"} />
                     <Cell label="DIST→SL" value={distPct == null ? "—" : `${distPct.toFixed(2)}%`} tone={distTone} />
                     <Cell label="RIESGO" value={risk == null ? "—" : `≈${fmt(risk)}`} />
                     <Cell label="P&L" value={pnlFmt(p.upl)} tone={pnlClass(p.upl)} />
