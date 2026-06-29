@@ -87,6 +87,7 @@ export type BotConfig = {
   pmMode: boolean; // Gestor de Cartera IA inline (OpenRouter, cada tick) — DEPRECADO por coste
   cloudPm: boolean; // Gestor en la nube: una routine Claude decide cada hora y deja las acciones en cola; el motor las ejecuta
   committee: boolean; // comité IA: varios modelos (OpenRouter) votan antes de cada apertura
+  committeeMinApprovals: number; // aprobaciones mínimas para no vetar (1 = veto solo si rechazo unánime)
   instruments: Instrument[]; // activos con su resolucion de senal
   watchlist: string[]; // espejo de instruments[].epic (compat)
   sizePerTrade: number; // unidades (modo fixed)
@@ -105,6 +106,7 @@ export const DEFAULT_CONFIG: BotConfig = {
   pmMode: false, // Gestor IA inline (OpenRouter) off — sustituido por cloudPm
   cloudPm: false, // Gestor en la nube off por defecto
   committee: true, // comité IA vota antes de abrir (ON)
+  committeeMinApprovals: 1, // veta solo si rechazo unánime (menos restrictivo)
   instruments: [
     // 💱 Forex
     { epic: "NZDUSD", resolution: "DAY", regimeFilter: false, category: "forex" },

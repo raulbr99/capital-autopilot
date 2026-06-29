@@ -26,7 +26,7 @@ function models(): string[] {
     .filter(Boolean);
 }
 
-export async function committeeVote(t: TradeProposal): Promise<Verdict> {
+export async function committeeVote(t: TradeProposal, minApprovals = 1): Promise<Verdict> {
   const key = process.env.OPENROUTER_API_KEY;
   const ms = models();
   if (!key || ms.length === 0) return { approved: true, votes: [], summary: "comité off" };
@@ -34,19 +34,20 @@ export async function committeeVote(t: TradeProposal): Promise<Verdict> {
   const ind = t.indicators
     ? `RSI ${t.indicators.rsi?.toFixed(0)}, ADX ${t.indicators.adx?.toFixed(0)}, SMA ${t.indicators.smaFast?.toFixed(4)}/${t.indicators.smaSlow?.toFixed(4)}`
     : "";
-  const prompt = `Eres un analista de riesgo en un comité de inversión de un bot que opera dinero REAL. Evalúa esta operación PROPUESTA y vota.
+  const prompt = `Eres un analista en un comité de inversión de un bot que opera dinero real. Evalúa esta operación y vota.
 
-Operación: ${t.direction} ${t.epic}${t.price ? ` @ ${t.price}` : ""} (mesa ${t.desk || "?"}), riesgo ${t.riskPct}% del capital.
+Operación: ${t.direction} ${t.epic}${t.price ? ` @ ${t.price}` : ""} (mesa ${t.desk || "?"}).
 Tesis del gestor: ${t.thesis}
 ${ind ? `Indicadores: ${ind}` : ""}
 
-¿Apruebas ABRIR esta operación AHORA? Sé ESCÉPTICO: rechaza si la tesis es floja/genérica, si va contra la tendencia clara, si es perseguir hype, o si el riesgo/recompensa no compensa. Aprobar solo con convicción real.
+El TAMAÑO y el riesgo ya los controla el bot (sizing por margen fijo) — NO penalices el % de riesgo, juzga solo si la TESIS y la DIRECCIÓN tienen fundamento. Aprueba salvo que la operación sea CLARAMENTE mala: tesis vacía o genérica, va en contra de una tendencia evidente, o es perseguir hype sin fundamento. Ante la duda razonable, APRUEBA.
 Responde SOLO con JSON: {"approve": true|false, "reason": "una frase corta"}`;
 
   const votes = (await Promise.all(ms.map((m) => askModel(key, m, prompt)))).filter(Boolean) as Vote[];
   if (votes.length === 0) return { approved: true, votes: [], summary: "sin respuestas (fail-open)" };
   const yes = votes.filter((v) => v.approve).length;
-  const approved = yes > votes.length / 2; // mayoría estricta
+  // Veta solo si NO llega al mínimo de aprobaciones (por defecto 1 = veto solo si rechazo unánime).
+  const approved = yes >= minApprovals;
   return { approved, votes, summary: `${yes}/${votes.length} a favor` };
 }
 

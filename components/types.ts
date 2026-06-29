@@ -118,6 +118,7 @@ export type BotConfig = {
   pmMode: boolean;
   cloudPm: boolean;
   committee: boolean;
+  committeeMinApprovals?: number;
   instruments: Instrument[];
   watchlist: string[];
   sizePerTrade: number;

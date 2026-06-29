@@ -568,15 +568,18 @@ async function executePmDecision(
       if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) { tagOutcome(act, "skipped", "tamaño/stop inválido"); continue; }
       // ---- comité IA: varios modelos votan antes de abrir ----
       if ((cfg as any).committee) {
-        const verdict = await committeeVote({
-          epic: act.epic,
-          direction: act.direction,
-          thesis: decision.thesis || act.reason || "",
-          riskPct,
-          desk: decision.desk ?? undefined,
-          price: e.price,
-          indicators: e.signal?.indicators,
-        });
+        const verdict = await committeeVote(
+          {
+            epic: act.epic,
+            direction: act.direction,
+            thesis: decision.thesis || act.reason || "",
+            riskPct,
+            desk: decision.desk ?? undefined,
+            price: e.price,
+            indicators: e.signal?.indicators,
+          },
+          (cfg as any).committeeMinApprovals ?? 1
+        );
         if (!verdict.approved) {
           const no = verdict.votes.find((v) => !v.approve);
           tagOutcome(act, "vetoed", `comité ${verdict.summary}${no ? `: ${no.reason}` : ""}`);
