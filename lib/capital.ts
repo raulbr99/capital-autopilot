@@ -49,19 +49,31 @@ export async function getSession(force = false): Promise<Session> {
     }
   }
 
-  const res = await fetch(`${BASE_URL}/api/v1/session`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CAP-API-KEY": process.env.CAPITAL_API_KEY!,
-    },
-    body: JSON.stringify({
-      identifier: process.env.CAPITAL_IDENTIFIER,
-      password: process.env.CAPITAL_PASSWORD,
-      encryptedPassword: false,
-    }),
-    cache: "no-store",
-  });
+  // El endpoint /session tiene un rate-limit MUY estricto (≈1 req/s). En un
+  // arranque en frio con el token compartido recien expirado, un 429/5xx
+  // transitorio en el login dejaria sin evaluar al instrumento. Reintentamos
+  // con backoff — igual que hace authed() para el resto de llamadas.
+  const doLogin = () =>
+    fetch(`${BASE_URL}/api/v1/session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CAP-API-KEY": process.env.CAPITAL_API_KEY!,
+      },
+      body: JSON.stringify({
+        identifier: process.env.CAPITAL_IDENTIFIER,
+        password: process.env.CAPITAL_PASSWORD,
+        encryptedPassword: false,
+      }),
+      cache: "no-store",
+    });
+
+  let res = await doLogin();
+  // 429 (rate-limit) o 5xx transitorio -> esperar y reintentar (2 intentos extra).
+  for (let attempt = 0; attempt < 2 && (res.status === 429 || res.status >= 500); attempt++) {
+    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+    res = await doLogin();
+  }
 
   if (!res.ok) {
     const text = await res.text();
