@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import PWARegister from "@/components/PWARegister";
 
 const sans = Inter({
   subsets: ["latin"],
@@ -16,6 +17,15 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Capital Autopilot — autonomous trading",
   description: "Panel de trading autónomo sobre Capital.com",
+  applicationName: "Capital Autopilot",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Autopilot" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0B0D11",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -37,6 +47,7 @@ export default function RootLayout({
         className={`${sans.variable} ${mono.variable} bg-ink text-white font-sans antialiased`}
       >
         {children}
+        <PWARegister />
       </body>
     </html>
   );

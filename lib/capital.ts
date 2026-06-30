@@ -19,6 +19,7 @@ const BASE_URL =
 type Session = { cst: string; xst: string; createdAt: number };
 
 let cached: Session | null = null;
+let loginInFlight: Promise<Session> | null = null; // single-flight: dedupe logins concurrentes
 const SESSION_TTL = 8 * 60 * 1000; // 8 minutos (sesion Capital ~10 min de inactividad)
 
 export function capitalConfigured(): boolean {
@@ -49,34 +50,52 @@ export async function getSession(force = false): Promise<Session> {
     }
   }
 
-  const res = await fetch(`${BASE_URL}/api/v1/session`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CAP-API-KEY": process.env.CAPITAL_API_KEY!,
-    },
-    body: JSON.stringify({
-      identifier: process.env.CAPITAL_IDENTIFIER,
-      password: process.env.CAPITAL_PASSWORD,
-      encryptedPassword: false,
-    }),
-    cache: "no-store",
+  // single-flight: si ya hay un login en curso, espera ESE mismo en vez de lanzar
+  // otro. Antes, getAccount + getPositions + getPrices con la sesión fría hacían
+  // varios logins a la vez -> burst -> 429 (que además tiraba la evaluación y
+  // provocaba listas de posiciones parciales -> cierres en falso).
+  if (loginInFlight) return loginInFlight;
+  loginInFlight = doLogin().finally(() => {
+    loginInFlight = null;
   });
+  return loginInFlight;
+}
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Login Capital.com fallo (${res.status}): ${text}`);
+async function doLogin(): Promise<Session> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(`${BASE_URL}/api/v1/session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CAP-API-KEY": process.env.CAPITAL_API_KEY!,
+      },
+      body: JSON.stringify({
+        identifier: process.env.CAPITAL_IDENTIFIER,
+        password: process.env.CAPITAL_PASSWORD,
+        encryptedPassword: false,
+      }),
+      cache: "no-store",
+    });
+
+    // /session limita a ~1 req/s -> en 429 esperamos y reintentamos
+    if (res.status === 429 && attempt < 2) {
+      await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+      continue;
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Login Capital.com fallo (${res.status}): ${text}`);
+    }
+    const cst = res.headers.get("CST");
+    const xst = res.headers.get("X-SECURITY-TOKEN");
+    if (!cst || !xst) {
+      throw new Error("Capital.com no devolvio los tokens de sesion.");
+    }
+    cached = { cst, xst, createdAt: Date.now() };
+    void saveSessionToken(cst, xst);
+    return cached;
   }
-
-  const cst = res.headers.get("CST");
-  const xst = res.headers.get("X-SECURITY-TOKEN");
-  if (!cst || !xst) {
-    throw new Error("Capital.com no devolvio los tokens de sesion.");
-  }
-
-  cached = { cst, xst, createdAt: Date.now() };
-  void saveSessionToken(cst, xst);
-  return cached;
+  throw new Error("Login Capital.com: 429 persistente tras reintentos.");
 }
 
 // Throttle global: espacia las llamadas a Capital ~140ms (≈7 req/s) para no
@@ -190,8 +209,8 @@ export type Position = {
   currentPrice: number | null;
 };
 
-export async function getPositions(): Promise<Position[]> {
-  if (positionsCache && Date.now() - positionsCache.t < 8000) return positionsCache.d;
+export async function getPositions(force = false): Promise<Position[]> {
+  if (!force && positionsCache && Date.now() - positionsCache.t < 8000) return positionsCache.d;
   const data = await json<any>(await authed("/api/v1/positions"));
   const out: Position[] = (data.positions ?? []).map((p: any) => {
     const bid = typeof p.market?.bid === "number" ? p.market.bid : null;

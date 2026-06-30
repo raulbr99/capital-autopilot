@@ -820,12 +820,35 @@ async function reconcileClosedTrades(
     b.prevDeposit = deposit;
     return;
   }
+  // Confirmación anti-glitch: antes de cerrar, RE-consulta posiciones sin caché. Una
+  // lista parcial/transitoria de Capital (p.ej. por un 429) cerraba en falso los trades
+  // que "faltaban" aunque seguían abiertos. Solo cerramos los que de verdad ya no están
+  // en la re-consulta fresca; si falla o viene vacía con varias abiertas, no cerramos nada.
+  let reallyClosed = closed;
+  try {
+    const fresh = await getPositions(true);
+    if (fresh.length === 0 && ourOpen.length >= 2) {
+      logN("info", "Reconciliación en pausa: la re-consulta devolvió 0 posiciones con varias abiertas (glitch).");
+      return;
+    }
+    const freshEpics = new Set(fresh.map((p) => p.epic));
+    reallyClosed = closed.filter((t) => !freshEpics.has(t.epic));
+    const saved = closed.length - reallyClosed.length;
+    if (saved > 0) logN("info", `Reconciliación: ${saved} trade(s) seguían abiertos en la re-consulta — cierre en falso evitado.`);
+  } catch {
+    logN("info", "Reconciliación en pausa: no pude confirmar el cierre (re-consulta falló).");
+    return;
+  }
+  if (reallyClosed.length === 0) {
+    b.prevDeposit = deposit;
+    return;
+  }
   // P&L realizado = delta de `deposit` (efectivo) entre ticks. Usamos deposit y NO
   // balance: balance incluye el P&L flotante de las posiciones aún abiertas, que
   // contaminaba la atribución (un cierre perdedor podía aparecer como ganancia).
   const prev = b.prevDeposit > 0 ? b.prevDeposit : deposit;
-  const per = Math.round(((deposit - prev) / closed.length) * 100) / 100;
-  for (const t of closed) {
+  const per = Math.round(((deposit - prev) / reallyClosed.length) * 100) / 100;
+  for (const t of reallyClosed) {
     const exit = priceByEpic.get(t.epic) ?? t.entry;
     await updateTrade(t.id, { status: "closed", exit, pnl: per, closedTs: Date.now() });
     b.stats.tradesClosed++;
