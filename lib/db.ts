@@ -142,6 +142,7 @@ function mergeConfig(base: BotConfig, override: any): BotConfig {
           resolution: i.resolution || DEFAULT_RESOLUTION,
           ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
           ...(category ? { category } : {}),
+          ...(i.longOnly === true ? { longOnly: true } : {}),
         };
       });
   } else if (Array.isArray(override.watchlist)) {
