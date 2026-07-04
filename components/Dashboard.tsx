@@ -172,18 +172,12 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2.5">
-          <span className="flex items-center gap-1.5 rounded-md bg-accent/12 px-2.5 py-1 text-[11px] font-semibold text-accent">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulseDot" />
-            LIVE
-          </span>
           {snap?.killedToday && (
             <span className="rounded border border-short bg-short/10 px-2 py-1 font-mono text-[10px] text-short">
               🛑 KILL
             </span>
           )}
-          <div className="hidden sm:block">
-            <ConnBadge configured={configured} enabled={enabled} />
-          </div>
+          <ConnBadge configured={configured} enabled={enabled} />
           <ThemeToggle />
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
@@ -240,16 +234,23 @@ export default function Dashboard() {
               {enabled ? "Detener piloto" : "Activar piloto"}
             </button>
 
+            {/* lo que importa HOY (no contadores de por vida) */}
             <div className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial text-center">
-              <MiniStat label="SEÑALES" value={snap?.state.stats.signals ?? 0} />
-              <MiniStat label="ABIERTAS" value={snap?.state.stats.tradesOpened ?? 0} />
-              <MiniStat label="CERRADAS" value={snap?.state.stats.tradesClosed ?? 0} />
+              <MiniStat
+                label="PNL HOY"
+                value={`${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
+                tone={Math.abs(dayPnlPct) < 0.005 ? undefined : dayPnlPct > 0 ? "long" : "short"}
+              />
+              <MiniStat label="TRADES HOY" value={`${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
+              <MiniStat
+                label="POSICIONES"
+                value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`}
+                tone={cfg && positions.length > cfg.maxOpenPositions ? "short" : undefined}
+              />
             </div>
 
             {/* guardarrailes en vivo */}
             <div className="mt-3 space-y-2 rounded-lg border border-industrial bg-base p-3.5 text-xs">
-              <Row label="PnL hoy" value={`${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`} tone={Math.abs(dayPnlPct) < 0.005 ? undefined : dayPnlPct > 0 ? "long" : "short"} />
-              <Row label="Trades hoy" value={`${snap?.tradesToday ?? 0} / ${cfg?.risk.maxTradesPerDay ?? "—"}`} />
               <Row label="Riesgo abierto" value={openRisk > 0 ? `≈${fmt(openRisk)} ${acc?.currency ?? ""}` : "—"} />
               <Row label="Cooldown" value={cooldownLabel(snap?.cooldownUntil ?? 0)} />
               <div className="pt-1.5">
@@ -285,16 +286,15 @@ export default function Dashboard() {
           <StatCard label="Efectivo" value={acc ? fmt(acc.deposit) : "—"} unit={acc?.currency} />
           <StatCard label="Disponible" value={acc ? fmt(acc.available) : "—"} unit={acc?.currency} />
           <StatCard label="PnL flotante" value={pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < 0.005 ? undefined : floatPnl > 0 ? "long" : "short"} />
-          <StatCard label="Posiciones" value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`} />
+          <StatCard
+            label="Posiciones"
+            value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`}
+            unit={cfg && positions.length > cfg.maxOpenPositions ? "sobre el límite" : undefined}
+            tone={cfg && positions.length > cfg.maxOpenPositions ? "short" : undefined}
+          />
         </section>
 
-        {/* EXPECTATIVA REAL (con tus trades cerrados) */}
-        <ExpectancyPanel className="mt-4" />
-
-        {/* LAS 4 MESAS */}
-        <DesksOverview evals={evals} positions={positions} instruments={cfg?.instruments ?? []} />
-
-        {/* ACTIVIDAD + RIESGO (el detalle por activo vive en las mesas; las herramientas en /lab) */}
+        {/* ACTIVIDAD + RIESGO — triage: lo accionable justo después del dinero */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
           <div className="min-w-0 space-y-4">
             <PositionsTable positions={positions} onClose={closePos} busy={busy} />
@@ -309,13 +309,17 @@ export default function Dashboard() {
             >
               <p className="tag">Herramientas</p>
               <p className="mt-1.5 font-display text-base font-semibold text-white">Lab — estrategia y ajustes</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted">
-                Configuración del bot, backtest y validación walk-forward.{" "}
-                <span className="text-accent">Abrir →</span>
-              </p>
+              <p className="mt-1 text-xs text-muted">Configuración del bot, backtest y validación walk-forward.</p>
+              <p className="mt-2 text-xs font-medium text-accent">Abrir →</p>
             </Link>
           </div>
         </section>
+
+        {/* LAS 4 MESAS */}
+        <DesksOverview evals={evals} positions={positions} instruments={cfg?.instruments ?? []} />
+
+        {/* EXPECTATIVA REAL (análisis, no triage) */}
+        <ExpectancyPanel className="mt-4" />
 
         <footer className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-industrial py-6 text-[11px] text-muted sm:flex-row">
           <p>Capital Autopilot</p>
@@ -382,8 +386,11 @@ function DesksOverview({
   instruments: Instrument[];
 }) {
   const catOf = (epic: string) => instruments.find((i) => i.epic === epic)?.category;
+  // posiciones de activos que ya no están en el universo (quedaron abiertas al podarlo)
+  const legacy = positions.filter((p) => !catOf(p.epic));
   return (
-    <section className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <section className="mt-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {DESK_META.map((d) => {
         const ev = evals.filter((e) => catOf(e.epic) === d.key);
         const pos = positions.filter((p) => catOf(p.epic) === d.key);
@@ -425,6 +432,13 @@ function DesksOverview({
           </Link>
         );
       })}
+    </div>
+    {legacy.length > 0 && (
+      <p className="mt-2 font-mono text-[11px] text-muted">
+        + {legacy.length} posición{legacy.length > 1 ? "es" : ""} de activos fuera del universo actual (
+        {legacy.map((p) => p.epic).join(", ")}) — se gestionan hasta su cierre, no se reabren.
+      </p>
+    )}
     </section>
   );
 }
@@ -460,10 +474,11 @@ function ConnBadge({ configured, enabled }: { configured: boolean; enabled: bool
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({ label, value, tone }: { label: string; value: string | number; tone?: "long" | "short" }) {
+  const c = tone === "long" ? "text-long" : tone === "short" ? "text-short" : "text-white";
   return (
     <div className="bg-soft py-3.5">
-      <p className="font-mono text-xl font-medium text-white">{value}</p>
+      <p className={`font-mono text-xl font-medium tabular-nums ${c}`}>{value}</p>
       <p className="tag mt-0.5">{label}</p>
     </div>
   );
