@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { apewisdom, type ApeTicker } from "@/lib/apewisdom";
 import { exaNews, exaConfigured } from "@/lib/exa";
 import { stockQuotes } from "@/lib/prices";
+import { earningsCalendar } from "@/lib/earnings";
 import { loadConfig } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,9 @@ export async function GET() {
     // Precios con extendido (pre-market / after-hours) vía Yahoo
     const prices = await stockQuotes(stockEpics).catch(() => []);
 
+    // Calendario de earnings (próxima fecha + EPS estimado + sorpresas) vía Yahoo
+    const earnings = await earningsCalendar(stockEpics).catch(() => []);
+
     let news: Awaited<ReturnType<typeof exaNews>> = [];
     let exaErr = false;
     if (exaConfigured()) {
@@ -62,6 +66,7 @@ export async function GET() {
       stocks,
       trending,
       prices,
+      earnings,
       news,
       exaConfigured: exaConfigured(),
       exaErr,
