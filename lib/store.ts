@@ -27,15 +27,15 @@ export type RiskConfig = {
 };
 
 export const DEFAULT_RISK: RiskConfig = {
-  sizingMode: "margin",
-  riskPercent: 1,
+  sizingMode: "percent", // riesgo normalizado (mismo €-riesgo por trade entre mesas)
+  riskPercent: 0.75, // ~0.75% del equity arriesgado por trade
   marginPct: 10,
   useAtrStops: true,
   atrPeriod: 14,
   atrStopMult: 2,
   atrTpMult: 3,
   maxDailyLossPct: 5,
-  maxTradesPerDay: 12,
+  maxTradesPerDay: 4,
   cooldownMin: 30,
   activeManage: true,
   breakevenAtr: 1,
@@ -52,6 +52,7 @@ export type Instrument = {
   resolution: string;
   regimeFilter?: boolean; // override por activo del filtro ADX (undefined = usa el global)
   category?: DeskCategory; // mesa a la que pertenece (forex/crypto/stocks/commodities)
+  longOnly?: boolean; // solo compras (bloquea SELL) — para mesas donde shortear pierde
 };
 
 export const RESOLUTIONS = [
@@ -88,6 +89,7 @@ export type BotConfig = {
   cloudPm: boolean; // Gestor en la nube: una routine Claude decide cada hora y deja las acciones en cola; el motor las ejecuta
   committee: boolean; // comité IA: varios modelos (OpenRouter) votan antes de cada apertura
   committeeMinApprovals: number; // aprobaciones mínimas para no vetar (1 = veto solo si rechazo unánime)
+  committeeMinApprovalsShort: number; // igual pero para SELL (más estricto: los shorts pierden)
   instruments: Instrument[]; // activos con su resolucion de senal
   watchlist: string[]; // espejo de instruments[].epic (compat)
   sizePerTrade: number; // unidades (modo fixed)
@@ -107,35 +109,36 @@ export const DEFAULT_CONFIG: BotConfig = {
   cloudPm: false, // Gestor en la nube off por defecto
   committee: true, // comité IA vota antes de abrir (ON)
   committeeMinApprovals: 1, // veta solo si rechazo unánime (menos restrictivo)
+  committeeMinApprovalsShort: 2, // SELL más estricto (mayoría 2/3) — los shorts pierden
   instruments: [
-    // 💱 Forex
-    { epic: "NZDUSD", resolution: "DAY", regimeFilter: false, category: "forex" },
+    // 💱 Forex (filtro de régimen ADX en todos)
+    { epic: "NZDUSD", resolution: "DAY", regimeFilter: true, category: "forex" },
     { epic: "EURUSD", resolution: "HOUR_4", regimeFilter: true, category: "forex" },
-    { epic: "GBPJPY", resolution: "DAY", regimeFilter: false, category: "forex" },
-    { epic: "EURJPY", resolution: "DAY", regimeFilter: false, category: "forex" },
+    { epic: "GBPJPY", resolution: "DAY", regimeFilter: true, category: "forex" },
+    { epic: "EURJPY", resolution: "DAY", regimeFilter: true, category: "forex" },
     { epic: "USDCHF", resolution: "HOUR_4", regimeFilter: true, category: "forex" },
-    // ₿ Crypto
-    { epic: "BTCUSD", resolution: "HOUR_4", regimeFilter: true, category: "crypto" },
-    { epic: "ETHUSD", resolution: "DAY", regimeFilter: true, category: "crypto" },
-    // 📈 Stocks US (solo horario NY ~15:30-22:00 Madrid; el motor las salta si están CLOSED)
-    { epic: "AAPL", resolution: "DAY", regimeFilter: true, category: "stocks" },
-    { epic: "NVDA", resolution: "DAY", regimeFilter: true, category: "stocks" },
-    { epic: "TSLA", resolution: "DAY", regimeFilter: true, category: "stocks" },
-    { epic: "MSFT", resolution: "DAY", regimeFilter: true, category: "stocks" },
-    { epic: "AMZN", resolution: "DAY", regimeFilter: true, category: "stocks" },
-    ...["GOOGL", "META", "NFLX", "AMD", "MU", "AVGO", "QCOM", "SMCI", "ARM", "SNOW", "CRWD", "PLTR", "COIN", "MSTR", "HOOD", "SOFI", "GME", "BABA", "DIS", "BA", "UBER", "PYPL", "ORCL", "CRM", "ADBE", "JPM", "V", "WMT", "XOM", "PFE"].map(
-      (epic) => ({ epic, resolution: "DAY", regimeFilter: true, category: "stocks" as const })
-    ),
-    // 🛢️ Commodities
-    { epic: "GOLD", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
-    { epic: "SILVER", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
-    { epic: "OIL_CRUDE", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
-    { epic: "NATURALGAS", resolution: "HOUR_4", regimeFilter: false, category: "commodities" },
-    { epic: "COPPER", resolution: "DAY", regimeFilter: false, category: "commodities" },
+    // ₿ Crypto — SOLO LONG (shortear cripto en el bull perdía todo)
+    { epic: "BTCUSD", resolution: "HOUR_4", regimeFilter: true, category: "crypto", longOnly: true },
+    { epic: "ETHUSD", resolution: "DAY", regimeFilter: true, category: "crypto", longOnly: true },
+    // 📈 Stocks US — 8 large-caps líquidas, SOLO LONG (horario NY; el motor las salta si CLOSED)
+    { epic: "AAPL", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    { epic: "MSFT", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    { epic: "NVDA", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    { epic: "AMZN", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    { epic: "GOOGL", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    { epic: "META", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    { epic: "JPM", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    { epic: "V", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    // 🛢️ Commodities (filtro de régimen ADX)
+    { epic: "GOLD", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
+    { epic: "SILVER", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
+    { epic: "OIL_CRUDE", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
+    { epic: "NATURALGAS", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
+    { epic: "COPPER", resolution: "DAY", regimeFilter: true, category: "commodities" },
   ],
-  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "NFLX", "AMD", "MU", "AVGO", "QCOM", "SMCI", "ARM", "SNOW", "CRWD", "PLTR", "COIN", "MSTR", "HOOD", "SOFI", "GME", "BABA", "DIS", "BA", "UBER", "PYPL", "ORCL", "CRM", "ADBE", "JPM", "V", "WMT", "XOM", "PFE", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
+  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "JPM", "V", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
-  maxOpenPositions: 10,
+  maxOpenPositions: 4,
   stopDistance: 150,
   profitDistance: 300,
   strategy: { ...DEFAULT_STRATEGY },

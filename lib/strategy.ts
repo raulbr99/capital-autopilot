@@ -174,8 +174,9 @@ export function evaluate(
     }
   } else {
     if (r > cfg.rsiSellAbove) {
-      confidence = Math.min(1, confidence + 0.25);
-      reason = `Cruce bajista + RSI ${r.toFixed(0)} en sobrecompra`;
+      // RSI alto en tendencia = fuerza alcista, NO agotamiento -> shortear ahí pierde
+      confidence *= 0.5;
+      reason = `Cruce bajista pero RSI ${r.toFixed(0)} alto = posible fuerza alcista (cautela con el short)`;
     } else if (r < cfg.rsiBuyBelow) {
       confidence *= 0.4;
       reason = `Cruce bajista pero RSI ${r.toFixed(0)} sobrevendido (cautela)`;

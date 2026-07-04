@@ -40,7 +40,8 @@ Operación: ${t.direction} ${t.epic}${t.price ? ` @ ${t.price}` : ""} (mesa ${t.
 Tesis del gestor: ${t.thesis}
 ${ind ? `Indicadores: ${ind}` : ""}
 
-El TAMAÑO y el riesgo ya los controla el bot (sizing por margen fijo) — NO penalices el % de riesgo, juzga solo si la TESIS y la DIRECCIÓN tienen fundamento. Aprueba salvo que la operación sea CLARAMENTE mala: tesis vacía o genérica, va en contra de una tendencia evidente, o es perseguir hype sin fundamento. Ante la duda razonable, APRUEBA.
+REGLA DE TENDENCIA (usa las SMA de arriba): si smaFast > smaSlow la tendencia es ALCISTA; si smaFast < smaSlow, BAJISTA. NUNCA apruebes un SELL contra una tendencia alcista clara salvo tesis de reversión MUY concreta (nivel clave roto, catalizador fuerte, RSI>75). Histórico REAL de este bot: los SHORT aciertan 11% y los LONG 60% — sé MUCHO más exigente y escéptico con los SELL (sobre todo contra-tendencia); permisivo con los BUY a favor de la tendencia.
+El tamaño y el riesgo los controla el bot — NO penalices el % de riesgo, juzga la TESIS y la DIRECCIÓN. Ante la duda en una operación CONTRA-TENDENCIA (sobre todo un SELL), RECHAZA; ante la duda en una operación A FAVOR de la tendencia, aprueba.
 Responde SOLO con JSON: {"approve": true|false, "reason": "una frase corta"}`;
 
   const votes = (await Promise.all(ms.map((m) => askModel(key, m, prompt)))).filter(Boolean) as Vote[];

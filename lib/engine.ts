@@ -549,6 +549,8 @@ async function executePmDecision(
       if (p.openCount >= cfg.maxOpenPositions) { tagOutcome(act, "skipped", `límite ${cfg.maxOpenPositions} posiciones`); continue; }
       if (p.tradesToday >= cfg.risk.maxTradesPerDay) { tagOutcome(act, "skipped", `límite ${cfg.risk.maxTradesPerDay} trades/día`); continue; }
       if (p.openEpics.has(act.epic)) { tagOutcome(act, "skipped", "ya tiene posición"); continue; }
+      const inst = cfg.instruments.find((i) => i.epic === act.epic);
+      if (inst?.longOnly && act.direction === "SELL") { tagOutcome(act, "skipped", "mesa long-only (no shorts)"); continue; }
       const e = p.evals.find((x) => x.epic === act.epic);
       if (!e || e.price <= 0) { tagOutcome(act, "skipped", "sin precio"); continue; }
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
@@ -578,7 +580,9 @@ async function executePmDecision(
             price: e.price,
             indicators: e.signal?.indicators,
           },
-          (cfg as any).committeeMinApprovals ?? 1
+          act.direction === "SELL"
+            ? ((cfg as any).committeeMinApprovalsShort ?? 2)
+            : ((cfg as any).committeeMinApprovals ?? 1)
         );
         if (!verdict.approved) {
           const no = verdict.votes.find((v) => !v.approve);

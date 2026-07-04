@@ -16,7 +16,7 @@ export type EpicEval = {
 };
 
 export type DeskCategory = "forex" | "crypto" | "stocks" | "commodities";
-export type Instrument = { epic: string; resolution: string; regimeFilter?: boolean; category?: DeskCategory };
+export type Instrument = { epic: string; resolution: string; regimeFilter?: boolean; category?: DeskCategory; longOnly?: boolean };
 export const RESOLUTIONS = [
   "MINUTE",
   "MINUTE_5",
@@ -119,6 +119,7 @@ export type BotConfig = {
   cloudPm: boolean;
   committee: boolean;
   committeeMinApprovals?: number;
+  committeeMinApprovalsShort?: number;
   instruments: Instrument[];
   watchlist: string[];
   sizePerTrade: number;
