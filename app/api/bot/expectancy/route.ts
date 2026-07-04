@@ -49,7 +49,18 @@ export async function GET() {
     const best = closed.reduce((m, t) => Math.max(m, t.pnl as number), -Infinity);
     const worst = closed.reduce((m, t) => Math.min(m, t.pnl as number), Infinity);
 
+    // desglose por dirección (LONG vs SHORT) — la métrica clave para vigilar el arreglo
+    const dirStats = (dir: "BUY" | "SELL") => {
+      const s = closed.filter((t) => t.direction === dir);
+      const w = s.filter((t) => (t.pnl as number) > EPS).length;
+      const l = s.filter((t) => (t.pnl as number) < -EPS).length;
+      const net = Math.round(s.reduce((a, t) => a + (t.pnl as number), 0) * 100) / 100;
+      return { trades: s.length, wins: w, losses: l, winRate: w + l ? Math.round((w / (w + l)) * 100) : 0, net };
+    };
+    const byDirection = { long: dirStats("BUY"), short: dirStats("SELL") };
+
     return NextResponse.json({
+      byDirection,
       closed: closed.length,
       wins: wins.length,
       losses: losses.length,
