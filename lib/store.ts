@@ -130,13 +130,16 @@ export const DEFAULT_CONFIG: BotConfig = {
     { epic: "JPM", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
     { epic: "V", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
     // 🛢️ Commodities (filtro de régimen ADX)
-    { epic: "GOLD", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
+    // GOLD retirado (afinador 2026-07-06): 0% win rate (2/2 perdedoras, -5.55, mayor
+    // perdedor) + el Gestor IA lo rechaza de forma recurrente por crowded-long
+    // (COT 85.88% largo) y RSI 74-86 sobrecomprado. Puede shortear (sin longOnly)
+    // un mercado con sesgo alcista, justo el setup que pierde.
     { epic: "SILVER", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
     { epic: "OIL_CRUDE", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
     { epic: "NATURALGAS", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
     { epic: "COPPER", resolution: "DAY", regimeFilter: true, category: "commodities" },
   ],
-  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "JPM", "V", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
+  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "JPM", "V", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
   maxOpenPositions: 4,
   stopDistance: 150,
