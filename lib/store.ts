@@ -110,33 +110,35 @@ export const DEFAULT_CONFIG: BotConfig = {
   committee: true, // comité IA vota antes de abrir (ON)
   committeeMinApprovals: 1, // veta solo si rechazo unánime (menos restrictivo)
   committeeMinApprovalsShort: 2, // SELL más estricto (mayoría 2/3) — los shorts pierden
+  // NOTA AFINADOR (2026-07-13): universo recortado y filtro ADX ajustado por activo
+  // según validación walk-forward OOS (~600 velas). Ver PR del afinador.
+  //  - Fuera SILVER/JPM/NVDA/EURJPY: pierden OOS con y sin filtro ADX (ningún ajuste los salva).
+  //  - GBPJPY/MSFT/AMZN con regimeFilter:false: el filtro ADX les DESTRUÍA una ventaja real
+  //    (p.ej. GBPJPY PF 1.15 sin filtro -> 0.41 con filtro).
   instruments: [
-    // 💱 Forex (filtro de régimen ADX en todos)
+    // 💱 Forex (filtro de régimen ADX salvo GBPJPY, donde el filtro perjudicaba)
     { epic: "NZDUSD", resolution: "DAY", regimeFilter: true, category: "forex" },
     { epic: "EURUSD", resolution: "HOUR_4", regimeFilter: true, category: "forex" },
-    { epic: "GBPJPY", resolution: "DAY", regimeFilter: true, category: "forex" },
-    { epic: "EURJPY", resolution: "DAY", regimeFilter: true, category: "forex" },
+    { epic: "GBPJPY", resolution: "DAY", regimeFilter: false, category: "forex" },
     { epic: "USDCHF", resolution: "HOUR_4", regimeFilter: true, category: "forex" },
     // ₿ Crypto — SOLO LONG (shortear cripto en el bull perdía todo)
     { epic: "BTCUSD", resolution: "HOUR_4", regimeFilter: true, category: "crypto", longOnly: true },
     { epic: "ETHUSD", resolution: "DAY", regimeFilter: true, category: "crypto", longOnly: true },
-    // 📈 Stocks US — 8 large-caps líquidas, SOLO LONG (horario NY; el motor las salta si CLOSED)
+    // 📈 Stocks US — large-caps líquidas, SOLO LONG (horario NY; el motor las salta si CLOSED)
+    // MSFT/AMZN sin filtro ADX: el filtro les quitaba la ventaja (PF >1.1 sin filtro -> <0.75 con filtro).
     { epic: "AAPL", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
-    { epic: "MSFT", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
-    { epic: "NVDA", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
-    { epic: "AMZN", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
+    { epic: "MSFT", resolution: "DAY", regimeFilter: false, category: "stocks", longOnly: true },
+    { epic: "AMZN", resolution: "DAY", regimeFilter: false, category: "stocks", longOnly: true },
     { epic: "GOOGL", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
     { epic: "META", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
-    { epic: "JPM", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
     { epic: "V", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
     // 🛢️ Commodities (filtro de régimen ADX)
     { epic: "GOLD", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
-    { epic: "SILVER", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
     { epic: "OIL_CRUDE", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
     { epic: "NATURALGAS", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
     { epic: "COPPER", resolution: "DAY", regimeFilter: true, category: "commodities" },
   ],
-  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "JPM", "V", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
+  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "V", "GOLD", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
   maxOpenPositions: 4,
   stopDistance: 150,
