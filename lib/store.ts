@@ -118,8 +118,9 @@ export const DEFAULT_CONFIG: BotConfig = {
     { epic: "EURJPY", resolution: "DAY", regimeFilter: true, category: "forex" },
     { epic: "USDCHF", resolution: "HOUR_4", regimeFilter: true, category: "forex" },
     // ₿ Crypto — SOLO LONG (shortear cripto en el bull perdía todo)
+    // ETHUSD retirado (afinador 2026-07-20): 4 trades cerrados, 25% aciertos, -5.25 pese a ser ya long-only.
+    // BTCUSD queda como representante de la mesa cripto (near-breakeven: -1.43, 75% aciertos).
     { epic: "BTCUSD", resolution: "HOUR_4", regimeFilter: true, category: "crypto", longOnly: true },
-    { epic: "ETHUSD", resolution: "DAY", regimeFilter: true, category: "crypto", longOnly: true },
     // 📈 Stocks US — 8 large-caps líquidas, SOLO LONG (horario NY; el motor las salta si CLOSED)
     { epic: "AAPL", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
     { epic: "MSFT", resolution: "DAY", regimeFilter: true, category: "stocks", longOnly: true },
@@ -136,7 +137,7 @@ export const DEFAULT_CONFIG: BotConfig = {
     { epic: "NATURALGAS", resolution: "HOUR_4", regimeFilter: true, category: "commodities" },
     { epic: "COPPER", resolution: "DAY", regimeFilter: true, category: "commodities" },
   ],
-  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "JPM", "V", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
+  watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "JPM", "V", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
   maxOpenPositions: 4,
   stopDistance: 150,
