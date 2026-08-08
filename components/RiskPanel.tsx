@@ -123,12 +123,12 @@ export default function RiskPanel({
               onCommit={(v) => patch({ risk: { cooldownMin: v } })}
             />
             <NumField
-              label="Máx. posiciones"
-              value={cfg.maxOpenPositions}
+              label="Máx. por mesa"
+              value={cfg.maxPerDesk}
               step={1}
               busy={busy}
-              hint="Posiciones abiertas a la vez como máximo."
-              onCommit={(v) => patch({ maxOpenPositions: v })}
+              hint="Posiciones abiertas a la vez como máximo en cada mesa (forex, crypto, stocks, commodities). No hay límite global."
+              onCommit={(v) => patch({ maxPerDesk: v })}
             />
           </div>
         </div>

@@ -93,7 +93,7 @@ export type BotConfig = {
   instruments: Instrument[]; // activos con su resolucion de senal
   watchlist: string[]; // espejo de instruments[].epic (compat)
   sizePerTrade: number; // unidades (modo fixed)
-  maxOpenPositions: number;
+  maxPerDesk: number; // máx posiciones abiertas POR MESA (forex/crypto/stocks/commodities); sin límite global
   stopDistance: number; // puntos (si no usa ATR)
   profitDistance: number;
   strategy: StrategyConfig;
@@ -138,7 +138,7 @@ export const DEFAULT_CONFIG: BotConfig = {
   ],
   watchlist: ["NZDUSD", "EURUSD", "GBPJPY", "EURJPY", "USDCHF", "BTCUSD", "ETHUSD", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "JPM", "V", "GOLD", "SILVER", "OIL_CRUDE", "NATURALGAS", "COPPER"],
   sizePerTrade: 0.1,
-  maxOpenPositions: 4,
+  maxPerDesk: 4,
   stopDistance: 150,
   profitDistance: 300,
   strategy: { ...DEFAULT_STRATEGY },

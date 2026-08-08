@@ -223,7 +223,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   } else if (effectiveAllow) {
     for (const e of evals) {
       if (e.signal.type === "FLAT" || openEpics.has(e.epic)) continue;
-      if (openCount >= cfg.maxOpenPositions) break;
+      if (deskOpenCount(cfg, openEpics, deskOf(cfg, e.epic)) >= cfg.maxPerDesk) continue; // mesa llena — las demás siguen
       if (tradesToday + opened >= cfg.risk.maxTradesPerDay) break;
 
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
@@ -432,7 +432,7 @@ async function runPmCycle(p: {
       currency: p.account.currency,
     },
     constraints: {
-      maxOpenPositions: cfg.maxOpenPositions,
+      maxPerDesk: cfg.maxPerDesk,
       openNow: p.openCount,
       maxRiskPct: cfg.risk.riskPercent,
       maxTradesPerDay: cfg.risk.maxTradesPerDay,
@@ -480,6 +480,22 @@ type PmExecCtx = {
   killedToday: boolean;
   cooldownActive: boolean;
 };
+
+// Mesa de un epic según el config; posiciones legado (fuera del universo) cuentan como "otros".
+function deskOf(cfg: { instruments: { epic: string; category?: string }[] }, epic: string): string {
+  return cfg.instruments.find((i) => i.epic === epic)?.category || "otros";
+}
+
+// Posiciones abiertas de una mesa. openEpics es la unión Capital + BD (+ aperturas del ciclo).
+function deskOpenCount(
+  cfg: { instruments: { epic: string; category?: string }[] },
+  openEpics: Set<string>,
+  desk: string
+): number {
+  let n = 0;
+  for (const ep of openEpics) if (deskOf(cfg, ep) === desk) n++;
+  return n;
+}
 
 /**
  * Gestor en la nube: drena la cola (ap_pm_queue) que rellena la routine Claude
@@ -546,7 +562,8 @@ async function executePmDecision(
       if (!act.epic || !act.direction) { tagOutcome(act, "skipped", "acción inválida"); continue; }
       if (p.killedToday) { tagOutcome(act, "skipped", "kill-switch activo"); continue; }
       if (p.cooldownActive) { tagOutcome(act, "skipped", "en cooldown"); continue; }
-      if (p.openCount >= cfg.maxOpenPositions) { tagOutcome(act, "skipped", `límite ${cfg.maxOpenPositions} posiciones`); continue; }
+      const actDesk = deskOf(cfg, act.epic);
+      if (deskOpenCount(cfg, p.openEpics, actDesk) >= cfg.maxPerDesk) { tagOutcome(act, "skipped", `mesa ${actDesk} llena (máx ${cfg.maxPerDesk})`); continue; }
       if (p.tradesToday >= cfg.risk.maxTradesPerDay) { tagOutcome(act, "skipped", `límite ${cfg.risk.maxTradesPerDay} trades/día`); continue; }
       if (p.openEpics.has(act.epic)) { tagOutcome(act, "skipped", "ya tiene posición"); continue; }
       const inst = cfg.instruments.find((i) => i.epic === act.epic);

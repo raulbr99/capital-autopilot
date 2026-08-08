@@ -128,6 +128,17 @@ export default function Dashboard() {
   const killPct = cfg?.risk.maxDailyLossPct ?? 5;
   const lossUsed = dayPnlPct < 0 ? Math.min(-dayPnlPct / killPct, 1) : 0; // 0..1 del presupuesto de pérdida diaria
 
+  // Límite por mesa (sin límite global): rojo si alguna mesa excede su cupo
+  const deskFull = (() => {
+    if (!cfg) return false;
+    const byDesk: Record<string, number> = {};
+    for (const p of positions) {
+      const d = cfg.instruments.find((i) => i.epic === p.epic)?.category || "otros";
+      byDesk[d] = (byDesk[d] || 0) + 1;
+    }
+    return Object.values(byDesk).some((n) => n > cfg.maxPerDesk);
+  })();
+
   const markers = trades
     .filter((t) => t.status === "closed" && t.closedTs)
     .map((t) => ({ ts: t.closedTs!, dir: t.direction, pnl: t.pnl }));
@@ -244,8 +255,8 @@ export default function Dashboard() {
               <MiniStat label="TRADES HOY" value={`${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
               <MiniStat
                 label="POSICIONES"
-                value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`}
-                tone={cfg && positions.length > cfg.maxOpenPositions ? "short" : undefined}
+                value={`${positions.length}`}
+                tone={deskFull ? "short" : undefined}
               />
             </div>
 
@@ -288,9 +299,9 @@ export default function Dashboard() {
           <StatCard label="PnL flotante" value={pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < 0.005 ? undefined : floatPnl > 0 ? "long" : "short"} />
           <StatCard
             label="Posiciones"
-            value={`${positions.length}/${cfg?.maxOpenPositions ?? "—"}`}
-            unit={cfg && positions.length > cfg.maxOpenPositions ? "sobre el límite" : undefined}
-            tone={cfg && positions.length > cfg.maxOpenPositions ? "short" : undefined}
+            value={`${positions.length}`}
+            unit={deskFull ? "mesa sobre el límite" : cfg ? `máx ${cfg.maxPerDesk}/mesa` : undefined}
+            tone={deskFull ? "short" : undefined}
           />
         </section>
 

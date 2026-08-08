@@ -54,9 +54,9 @@ export async function PATCH(req: Request) {
       .map((epic: string) => ({ epic, resolution: prev.get(epic) || DEFAULT_RESOLUTION }));
     cfg.watchlist = cfg.instruments.map((i) => i.epic);
   }
-  for (const k of ["sizePerTrade", "maxOpenPositions", "stopDistance", "profitDistance"] as const) {
+  for (const k of ["sizePerTrade", "maxPerDesk", "stopDistance", "profitDistance"] as const) {
     if (typeof body[k] === "number" && body[k] > 0) {
-      (cfg as any)[k] = k === "maxOpenPositions" ? Math.floor(body[k]) : body[k];
+      (cfg as any)[k] = k === "maxPerDesk" ? Math.floor(body[k]) : body[k];
     }
   }
   if (body.strategy && typeof body.strategy === "object") {

@@ -123,7 +123,7 @@ export type BotConfig = {
   instruments: Instrument[];
   watchlist: string[];
   sizePerTrade: number;
-  maxOpenPositions: number;
+  maxPerDesk: number;
   stopDistance: number;
   profitDistance: number;
   strategy: StrategyConfig;

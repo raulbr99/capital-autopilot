@@ -29,7 +29,7 @@ export type PmDecision = {
 export type PmContext = {
   account: { equity: number; available: number; dailyPnlPct: number; currency: string };
   constraints: {
-    maxOpenPositions: number;
+    maxPerDesk: number;
     openNow: number;
     maxRiskPct: number;
     maxTradesPerDay: number;
@@ -135,7 +135,7 @@ function prompt(c: PmContext): string {
     `  posiciones abiertas: ${pos}`,
     "",
     "RESTRICCIONES (no puedes excederlas; el sistema las hará cumplir):",
-    `  máx posiciones: ${c.constraints.maxOpenPositions} (abiertas ahora: ${c.constraints.openNow})`,
+    `  máx posiciones POR MESA: ${c.constraints.maxPerDesk} (abiertas ahora en total: ${c.constraints.openNow})`,
     `  riesgo máx por operación: ${c.constraints.maxRiskPct}% del capital`,
     `  máx operaciones/día: ${c.constraints.maxTradesPerDay} (hoy: ${c.constraints.tradesToday})`,
     `  kill-switch: si pierdes ${c.constraints.killSwitchPct}% en el día, parada total`,
