@@ -23,6 +23,7 @@ import {
   type Candle,
 } from "./capital";
 import { committeeVote } from "./committee";
+import { relevantEvents } from "./calendar";
 import { evaluate, atr, type Signal } from "./strategy";
 import { bot, log, pushEquity, todayKey, TradeRecord, DEFAULT_RESOLUTION, type Instrument, type EquityPoint } from "./store";
 import {
@@ -225,6 +226,21 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       if (e.signal.type === "FLAT" || openEpics.has(e.epic)) continue;
       if (deskOpenCount(cfg, openEpics, deskOf(cfg, e.epic)) >= cfg.maxPerDesk) continue; // mesa llena — las demás siguen
       if (tradesToday + opened >= cfg.risk.maxTradesPerDay) break;
+
+      // Filtro macro: no abrir con evento de alto impacto inminente para las divisas
+      // del activo (45 min antes .. 15 después) — la volatilidad de la noticia se come
+      // el stop. Fail-open: sin feed o sin divisas mapeadas, no bloquea.
+      try {
+        const macro = await relevantEvents(e.epic, { aheadMin: 45, behindMin: 15 });
+        if (macro.length) {
+          const ev = macro[0];
+          const when = ev.minutesUntil >= 0 ? `en ${ev.minutesUntil} min` : `hace ${-ev.minutesUntil} min`;
+          logN("info", `⏸️ ${e.epic}: evento macro inminente (${ev.currency} ${ev.title}, ${when}) — no abro`, e.epic);
+          continue;
+        }
+      } catch {
+        /* fail-open */
+      }
 
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
       const size = await sizeFor(cfg, equity, stopDist, e.epic);
