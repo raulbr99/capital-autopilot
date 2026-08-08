@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTrades, loadConfig } from "@/lib/db";
+import { getTrades, loadConfig, getJournal } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -48,7 +48,64 @@ export async function GET(req: Request) {
       }));
 
     const netTotal = Math.round(trades.reduce((s, t) => s + (t.pnl || 0), 0) * 100) / 100;
-    return NextResponse.json({ desk: desk || "all", closed: trades.length, netTotal, byEpic, recent });
+
+    // ---- Lessons 2.0: el Gestor aprende de SUS propias decisiones ----
+    // Trades originados por el Gestor llevan reason "IA: ..." (executePmDecision);
+    // el resto son del motor técnico. Contrastar ambos = feedback de calidad de criterio.
+    const isAI = (t: { reason?: string }) => (t.reason || "").startsWith("IA:");
+    const stat = (arr: typeof trades) => {
+      const wins = arr.filter((t) => (t.pnl || 0) >= 0).length;
+      const net = Math.round(arr.reduce((s, t) => s + (t.pnl || 0), 0) * 100) / 100;
+      return { trades: arr.length, wins, winRate: arr.length ? Math.round((wins / arr.length) * 100) : 0, netPnl: net };
+    };
+    const aiTrades = trades.filter(isAI);
+    const gestor = stat(aiTrades);
+    const tecnico = stat(trades.filter((t) => !isAI(t)));
+    const failedTheses = [...aiTrades]
+      .filter((t) => (t.pnl || 0) < 0)
+      .sort((a, b) => (b.closedTs || b.ts || 0) - (a.closedTs || a.ts || 0))
+      .slice(0, 5)
+      .map((t) => ({
+        epic: t.epic,
+        direction: t.direction,
+        pnl: t.pnl,
+        thesis: (t.reason || "").replace(/^IA:\s*/, "").slice(0, 120),
+      }));
+
+    // Resultado de sus decisiones recientes en el diario (qué se ejecutó, qué vetó el comité)
+    let decisiones: Record<string, number> = {};
+    try {
+      const entries = (await getJournal(120)).filter((e: any) => !desk || e.desk === desk);
+      for (const e of entries.slice(0, 30)) {
+        for (const a of e.actions || []) {
+          const key = a.outcome || (a.action === "HOLD" ? "held" : "sin_outcome");
+          decisiones[key] = (decisiones[key] || 0) + 1;
+        }
+      }
+    } catch {
+      /* journal opcional */
+    }
+
+    const peor = failedTheses[0];
+    const summary =
+      `Tus trades (Gestor IA): ${gestor.trades} cerrados, ${gestor.winRate}% acierto, net ${gestor.netPnl}. ` +
+      `Motor técnico: ${tecnico.trades} cerrados, ${tecnico.winRate}% acierto, net ${tecnico.netPnl}. ` +
+      (peor ? `Tu última tesis perdedora: ${peor.epic} ${peor.direction} (${peor.pnl}) "${peor.thesis}". ` : "") +
+      `Decisiones recientes: ${decisiones.opened || 0} abiertas, ${decisiones.vetoed || 0} vetadas por el comité, ${decisiones.skipped || 0} omitidas por límites. ` +
+      `Aprende: no repitas tesis que ya perdieron; si el comité te veta mucho, tus tesis necesitan más confluencia.`;
+
+    return NextResponse.json({
+      desk: desk || "all",
+      closed: trades.length,
+      netTotal,
+      byEpic,
+      recent,
+      gestor,
+      tecnico,
+      failedTheses,
+      decisiones,
+      summary,
+    });
   } catch (e: unknown) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "lessons failed" },

@@ -143,6 +143,7 @@ function mergeConfig(base: BotConfig, override: any): BotConfig {
           ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
           ...(category ? { category } : {}),
           ...(i.longOnly === true ? { longOnly: true } : {}),
+          ...(i.paused === true ? { paused: true } : {}),
         };
       });
   } else if (Array.isArray(override.watchlist)) {

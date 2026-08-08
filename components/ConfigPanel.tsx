@@ -36,6 +36,10 @@ export default function ConfigPanel({
         i.epic === epic ? { ...i, regimeFilter: !i.regimeFilter } : i
       ),
     });
+  const togglePaused = (epic: string) =>
+    patch({
+      instruments: instruments.map((i) => (i.epic === epic ? { ...i, paused: !i.paused } : i)),
+    });
 
   return (
     <div className="border border-industrial bg-soft rounded-xl">
@@ -70,6 +74,17 @@ export default function ConfigPanel({
                   }`}
                 >
                   ADX
+                </button>
+                <button
+                  onClick={() => togglePaused(i.epic)}
+                  disabled={busy}
+                  aria-pressed={!!i.paused}
+                  title={i.paused ? "Pausado por circuit breaker (no abre nuevas). Clic para reactivar." : "Pausar este activo (no abrirá nuevas posiciones)."}
+                  className={`rounded-md border px-1.5 py-1.5 font-mono text-[9px] ${
+                    i.paused ? "border-short text-short" : "border-cement text-muted"
+                  }`}
+                >
+                  ⛔
                 </button>
                 <button
                   onClick={() => remove(i.epic)}

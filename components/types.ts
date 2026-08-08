@@ -16,7 +16,7 @@ export type EpicEval = {
 };
 
 export type DeskCategory = "forex" | "crypto" | "stocks" | "commodities";
-export type Instrument = { epic: string; resolution: string; regimeFilter?: boolean; category?: DeskCategory; longOnly?: boolean };
+export type Instrument = { epic: string; resolution: string; regimeFilter?: boolean; category?: DeskCategory; longOnly?: boolean; paused?: boolean };
 export const RESOLUTIONS = [
   "MINUTE",
   "MINUTE_5",

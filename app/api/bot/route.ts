@@ -43,6 +43,10 @@ export async function PATCH(req: Request) {
         epic: String(i.epic).toUpperCase().trim(),
         resolution: i.resolution || DEFAULT_RESOLUTION,
         ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
+        // preservar flags que la UI solo re-emite (si se descartan aquí, un guardado los borra de la BD)
+        ...(i.category ? { category: i.category } : {}),
+        ...(i.longOnly === true ? { longOnly: true } : {}),
+        ...(i.paused === true ? { paused: true } : {}),
       }));
     cfg.watchlist = cfg.instruments.map((i) => i.epic);
   } else if (Array.isArray(body.watchlist)) {

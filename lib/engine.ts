@@ -30,6 +30,7 @@ import {
   loadConfig,
   loadRuntime,
   saveRuntime,
+  saveConfig,
   claimTradeOpen,
   deleteTrade,
   updateTrade,
@@ -143,6 +144,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   // ---- reconciliar cierres (SL/TP de Capital o cierres de la IA) ----
   const priceByEpic = new Map(evals.map((e) => [e.epic, e.price]));
   await reconcileClosedTrades(positions, priceByEpic, account.deposit);
+  await applyCircuitBreaker(cfg);
 
   // ---- equity ----
   // Capital ya incluye el P&L flotante en `balance` (balance = deposit + profitLoss).
@@ -224,6 +226,7 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   } else if (effectiveAllow) {
     for (const e of evals) {
       if (e.signal.type === "FLAT" || openEpics.has(e.epic)) continue;
+      if (cfg.instruments.find((i) => i.epic === e.epic)?.paused) continue; // circuit breaker
       if (deskOpenCount(cfg, openEpics, deskOf(cfg, e.epic)) >= cfg.maxPerDesk) continue; // mesa llena — las demás siguen
       if (tradesToday + opened >= cfg.risk.maxTradesPerDay) break;
 
@@ -497,6 +500,44 @@ type PmExecCtx = {
   cooldownActive: boolean;
 };
 
+/**
+ * Circuit breaker por instrumento: si un activo acumula >=8 cerrados y el neto de
+ * sus últimos 10 es negativo, se auto-pausa (no abre nuevas; las abiertas siguen
+ * gestionadas). Solo QUITA riesgo — la reactivación es manual (toggle en Lab).
+ */
+async function applyCircuitBreaker(cfg: ReturnType<typeof bot>["config"]): Promise<void> {
+  try {
+    const closed = (await getTrades(300)).filter(
+      (t) => t.status === "closed" && typeof t.pnl === "number"
+    );
+    let changed = false;
+    for (const inst of cfg.instruments) {
+      if (inst.paused) continue;
+      const mine = closed
+        .filter((t) => t.epic === inst.epic)
+        .sort((a, b) => (b.closedTs || b.ts || 0) - (a.closedTs || a.ts || 0));
+      if (mine.length < 8) continue;
+      const win = mine.slice(0, 10);
+      const net = win.reduce((s, t) => s + (t.pnl || 0), 0);
+      if (net >= 0) continue;
+      inst.paused = true;
+      changed = true;
+      const msg = `⛔ ${inst.epic}: CIRCUIT BREAKER — auto-pausado (últimos ${win.length} cerrados: ${net.toFixed(2)}). Reactivación manual en Lab.`;
+      logN("trade", msg, inst.epic);
+      await recordJournal({
+        thesis: msg,
+        confidence: 1,
+        actions: [{ action: "PAUSE", epic: inst.epic, reason: `net ${net.toFixed(2)} en ${win.length} cerrados` }],
+        snapshot: null,
+        desk: inst.category || null,
+      });
+    }
+    if (changed) await saveConfig(cfg);
+  } catch {
+    /* el breaker nunca tumba el tick */
+  }
+}
+
 // Mesa de un epic según el config; posiciones legado (fuera del universo) cuentan como "otros".
 function deskOf(cfg: { instruments: { epic: string; category?: string }[] }, epic: string): string {
   return cfg.instruments.find((i) => i.epic === epic)?.category || "otros";
@@ -584,6 +625,7 @@ async function executePmDecision(
       if (p.openEpics.has(act.epic)) { tagOutcome(act, "skipped", "ya tiene posición"); continue; }
       const inst = cfg.instruments.find((i) => i.epic === act.epic);
       if (inst?.longOnly && act.direction === "SELL") { tagOutcome(act, "skipped", "mesa long-only (no shorts)"); continue; }
+      if (inst?.paused) { tagOutcome(act, "skipped", "instrumento pausado (circuit breaker)"); continue; }
       const e = p.evals.find((x) => x.epic === act.epic);
       if (!e || e.price <= 0) { tagOutcome(act, "skipped", "sin precio"); continue; }
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);

@@ -53,6 +53,7 @@ export type Instrument = {
   regimeFilter?: boolean; // override por activo del filtro ADX (undefined = usa el global)
   category?: DeskCategory; // mesa a la que pertenece (forex/crypto/stocks/commodities)
   longOnly?: boolean; // solo compras (bloquea SELL) — para mesas donde shortear pierde
+  paused?: boolean; // circuit breaker: auto-pausado por mala racha (no abre nuevas; reactivación manual)
 };
 
 export const RESOLUTIONS = [
