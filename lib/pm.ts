@@ -138,7 +138,9 @@ function prompt(c: PmContext): string {
     `  máx posiciones POR MESA: ${c.constraints.maxPerDesk} (abiertas ahora en total: ${c.constraints.openNow})`,
     `  riesgo máx por operación: ${c.constraints.maxRiskPct}% del capital`,
     `  máx operaciones/día: ${c.constraints.maxTradesPerDay} (hoy: ${c.constraints.tradesToday})`,
-    `  kill-switch: si pierdes ${c.constraints.killSwitchPct}% en el día, parada total`,
+    c.constraints.killSwitchPct > 0
+      ? `  kill-switch: si pierdes ${c.constraints.killSwitchPct}% en el día, parada total`
+      : `  kill-switch: DESACTIVADO (sin freno de pérdida diaria)`,
     "",
     "INSTRUMENTOS (ADX>25 = tendencia; señal del bot técnico como referencia):",
     inst,

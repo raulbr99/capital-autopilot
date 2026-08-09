@@ -160,8 +160,9 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       ? ((equity - b.dayAnchor.startEquity) / b.dayAnchor.startEquity) * 100
       : 0;
 
-  let killedToday = b.killedDate === today;
-  if (!killedToday && dailyPnlPct <= -cfg.risk.maxDailyLossPct) {
+  // Kill-switch diario: maxDailyLossPct <= 0 lo desactiva por completo
+  let killedToday = cfg.risk.maxDailyLossPct > 0 && b.killedDate === today;
+  if (cfg.risk.maxDailyLossPct > 0 && !killedToday && dailyPnlPct <= -cfg.risk.maxDailyLossPct) {
     b.killedDate = today;
     killedToday = true;
     logN("kill", `🛑 KILL-SWITCH: pérdida diaria ${dailyPnlPct.toFixed(2)}% ≥ límite ${cfg.risk.maxDailyLossPct}%. Bot desarmado hoy.`);

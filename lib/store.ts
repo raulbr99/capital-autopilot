@@ -14,7 +14,7 @@ export type RiskConfig = {
   atrPeriod: number;
   atrStopMult: number; // SL = atrStopMult * ATR
   atrTpMult: number; // TP = atrTpMult * ATR
-  maxDailyLossPct: number; // kill-switch: si el equity cae este % en el dia -> desarma
+  maxDailyLossPct: number; // kill-switch: si el equity cae este % en el dia -> desarma (0 = desactivado)
   maxTradesPerDay: number;
   cooldownMin: number; // minutos de pausa tras una operacion perdedora
   // --- Gestión activa de posiciones abiertas (trailing/breakeven/scaling) ---
@@ -34,7 +34,7 @@ export const DEFAULT_RISK: RiskConfig = {
   atrPeriod: 14,
   atrStopMult: 2,
   atrTpMult: 3,
-  maxDailyLossPct: 5,
+  maxDailyLossPct: 0, // desactivado a petición del dueño (ago 2026); poner un % para reactivar
   maxTradesPerDay: 4,
   cooldownMin: 30,
   activeManage: true,

@@ -102,7 +102,7 @@ export default function RiskPanel({
               value={r.maxDailyLossPct}
               step={0.5}
               busy={busy}
-              hint="Si pierdes este % del capital en el día, el bot se desarma solo (kill-switch)."
+              hint="Si pierdes este % del capital en el día, el bot se desarma solo (kill-switch). 0 = desactivado."
               onCommit={(v) => patch({ risk: { maxDailyLossPct: v } })}
             />
             <NumField
