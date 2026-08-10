@@ -1,25 +1,95 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Nav from "./Nav";
 import ThemeToggle from "./ThemeToggle";
-import { Clock } from "./ui";
+import { Clock, ConnBadge, fmt, pnlClass, pnlFmt } from "./ui";
 
-/** Cabecera única para las páginas internas (mesas, analítica, diario, lab). */
-export default function AppHeader({ active, right }: { active: string; right?: ReactNode }) {
+type Live = {
+  equity: number | null;
+  dayPnlPct: number;
+  currency: string;
+  configured: boolean;
+  enabled: boolean;
+};
+
+/**
+ * Cabecera única de toda la app. Además de la marca y la navegación, mantiene
+ * SIEMPRE a la vista el estado del dinero (equity + P&L del día) y de la
+ * conexión: es lo que distingue un panel de broker de un dashboard cualquiera.
+ *
+ * Se alimenta sola del snapshot (GET, solo lectura) para que ninguna página
+ * tenga que pasarle datos; `live` permite inyectarlos si ya se tienen.
+ */
+export default function AppHeader({
+  active,
+  right,
+  live: injected,
+}: {
+  active: string;
+  right?: ReactNode;
+  live?: Partial<Live>;
+}) {
+  const [live, setLive] = useState<Live | null>(null);
+
+  useEffect(() => {
+    if (injected) return; // la página ya tiene los datos: no duplicamos peticiones
+    let alive = true;
+    const load = async () => {
+      try {
+        const r = await fetch("/api/bot/tick");
+        const d = await r.json();
+        if (!alive) return;
+        setLive({
+          equity: d.account?.balance ?? null,
+          dayPnlPct: d.dailyPnlPct ?? 0,
+          currency: d.account?.currency ?? "",
+          configured: d.configured ?? true,
+          enabled: d.enabled ?? false,
+        });
+      } catch {
+        /* la cabecera nunca rompe la página */
+      }
+    };
+    load();
+    const id = setInterval(load, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [injected]);
+
+  const v: Partial<Live> = injected ?? live ?? {};
+
   return (
     <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between gap-3 border-b border-industrial bg-ink/85 px-5 backdrop-blur md:px-8">
       <div className="flex min-w-0 items-center gap-4">
-        <Link href="/" className="hidden shrink-0 items-center gap-3 sm:flex">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Ir al panel">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
             <span className="font-display text-base font-bold leading-none">A</span>
           </div>
+          <span className="hidden font-display text-[15px] font-semibold leading-none tracking-tight text-white lg:block">
+            Capital Autopilot
+          </span>
         </Link>
         <Nav active={active} />
       </div>
+
       <div className="flex shrink-0 items-center gap-3">
+        {/* Cotización de la cuenta: el dato que un broker nunca esconde */}
+        {v.equity != null && (
+          <div className="hidden items-baseline gap-2 border-r border-industrial pr-3 sm:flex">
+            <span className="font-mono text-sm font-medium tabular-nums text-white">
+              {fmt(v.equity)} <span className="text-[11px] font-normal text-muted">{v.currency}</span>
+            </span>
+            <span className={`font-mono text-[11px] tabular-nums ${pnlClass(v.dayPnlPct ?? 0)}`}>
+              {pnlFmt(v.dayPnlPct ?? 0)}%
+            </span>
+          </div>
+        )}
         {right}
+        {v.configured != null && <ConnBadge configured={!!v.configured} enabled={!!v.enabled} />}
         <ThemeToggle />
         <Clock className="hidden font-mono text-sm text-white lg:block" />
       </div>

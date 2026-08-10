@@ -220,3 +220,15 @@ export function Sparkline({
     </svg>
   );
 }
+
+/** Estado de conexión con el broker. Compartido por la cabecera de todas las páginas. */
+export function ConnBadge({ configured, enabled }: { configured: boolean; enabled: boolean }) {
+  const color = !configured ? "bg-short" : enabled ? "bg-long" : "bg-accent";
+  const label = !configured ? "sin credenciales" : enabled ? "live" : "conectado";
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-industrial px-3 py-1.5">
+      <span className={`h-2 w-2 rounded-full ${color} ${enabled ? "animate-pulseDot" : ""}`} />
+      <span className="text-[11px] font-medium text-dim">{label}</span>
+    </div>
+  );
+}

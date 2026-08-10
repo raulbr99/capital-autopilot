@@ -3,15 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, pnlFmt, pnlClass, SectionHead, StatCard, Clock, DeskGlyph } from "./ui";
+import { fmt, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
 import LogFeed from "./LogFeed";
 import ExpectancyPanel from "./ExpectancyPanel";
 import CommandPalette, { type Command } from "./CommandPalette";
-import ThemeToggle from "./ThemeToggle";
-import Nav from "./Nav";
+import AppHeader from "./AppHeader";
 import Link from "next/link";
 
 const TICK_MS = 6000;
@@ -164,49 +163,31 @@ export default function Dashboard() {
 
       <Ticker evals={evals} />
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between gap-2 border-b border-industrial bg-ink/85 px-5 backdrop-blur md:px-8">
-        <div className="flex min-w-0 items-center gap-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent text-onaccent">
-              <span className="font-display text-base font-bold leading-none">A</span>
-            </div>
-            <div className="min-w-0">
-              <h1 className="truncate font-display text-[15px] font-semibold leading-none tracking-tight text-white">
-                Capital Autopilot
-              </h1>
-              <p className="mt-1 hidden text-[11px] text-muted sm:block">Trading autónomo · Capital.com</p>
-            </div>
-          </div>
-          <div className="hidden md:block">
-            <Nav active="/" />
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2.5">
-          {snap?.killedToday && (
-            <span className="rounded border border-short bg-short/10 px-2 py-1 font-mono text-[10px] text-short">
-              🛑 KILL
-            </span>
-          )}
-          <ConnBadge configured={configured} enabled={enabled} />
-          <ThemeToggle />
-          <button
-            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-            className="hidden rounded-md border border-industrial px-2 py-1 font-mono text-[10px] text-muted transition-colors hover:border-cement hover:text-dim md:block"
-          >
-            ⌘K
-          </button>
-          <div className="hidden text-right lg:block">
-            <Clock className="font-mono text-sm text-white" />
-            <p className="tag">Capital.com</p>
-          </div>
-        </div>
-      </header>
-
-      {/* Nav en móvil (en escritorio va en el header) */}
-      <div className="sticky top-[64px] z-20 border-b border-industrial bg-ink/80 px-4 py-2 backdrop-blur md:hidden">
-        <Nav active="/" />
-      </div>
+      <AppHeader
+        active="/"
+        live={{
+          equity: lastEquity || null,
+          dayPnlPct,
+          currency: acc?.currency ?? "",
+          configured,
+          enabled,
+        }}
+        right={
+          <>
+            {snap?.killedToday && (
+              <span className="rounded border border-short bg-short/10 px-2 py-1 font-mono text-[10px] text-short">
+                🛑 KILL
+              </span>
+            )}
+            <button
+              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+              className="hidden rounded-md border border-industrial px-2 py-1 font-mono text-[10px] text-muted transition-colors hover:border-cement hover:text-dim md:block"
+            >
+              ⌘K
+            </button>
+          </>
+        }
+      />
 
       <main className="mx-auto max-w-[1400px] overflow-x-clip px-5 py-6 md:px-8">
         {!configured && <ConfigWarning />}
@@ -474,17 +455,6 @@ function Ticker({ evals }: { evals: Snapshot["evals"] }) {
           </span>
         ))}
       </div>
-    </div>
-  );
-}
-
-function ConnBadge({ configured, enabled }: { configured: boolean; enabled: boolean }) {
-  const color = !configured ? "bg-short" : enabled ? "bg-long" : "bg-accent";
-  const label = !configured ? "sin credenciales" : enabled ? "live" : "conectado";
-  return (
-    <div className="flex items-center gap-2 rounded-lg border border-industrial px-3 py-1.5">
-      <span className={`h-2 w-2 rounded-full ${color} ${enabled ? "animate-pulseDot" : ""}`} />
-      <span className="text-[11px] font-medium text-dim">{label}</span>
     </div>
   );
 }
