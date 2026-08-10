@@ -29,7 +29,28 @@ function derive(p: OpenPos) {
   // ¿el precio actual favorece la posición? (LONG sube / SHORT baja)
   const favor = cur === p.entry ? 0 : p.direction === "BUY" ? cur - p.entry : p.entry - cur;
   const curTone = favor > 0 ? "text-long" : favor < 0 ? "text-short" : "text-dim";
-  return { cur, risk, distPct, distTone, curTone };
+  // Resultado en múltiplos de RIESGO: como puntúa un operador ("voy +1.2R"),
+  // comparable entre activos aunque los euros sean distintos.
+  const rMult = risk && risk > 0 ? p.upl / risk : null;
+  const notional = Math.abs(p.size * p.entry);
+  return { cur, risk, distPct, distTone, curTone, rMult, notional };
+}
+
+/** Barra de recorrido del trade: -1R (stop) .. 0 (entrada) .. +2R. */
+function RBar({ r }: { r: number }) {
+  const clamped = Math.max(-1, Math.min(2, r));
+  const zero = 33.3; // posición de la entrada en la barra
+  const pct = clamped >= 0 ? zero + (clamped / 2) * (100 - zero) : zero + clamped * zero;
+  const pos = r >= 0;
+  return (
+    <div className="relative mt-1 h-1 w-full overflow-hidden rounded-full bg-industrial" aria-hidden>
+      <div
+        className={`absolute top-0 h-full ${pos ? "bg-long/60" : "bg-short/60"}`}
+        style={{ left: `${Math.min(zero, pct)}%`, width: `${Math.abs(pct - zero)}%` }}
+      />
+      <div className="absolute top-0 h-full w-px bg-muted" style={{ left: `${zero}%` }} />
+    </div>
+  );
 }
 
 const LiveTag = (
@@ -49,6 +70,43 @@ export default function PositionsTable({
   busy: boolean;
 }) {
   const [chartPos, setChartPos] = useState<OpenPos | null>(null);
+  const [confirmKey, setConfirmKey] = useState<string | null>(null);
+
+  // Totales de la cartera: un blotter de broker siempre cierra con su suma
+  const totals = positions.reduce(
+    (a, p) => {
+      const { risk, notional } = derive(p);
+      a.pnl += p.upl || 0;
+      a.risk += risk ?? 0;
+      a.notional += notional;
+      return a;
+    },
+    { pnl: 0, risk: 0, notional: 0 }
+  );
+
+  /** Cerrar mueve dinero real: primer clic arma, segundo confirma. */
+  const closeBtn = (p: OpenPos, cls: string) =>
+    confirmKey === p.key ? (
+      <button
+        onClick={() => {
+          onClose(p);
+          setConfirmKey(null);
+        }}
+        disabled={busy}
+        className={`${cls} border-short bg-short/10 text-short`}
+      >
+        ¿CERRAR?
+      </button>
+    ) : (
+      <button
+        onClick={() => setConfirmKey(p.key)}
+        disabled={busy}
+        className={`${cls} border-cement text-dim hover:border-short hover:text-short`}
+      >
+        CERRAR
+      </button>
+    );
+
   return (
     <>
     <div className="rounded-xl border border-industrial bg-soft">
@@ -73,13 +131,13 @@ export default function PositionsTable({
                   <th className="px-4 py-2 text-right font-normal">SL · TP</th>
                   <th className="px-4 py-2 text-right font-normal">DIST→SL</th>
                   <th className="px-4 py-2 text-right font-normal">RIESGO</th>
-                  <th className="px-4 py-2 text-right font-normal">PNL</th>
+                  <th className="px-4 py-2 text-right font-normal">PNL · R</th>
                   <th className="px-4 py-2 font-normal"></th>
                 </tr>
               </thead>
               <tbody>
                 {positions.map((p) => {
-                  const { cur, risk, distPct, distTone, curTone } = derive(p);
+                  const { cur, risk, distPct, distTone, curTone, rMult } = derive(p);
                   return (
                     <tr key={p.key} className="border-b border-industrial/60 hover:bg-raised">
                       <td className="px-4 py-3 text-white">{p.epic}</td>
@@ -88,16 +146,27 @@ export default function PositionsTable({
                           {p.direction === "BUY" ? "▲ LONG" : "▼ SHORT"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right text-dim">{fmt(p.size)}</td>
-                      <td className="px-4 py-3 text-right text-dim">{price(p.entry)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-dim">{fmt(p.size)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-dim">{price(p.entry)}</td>
                       <td className={`px-4 py-3 text-right font-medium tabular-nums ${curTone}`}>{price(cur)}</td>
-                      <td className="px-4 py-3 text-right text-dim">
+                      <td className="px-4 py-3 text-right tabular-nums text-dim">
                         {p.stopLevel == null ? <span className="text-short">sin SL</span> : price(p.stopLevel)}
                         <span className="text-muted"> · {price(p.limitLevel)}</span>
                       </td>
-                      <td className={`px-4 py-3 text-right ${distTone}`}>{distPct == null ? "—" : `${distPct.toFixed(2)}%`}</td>
-                      <td className="px-4 py-3 text-right text-dim">{risk == null ? "—" : `≈${fmt(risk)}`}</td>
-                      <td className={`px-4 py-3 text-right ${pnlClass(p.upl)}`}>{pnlFmt(p.upl)}</td>
+                      <td className={`px-4 py-3 text-right tabular-nums ${distTone}`}>{distPct == null ? "—" : `${distPct.toFixed(2)}%`}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-dim">{risk == null ? "—" : `≈${fmt(risk)}`}</td>
+                      <td className="min-w-[92px] px-4 py-3 text-right">
+                        <span className={`tabular-nums ${pnlClass(p.upl)}`}>{pnlFmt(p.upl)}</span>
+                        {rMult != null && (
+                          <>
+                            <span className="ml-1.5 tabular-nums text-[10px] text-muted">
+                              {rMult >= 0 ? "+" : ""}
+                              {rMult.toFixed(2)}R
+                            </span>
+                            <RBar r={rMult} />
+                          </>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
@@ -107,42 +176,59 @@ export default function PositionsTable({
                           >
                             {ChartIcon}
                           </button>
-                          <button
-                            onClick={() => onClose(p)}
-                            disabled={busy}
-                            className="rounded-md border border-cement px-3 py-1 text-[10px] text-dim transition hover:border-short hover:text-short disabled:opacity-40"
-                          >
-                            CERRAR
-                          </button>
+                          {closeBtn(p, "rounded-md border px-3 py-1 text-[10px] transition disabled:opacity-40")}
                         </div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
+              <tfoot>
+                <tr className="border-t border-cement bg-base/60 text-[11px]">
+                  <td className="px-4 py-2.5 text-muted" colSpan={3}>
+                    TOTAL · {positions.length} {positions.length === 1 ? "posición" : "posiciones"}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-muted" colSpan={3}>
+                    exposición <span className="tabular-nums text-dim">{fmt(totals.notional, 0)}</span>
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-muted">a stop</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-dim">≈{fmt(totals.risk)}</td>
+                  <td className={`px-4 py-2.5 text-right font-medium tabular-nums ${pnlClass(totals.pnl)}`}>
+                    {pnlFmt(totals.pnl)}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
             </table>
           </div>
 
           {/* Móvil: tarjetas apiladas */}
           <div className="space-y-2 p-3 md:hidden">
             {positions.map((p) => {
-              const { cur, risk, distPct, distTone, curTone } = derive(p);
+              const { cur, risk, distPct, distTone, curTone, rMult } = derive(p);
               return (
                 <div key={p.key} className="rounded-lg border border-industrial bg-base p-3">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-sm text-white">{p.epic}</span>
-                    <span className={`font-mono text-xs ${p.direction === "BUY" ? "text-long" : "text-short"}`}>
-                      {p.direction === "BUY" ? "▲ LONG" : "▼ SHORT"}
-                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`font-mono text-sm tabular-nums ${pnlClass(p.upl)}`}>{pnlFmt(p.upl)}</span>
+                      {rMult != null && (
+                        <span className="font-mono text-[10px] tabular-nums text-muted">
+                          {rMult >= 0 ? "+" : ""}
+                          {rMult.toFixed(2)}R
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-2.5 grid grid-cols-3 gap-y-2 font-mono text-[11px]">
+                  {rMult != null && <RBar r={rMult} />}
+                  <div className="mt-2.5 grid grid-cols-3 gap-y-2 font-mono text-[11px] tabular-nums">
+                    <Cell label="DIR" value={p.direction === "BUY" ? "▲ LONG" : "▼ SHORT"} tone={p.direction === "BUY" ? "text-long" : "text-short"} />
                     <Cell label="SIZE" value={fmt(p.size)} />
                     <Cell label="ENTRADA" value={price(p.entry)} />
                     <Cell label="PRECIO" value={price(cur)} tone={curTone} />
                     <Cell label="SL" value={p.stopLevel == null ? "sin SL" : price(p.stopLevel)} tone={p.stopLevel == null ? "text-short" : "text-dim"} />
                     <Cell label="DIST→SL" value={distPct == null ? "—" : `${distPct.toFixed(2)}%`} tone={distTone} />
                     <Cell label="RIESGO" value={risk == null ? "—" : `≈${fmt(risk)}`} />
-                    <Cell label="P&L" value={pnlFmt(p.upl)} tone={pnlClass(p.upl)} />
                   </div>
                   <div className="mt-3 flex gap-2">
                     <button
@@ -151,17 +237,17 @@ export default function PositionsTable({
                     >
                       {ChartIcon} GRÁFICO
                     </button>
-                    <button
-                      onClick={() => onClose(p)}
-                      disabled={busy}
-                      className="min-h-11 flex-1 rounded-md border border-cement text-[11px] text-dim transition hover:border-short hover:text-short disabled:opacity-40"
-                    >
-                      CERRAR
-                    </button>
+                    {closeBtn(p, "min-h-11 flex-1 rounded-md border text-[11px] transition disabled:opacity-40")}
                   </div>
                 </div>
               );
             })}
+
+            {/* Total de cartera también en móvil */}
+            <div className="flex items-center justify-between rounded-lg border border-cement bg-base/60 px-3 py-2.5 font-mono text-[11px]">
+              <span className="text-muted">TOTAL · riesgo ≈{fmt(totals.risk)}</span>
+              <span className={`tabular-nums ${pnlClass(totals.pnl)}`}>{pnlFmt(totals.pnl)}</span>
+            </div>
           </div>
         </>
       )}
