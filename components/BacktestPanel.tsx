@@ -124,31 +124,43 @@ export default function BacktestPanel() {
             {res.map((r) => (
               <div
                 key={r.epic}
-                className="flex items-center justify-between gap-3 border border-industrial bg-ink px-3 py-2"
+                className={`flex items-center justify-between gap-3 rounded-lg border border-industrial bg-ink px-3 py-2 ${
+                  r.trades === 0 ? "opacity-55" : ""
+                }`}
               >
-                <div className="min-w-0">
+                {/* Ancho fijo: con la columna flexible, la línea de métricas
+                    partía y dejaba huérfano el último dato. */}
+                <div className="w-[176px] shrink-0">
                   <p className="font-display text-sm">{r.epic}</p>
-                  <p className="font-mono text-[10px] text-muted">
-                    {r.trades} trades · WR {r.winRate.toFixed(0)}% · PF {pf(r.profitFactor)} · DD {fmt(r.maxDrawdown)}
-                  </p>
+                  {r.trades === 0 ? (
+                    <p className="font-mono text-[10px] text-muted">sin operaciones en el periodo</p>
+                  ) : (
+                    <p className="whitespace-nowrap font-mono text-[10px] tabular-nums text-muted">
+                      {r.trades} ops · {r.winRate.toFixed(0)}% · PF {pf(r.profitFactor)}
+                    </p>
+                  )}
                 </div>
-                <Sparkline
-                  data={r.equityCurve.map((p) => p.equity)}
-                  up={r.returnPct >= 0}
-                  w={120}
-                  h={34}
-                />
-                <div className="shrink-0 text-right">
-                  <span
-                    className={`font-mono text-sm ${r.returnPct >= 0 ? "text-long" : "text-short"}`}
-                  >
-                    {r.returnPct >= 0 ? "+" : ""}
-                    {r.returnPct.toFixed(1)}%
-                  </span>
-                  <p className="font-mono text-[10px] text-muted">
-                    {r.netPnl >= 0 ? "+" : ""}
-                    {fmt(r.netPnl)} €
-                  </p>
+                {r.trades === 0 ? (
+                  <div className="min-w-0 flex-1" />
+                ) : (
+                  <div className="min-w-0 flex-1">
+                    <Sparkline data={r.equityCurve.map((p) => p.equity)} up={r.returnPct >= 0} h={34} />
+                  </div>
+                )}
+                <div className="w-[92px] shrink-0 text-right">
+                  {r.trades === 0 ? (
+                    <span className="font-mono text-sm text-muted">—</span>
+                  ) : (
+                    <>
+                      <span className={`font-mono text-sm tabular-nums ${r.returnPct >= 0 ? "text-long" : "text-short"}`}>
+                        {r.returnPct >= 0 ? "+" : ""}
+                        {r.returnPct.toFixed(1)}%
+                      </span>
+                      <p className="font-mono text-[10px] tabular-nums text-muted">
+                        peor racha {fmt(r.maxDrawdown)}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
