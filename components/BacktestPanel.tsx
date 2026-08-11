@@ -20,7 +20,11 @@ export default function BacktestPanel() {
   const [loading, setLoading] = useState(false);
   const [res, setRes] = useState<BTResult[] | null>(null);
   const [agg, setAgg] = useState<any>(null);
-  const [resolution, setResolution] = useState("MINUTE");
+  // Por defecto 4 horas, NO 1 minuto. En marcos cortos la horquilla domina el
+  // resultado (medido: en 1 min es ~66% del rango de la vela en EURUSD), así
+  // que arrancar ahí empuja a concluir que la estrategia no vale cuando lo que
+  // no vale es el marco. Las opciones rápidas siguen ahí para quien las busque.
+  const [resolution, setResolution] = useState("HOUR_4");
   const [err, setErr] = useState<string | null>(null);
 
   const run = async () => {
@@ -57,7 +61,7 @@ export default function BacktestPanel() {
               onChange={(e) => setResolution(e.target.value)}
               className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim focus:outline-none"
             >
-              {["MINUTE", "MINUTE_5", "MINUTE_15", "HOUR", "DAY"].map((r) => (
+              {["MINUTE", "MINUTE_5", "MINUTE_15", "HOUR", "HOUR_4", "DAY"].map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
@@ -68,7 +72,7 @@ export default function BacktestPanel() {
               disabled={loading}
               className="bg-accent px-3 py-1 font-display text-[11px] text-onaccent disabled:opacity-40"
             >
-              {loading ? "…" : "▶ RUN"}
+              {loading ? "…" : "▶ Ejecutar"}
             </button>
           </div>
         }
@@ -78,7 +82,8 @@ export default function BacktestPanel() {
         {!res && !err && (
           <p className="text-xs text-muted">
             Corre la estrategia actual sobre histórico de cada activo de la watchlist
-            <span className="text-dim"> antes de arriesgar</span>.
+            <span className="text-dim"> antes de arriesgar</span>. En marcos por debajo de una hora la
+            horquilla se come el resultado, así que un mal dato ahí dice más del marco que de la estrategia.
           </p>
         )}
         {agg && (
