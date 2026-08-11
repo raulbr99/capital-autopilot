@@ -47,7 +47,7 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
   const shell = (children: React.ReactNode) => (
     <div className={`overflow-hidden rounded-xl border border-industrial bg-soft ${className}`}>
       <SectionHead
-        label="EXPECTATIVA_REAL"
+        label="Expectativa real"
         right={d ? <span className="font-mono text-[11px] text-muted">{d.closed} cerrados</span> : undefined}
       />
       {children}
@@ -59,7 +59,7 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
   if (!d || d.closed === 0)
     return shell(
       <div className="dotgrid p-8 text-center">
-        <span className="tag">SIN_TRADES_CERRADOS_TODAVÍA</span>
+        <p className="text-sm font-medium text-dim">Sin operaciones cerradas todavía</p>
         <p className="mt-2 text-xs text-muted">Se llena solo según el bot va cerrando operaciones.</p>
       </div>
     );
@@ -71,15 +71,15 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
     <>
       {/* núcleo: 4 métricas */}
       <div className="grid grid-cols-2 gap-px border-b border-industrial bg-industrial md:grid-cols-4">
-        <StatCard label="WIN_RATE" value={`${d.winRate.toFixed(0)}%`} tone="accent" />
+        <StatCard label="Aciertos" value={`${d.winRate.toFixed(0)}%`} tone="accent" />
         <StatCard
-          label="EXPECTANCY/TRADE"
+          label="Por operación"
           value={`${pnlFmt(d.expectancy)}`}
           unit="€"
           tone={positive ? "long" : d.expectancy < -0.005 ? "short" : undefined}
         />
-        <StatCard label="PROFIT_FACTOR" value={pf(d.profitFactor)} tone={d.profitFactor >= 1 ? "long" : "short"} />
-        <StatCard label="NET_TOTAL" value={`${pnlFmt(d.netTotal)}`} unit="€" tone={d.netTotal >= 0 ? "long" : "short"} />
+        <StatCard label="Profit factor" value={pf(d.profitFactor)} tone={d.profitFactor >= 1 ? "long" : "short"} />
+        <StatCard label="Resultado neto" value={`${pnlFmt(d.netTotal)}`} unit="€" tone={d.netTotal >= 0 ? "long" : "short"} />
       </div>
 
       {/* mecánica: ganas X / pierdes Y → equilibrio */}
@@ -107,11 +107,11 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
       {/* proyección a la frecuencia observada */}
       <div className="border-t border-industrial p-5">
         <p className="tag mb-3">
-          PROYECCIÓN · a tu ritmo de {d.tradesPerWeek.toFixed(1)} trades/sem
+          Proyección · a tu ritmo de {d.tradesPerWeek.toFixed(1)} trades/sem
         </p>
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial">
-          <Proj label="POR SEMANA" eur={d.projWeek} pct={d.projWeekPct} />
-          <Proj label="POR MES" eur={d.projMonth} pct={d.projMonthPct} big />
+          <Proj label="Por semana" eur={d.projWeek} pct={d.projWeekPct} />
+          <Proj label="Por mes" eur={d.projMonth} pct={d.projMonthPct} big />
         </div>
       </div>
 

@@ -32,10 +32,13 @@ Sirve para no repetir apartado y para saber qué queda.
 | 11 | 11-ago-2026 | **Gestión de riesgo** (`RiskPanel`) | Enseñaba los mandos pero nunca sus consecuencias. Tira de 3 cifras derivadas en vivo sobre los campos: **euros por operación** (0,75% del equity real = 1,74 €), **relación R:R** (objetivo/stop, verde si ≥1 — con esto la config rota de julio, stop ×4 / objetivo ×3 = 0,75:1, se habría visto en rojo el primer día en vez de sangrar semanas) y **acierto mínimo** para no perder. Más aviso del peor día (riesgo × máx trades) y alerta roja cuando el **freno diario está desactivado**: una salvaguarda apagada no puede vivir escondida en el texto de ayuda de un campo. |
 | 12 | 11-ago-2026 | **Registro en vivo** (`LogFeed`) | **Agrupa entradas consecutivas idénticas** con contador `×N` — el motor registraba el mismo ajuste dos veces y la lista con la línea repetida parece rota aunque el dato sea correcto. Filtros con recuento (**Todo / Operativa / Problemas**): el registro se llenaba de ajustes de trailing y encontrar un error era imposible; "Problemas" se tiñe de rojo si hay alguno. Estados vacíos según filtro. ⚠️ **Causa raíz detectada, NO corregida** (cambia comportamiento de trading, decisión del dueño): `manageOpenPositions` corre siempre que `cfg.enabled`, también en los GET de solo lectura del navegador cada 6 s → ticks solapados que mueven el stop dos veces y duplican el log. |
 
+| 13 | 11-ago-2026 | **Resumen de mesas + expectativa** | `DesksOverview`: **punto de sesión** por mesa (verde si el mercado está abierto ahora — sin él, una mesa en calma y otra fuera de horario se ven idénticas), **cupo `3/4`** en rojo si está llena, y línea de señales con **altura fija** (antes aparecía y desaparecía, y las tarjetas bailaban en cada refresco de 6 s). `deskSession()` sube a `ui.tsx`: la lógica de horarios vivía encerrada en una sola pantalla. `ExpectancyPanel`: últimos restos de estilo gritón fuera — `EXPECTATIVA_REAL`, `WIN_RATE`, `PROFIT_FACTOR`, `NET_TOTAL`, `SIN_TRADES_CERRADOS_TODAVÍA` pasan a texto normal. |
+
 ## Pendiente (orden sugerido por impacto)
 
 - **ConfigPanel**: formulario denso, aún sin repasar por dentro.
-- **DesksOverview**, **ExpectancyPanel**, **SentimentBoard**, **CotPanel**.
+- **SentimentBoard**, **CotPanel**, **BacktestPanel**, **WalkForward**.
+- **CommandPalette** (⌘K) y experiencia móvil general.
 - **CommandPalette** (⌘K) y experiencia móvil general.
 
 ## Criterio
