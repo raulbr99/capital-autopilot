@@ -173,6 +173,7 @@ export type JournalEntry = {
   confidence: number;
   actions: JournalAction[];
   snapshot: { equity?: number; dailyPnlPct?: number; positions?: number };
+  desk?: DeskCategory | null;
 };
 
 export type Analytics = {

@@ -19,9 +19,10 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 5 | 11-ago-2026 | **Analítica** (`AnalyticsPage`) | Tenía las cifras pero no el **criterio** para leerlas. Añadido: (1) bloque **"Mecánica del sistema"** que enfrenta el win rate con su **punto de equilibrio** (`100/(1+payoff)`) — un 35% de aciertos es excelente con payoff 2,4 y ruinoso con payoff 0,8, y sin ese contraste el dato suelto no dice nada; chip ✓/✗ según el lado en que caiga. (2) **Largos vs cortos** con barra y P&L por dirección: es el desglose que destapó el agujero de los cortos (25% vs 45%) y no estaba en la página. (3) **Aviso de muestra insuficiente** por debajo de 30 operaciones, para que nadie tome decisiones sobre ruido. `analyze()` calcula ahora `payoff`, `breakevenWinRate`, `byDirection` y `enough`. |
 
+| 6 | 11-ago-2026 | **Diario IA** (`JournalPage`) | Era un muro de prosa: tesis de 800+ caracteres, todas desplegadas, y las entradas de puro HOLD (el 90%) pesaban igual que aquellas en las que el bot operó de verdad. Ahora: **tesis plegada a 2 líneas** con "Leer tesis completa"; **resumen de resultado por entrada** (`2 ejecutadas` / `1 sin ejecutar` / `sin operaciones`) para saber qué pasó sin leer; **triaje visual** — punto del timeline y borde en verde si se operó, rojo si algo quedó bloqueado, apagado si fue HOLD; **agrupado por día** con separador (un diario se lee por jornadas) y hora en cada entrada; contador de "N entradas · M con operación". `JournalEntry.desk` tipado (se accedía con `as any`). |
+
 ## Pendiente (orden sugerido por impacto)
 
-- **Diario IA** (`JournalPage`): legibilidad de tesis largas.
 - **Lab** (`LabPage`, `ConfigPanel`, `BacktestPanel`, `WalkForward`): formularios densos.
 - **Estados vacíos y de carga** en toda la app (hoy: ceros y guiones).
 - **Curva de equity** (`EquityChart`): hoy es un SVG propio muy básico.
