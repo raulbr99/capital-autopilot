@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TradeRecord, DeskCategory } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -356,42 +356,75 @@ function DailyBars({ data }: { data: { date: string; pnl: number }[] }) {
   );
 }
 
+/** Cuánto estuvo abierta la operación. */
+function duracion(t: TradeRecord) {
+  if (!t.closedTs || !t.ts) return "—";
+  const min = Math.max(0, Math.round((t.closedTs - t.ts) / 60000));
+  if (min < 60) return `${min} min`;
+  const h = Math.round(min / 6) / 10;
+  return h < 48 ? `${h} h` : `${Math.round(h / 24)} d`;
+}
+
 function TradeTable({ trades }: { trades: TradeRecord[] }) {
   return (
     <div className="max-h-[520px] overflow-auto">
       <table className="w-full text-left font-mono text-[12px]">
         <thead className="sticky top-0 bg-soft">
           <tr className="border-b border-industrial text-muted">
-            <th className="px-4 py-2.5 font-normal">Cierre</th>
-            <th className="px-4 py-2.5 font-normal">Activo</th>
-            <th className="px-4 py-2.5 font-normal">Dir</th>
-            <th className="px-4 py-2.5 font-normal">Entrada → Salida</th>
-            <th className="px-4 py-2.5 text-right font-normal">PnL</th>
+            <th scope="col" className="px-4 py-2.5 font-normal">Cierre</th>
+            <th scope="col" className="px-4 py-2.5 font-normal">Activo</th>
+            <th scope="col" className="px-4 py-2.5 font-normal">Dir</th>
+            <th scope="col" className="px-4 py-2.5 font-normal">Entrada → Salida</th>
+            <th scope="col" className="px-4 py-2.5 text-right font-normal">Duración</th>
+            <th scope="col" className="px-4 py-2.5 text-right font-normal">PnL</th>
           </tr>
         </thead>
         <tbody>
-          {trades.map((t) => (
-            <tr key={t.id} className="border-b border-industrial/50 hover:bg-raised">
-              <td className="px-4 py-2.5 text-muted">
-                {new Date(t.closedTs || t.ts).toLocaleString("es-ES", {
-                  day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
-                })}
-              </td>
-              <td className="px-4 py-2.5 text-white">{t.epic}</td>
-              <td className="px-4 py-2.5">
-                <span className={t.direction === "BUY" ? "text-long" : "text-short"}>
-                  {t.direction === "BUY" ? "▲" : "▼"}
-                </span>
-              </td>
-              <td className="px-4 py-2.5 text-dim">
-                {fmt(t.entry)}
-                {t.exit != null ? ` → ${fmt(t.exit)}` : ""}
-              </td>
-              <td className={`px-4 py-2.5 text-right ${pnlClass(t.pnl || 0)}`}>
-                {t.pnl != null ? `${t.pnl >= 0 ? "+" : ""}${fmt(t.pnl)}` : "—"}
-              </td>
-            </tr>
-          ))}
+          {trades.map((t) => {
+            // De la IA o del motor técnico: executePmDecision prefija "IA:"
+            const deIA = (t.reason || "").startsWith("IA:");
+            const motivo = (t.reason || "").replace(/^IA:\s*/, "");
+            return (
+              <tr key={t.id} className="border-b border-industrial/50 align-top hover:bg-raised">
+                <td className="px-4 py-2.5 tabular-nums text-muted">
+                  {new Date(t.closedTs || t.ts).toLocaleString("es-ES", {
+                    day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+                  })}
+                </td>
+                <td className="px-4 py-2.5">
+                  <span className="text-white">{t.epic}</span>
+                  {/* Quién la abrió: separa el criterio de la IA del del motor */}
+                  <span
+                    className={`ml-1.5 rounded px-1 py-0.5 text-[8px] ${
+                      deIA ? "bg-accent/15 text-accent" : "bg-industrial text-muted"
+                    }`}
+                    title={deIA ? "Abierta por el Gestor IA" : "Abierta por el motor técnico"}
+                  >
+                    {deIA ? "IA" : "TEC"}
+                  </span>
+                  {/* El porqué: sin esto la tabla es una lista de números sin auditoría */}
+                  {motivo && (
+                    <p className="mt-0.5 max-w-[380px] truncate text-[10px] text-muted" title={motivo}>
+                      {motivo}
+                    </p>
+                  )}
+                </td>
+                <td className="px-4 py-2.5">
+                  <span className={t.direction === "BUY" ? "text-long" : "text-short"}>
+                    {t.direction === "BUY" ? "▲" : "▼"}
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 tabular-nums text-dim">
+                  {price(t.entry)}
+                  {t.exit != null ? ` → ${price(t.exit)}` : ""}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-muted">{duracion(t)}</td>
+                <td className={`px-4 py-2.5 text-right tabular-nums ${pnlClass(t.pnl || 0)}`}>
+                  {t.pnl != null ? `${t.pnl >= 0 ? "+" : ""}${fmt(t.pnl)}` : "—"}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
