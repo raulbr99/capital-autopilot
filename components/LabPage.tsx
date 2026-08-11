@@ -94,6 +94,8 @@ export default function LabPage() {
               </p>
             </div>
 
+            <SecurityCard />
+
             {cfg ? (
               <>
                 <ConfigPanel
@@ -102,7 +104,6 @@ export default function LabPage() {
                   patch={patch}
                   notifyEnv={snap?.state.notifyEnv ?? { telegram: false, discord: false }}
                 />
-                <SecurityCard />
                 <p className="px-1 text-[12px] text-muted">
                   Los límites de riesgo (tamaño por operación, máximo por mesa, freno diario) se editan en el{" "}
                   <a href="/" className="text-accent underline-offset-2 hover:underline">
