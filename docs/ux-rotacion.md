@@ -25,9 +25,9 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 8 | 11-ago-2026 | **Estados de carga (el "frame frío")** | Mientras no había datos, el panel pintaba equity **0**, PnL **0,00%**, 0 posiciones y el motor en **"En espera"** — o sea, afirmaba que la cuenta está vacía y el bot parado, que es justo lo contrario de informar (y la razón por la que las capturas tras deploy salían engañosas). Nuevo primitivo `Skeleton` en `ui.tsx`; `StatCard` y `MiniStat` aceptan `value={null}` y pintan hueco. Aplicado a hero del motor, equity, las 4 tarjetas de cuenta y las 3 de hoy; el botón del piloto se deshabilita y dice "Cargando…" en vez de ofrecer "Activar" sobre un estado desconocido. Los `Cargando…` en texto plano de Analítica y Diario pasan a esqueletos con la forma del contenido real. |
 
-## Pendiente (orden sugerido por impacto)
+| 9 | 11-ago-2026 | **Curva de equity** (`EquityChart`) | Aplicada la guía `dataviz`: (1) **cruz de lectura + tooltip** (puntero y táctil) — un gráfico HTML es interactivo por defecto y sin esto la curva era una forma de la que no se podía leer ni un valor; (2) **ejes con cifras**: tres referencias de equity a la derecha y extremos temporales abajo (hora en vez de fecha si el rango es de menos de un día, que si no se repetía "11 ago" dos veces); (3) **colores de token** (`stroke-long`, `fill-short`, `stroke-industrial`) en vez de los hex fijos `#34C98A`/`#F2567A`, que eran los valores del tema OSCURO y desentonaban en claro; (4) **ancho real medido con `ResizeObserver`** en vez de `viewBox` + `preserveAspectRatio="none"`, que deformaba horizontalmente el trazo y los puntos. **Bug de cifras cazado al mirar la captura** (paso 7 de la guía): GOLD marcaba **+21,32R** porque su trailing había movido el stop por delante de la entrada y el denominador del riesgo era casi cero; ahora esas posiciones muestran "asegurada" y no calculan R. |
 
-- **Curva de equity** (`EquityChart`): hoy es un SVG propio muy básico.
+## Pendiente (orden sugerido por impacto)
 
 ## Criterio
 

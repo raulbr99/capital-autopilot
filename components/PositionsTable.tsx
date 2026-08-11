@@ -14,7 +14,13 @@ const ChartIcon = (
 
 function derive(p: OpenPos) {
   const cur = p.currentPrice ?? p.entry;
-  const risk = p.stopLevel != null ? Math.abs(p.entry - p.stopLevel) * p.size : null;
+  // ¿El stop ya pasó de la entrada? Entonces la gestión activa lo movió a
+  // beneficio: no hay riesgo, hay ganancia asegurada. Tratar esa distancia
+  // como "riesgo" daría un denominador minúsculo y una R absurda (+21R).
+  const locked =
+    p.stopLevel != null && (p.direction === "BUY" ? p.stopLevel > p.entry : p.stopLevel < p.entry);
+  const lockedGain = locked ? Math.abs(p.stopLevel! - p.entry) * p.size : 0;
+  const risk = p.stopLevel != null ? (locked ? 0 : Math.abs(p.entry - p.stopLevel) * p.size) : null;
   const distPct = p.stopLevel != null && cur ? (Math.abs(cur - p.stopLevel) / cur) * 100 : null;
   const distTone = distPct == null ? "text-muted" : distPct < 0.5 ? "text-short" : "text-dim";
   // ¿el precio actual favorece la posición? (LONG sube / SHORT baja)
@@ -24,7 +30,7 @@ function derive(p: OpenPos) {
   // comparable entre activos aunque los euros sean distintos.
   const rMult = risk && risk > 0 ? p.upl / risk : null;
   const notional = Math.abs(p.size * p.entry);
-  return { cur, risk, distPct, distTone, curTone, rMult, notional };
+  return { cur, risk, distPct, distTone, curTone, rMult, notional, locked, lockedGain };
 }
 
 /** Barra de recorrido del trade: -1R (stop) .. 0 (entrada) .. +2R. */
@@ -128,7 +134,7 @@ export default function PositionsTable({
               </thead>
               <tbody>
                 {positions.map((p) => {
-                  const { cur, risk, distPct, distTone, curTone, rMult } = derive(p);
+                  const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain } = derive(p);
                   return (
                     <tr key={p.key} className="border-b border-industrial/60 hover:bg-raised">
                       <td className="px-4 py-3 text-white">{p.epic}</td>
@@ -145,7 +151,17 @@ export default function PositionsTable({
                         <span className="text-muted"> · {price(p.limitLevel)}</span>
                       </td>
                       <td className={`px-4 py-3 text-right tabular-nums ${distTone}`}>{distPct == null ? "—" : `${distPct.toFixed(2)}%`}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-dim">{risk == null ? "—" : `≈${fmt(risk)}`}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {risk == null ? (
+                          <span className="text-dim">—</span>
+                        ) : locked ? (
+                          <span className="text-long" title={`Stop por delante de la entrada: ${fmt(lockedGain)} asegurados`}>
+                            asegurada
+                          </span>
+                        ) : (
+                          <span className="text-dim">≈{fmt(risk)}</span>
+                        )}
+                      </td>
                       <td className="min-w-[92px] px-4 py-3 text-right">
                         <span className={`tabular-nums ${pnlClass(p.upl)}`}>{pnlFmt(p.upl)}</span>
                         {rMult != null && (
@@ -196,7 +212,7 @@ export default function PositionsTable({
           {/* Móvil: tarjetas apiladas */}
           <div className="space-y-2 p-3 md:hidden">
             {positions.map((p) => {
-              const { cur, risk, distPct, distTone, curTone, rMult } = derive(p);
+              const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain } = derive(p);
               return (
                 <div key={p.key} className="rounded-lg border border-industrial bg-base p-3">
                   <div className="flex items-center justify-between">
@@ -219,7 +235,11 @@ export default function PositionsTable({
                     <Cell label="PRECIO" value={price(cur)} tone={curTone} />
                     <Cell label="SL" value={p.stopLevel == null ? "sin SL" : price(p.stopLevel)} tone={p.stopLevel == null ? "text-short" : "text-dim"} />
                     <Cell label="DIST→SL" value={distPct == null ? "—" : `${distPct.toFixed(2)}%`} tone={distTone} />
-                    <Cell label="RIESGO" value={risk == null ? "—" : `≈${fmt(risk)}`} />
+                    <Cell
+                      label="RIESGO"
+                      value={risk == null ? "—" : locked ? "asegurada" : `≈${fmt(risk)}`}
+                      tone={locked ? "text-long" : "text-dim"}
+                    />
                   </div>
                   <div className="mt-3 flex gap-2">
                     <button

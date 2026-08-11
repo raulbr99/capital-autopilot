@@ -123,6 +123,11 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
   const { values, min, max, plotW, plotH, x, xt, y, line, area, ddArea, up } = geom;
   const tone = up ? "long" : "short";
   const hi = hover != null ? data[hover] : null;
+  // Con menos de un día de datos, repetir la fecha en los dos extremos no
+  // informa de nada: se muestra la hora.
+  const sameDay = data[data.length - 1].ts - data[0].ts < DAY;
+  const eje = (ts: number, hora: boolean) =>
+    new Date(ts).toLocaleString("es-ES", hora ? { hour: "2-digit", minute: "2-digit", hour12: false } : { day: "2-digit", month: "short" });
   const fecha = (ts: number) =>
     new Date(ts).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 
@@ -199,10 +204,10 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
 
         {/* fechas de los extremos */}
         <text x={0} y={H - 4} className="fill-muted font-mono text-[10px]">
-          {new Date(data[0].ts).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+          {eje(data[0].ts, sameDay)}
         </text>
         <text x={plotW} y={H - 4} textAnchor="end" className="fill-muted font-mono text-[10px]">
-          {new Date(data[data.length - 1].ts).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+          {eje(data[data.length - 1].ts, sameDay)}
         </text>
       </svg>
 
