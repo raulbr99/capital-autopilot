@@ -92,7 +92,7 @@ export default function ConfigPanel({
                   disabled={busy}
                   aria-label={`Resolución de ${i.epic}`}
                   onChange={(e) => setRes(i.epic, e.target.value)}
-                  className="rounded-md border border-cement bg-ink px-1.5 py-1.5 font-mono text-[10px] text-accent focus:outline-none"
+                  className="min-h-[36px] rounded-md border border-cement bg-ink px-1.5 font-mono text-[10px] text-accent focus:outline-none"
                 >
                   {RESOLUTIONS.map((r) => (
                     <option key={r} value={r}>{r}</option>
@@ -103,7 +103,7 @@ export default function ConfigPanel({
                   disabled={busy}
                   aria-pressed={!!i.regimeFilter}
                   title="Filtro de régimen ADX para este activo"
-                  className={`rounded-md border px-1.5 py-1.5 font-mono text-[9px] ${
+                  className={`min-h-[36px] min-w-[36px] rounded-md border px-1.5 font-mono text-[9px] ${
                     i.regimeFilter ? "border-accent text-accent" : "border-cement text-muted"
                   }`}
                 >
@@ -114,7 +114,7 @@ export default function ConfigPanel({
                   disabled={busy}
                   aria-pressed={!!i.paused}
                   title={i.paused ? "Pausado por circuit breaker (no abre nuevas). Clic para reactivar." : "Pausar este activo (no abrirá nuevas posiciones)."}
-                  className={`rounded-md border px-1.5 py-1.5 font-mono text-[9px] ${
+                  className={`min-h-[36px] min-w-[36px] rounded-md border px-1.5 font-mono text-[9px] ${
                     i.paused ? "border-short text-short" : "border-cement text-muted"
                   }`}
                 >
@@ -128,7 +128,7 @@ export default function ConfigPanel({
                       setConfirmDel(null);
                     }}
                     disabled={busy}
-                    className="rounded-md border border-short bg-short/10 px-2 py-1.5 font-mono text-[9px] text-short"
+                    className="min-h-[36px] rounded-md border border-short bg-short/10 px-2 font-mono text-[9px] text-short"
                   >
                     ¿QUITAR?
                   </button>
@@ -137,7 +137,7 @@ export default function ConfigPanel({
                     onClick={() => setConfirmDel(i.epic)}
                     disabled={busy}
                     aria-label={`Quitar ${i.epic}`}
-                    className="rounded-md border border-cement px-2 py-1.5 font-mono text-[11px] text-muted hover:border-short hover:text-short"
+                    className="min-h-[36px] min-w-[36px] rounded-md border border-cement px-2 font-mono text-[11px] text-muted hover:border-short hover:text-short"
                   >
                     ✕
                   </button>

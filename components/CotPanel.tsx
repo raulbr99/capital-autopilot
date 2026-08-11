@@ -87,7 +87,7 @@ export default function CotPanel({
           const short = c.bias === "short";
           return (
             <div key={c.symbol} className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-sm font-medium text-white">{NAMES[c.symbol] ?? c.symbol}</span>
+              <span className="w-20 shrink-0 truncate text-[13px] font-medium text-white sm:w-24 sm:text-sm">{NAMES[c.symbol] ?? c.symbol}</span>
               <div
                 className="relative flex h-5 min-w-0 flex-1 overflow-hidden rounded bg-industrial/40"
                 title={`${c.longs.toLocaleString()} long · ${c.shorts.toLocaleString()} short`}
@@ -102,7 +102,7 @@ export default function CotPanel({
                 {/* Marca del 50 %: sin referencia, la barra no dice de qué lado cae */}
                 <span className="absolute inset-y-0 left-1/2 w-px bg-muted/40" aria-hidden />
               </div>
-              <span className={`flex w-40 shrink-0 items-center justify-end gap-1 whitespace-nowrap font-mono text-[11px] ${long ? "text-long" : short ? "text-short" : "text-muted"}`}>
+              <span className={`flex w-24 shrink-0 items-center justify-end gap-1 whitespace-nowrap font-mono text-[10px] sm:w-40 sm:text-[11px] ${long ? "text-long" : short ? "text-short" : "text-muted"}`}>
                 {c.bias === "neutral" ? "neutral" : long ? "▲ net long" : "▼ net short"}
                 {crowded(c.pctLong) && (
                   <span
@@ -113,7 +113,7 @@ export default function CotPanel({
                   </span>
                 )}
               </span>
-              <span className="w-14 shrink-0 text-right font-mono text-[10px] text-muted" title="Cambio vs semana previa">
+              <span className="hidden w-14 shrink-0 text-right font-mono text-[10px] text-muted sm:block" title="Cambio vs semana previa">
                 {c.change != null ? fmtK(c.change) : ""}
               </span>
             </div>

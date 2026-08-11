@@ -44,7 +44,7 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
               key={r.k}
               onClick={() => setRange(r.k)}
               aria-pressed={range === r.k}
-              className={`px-2.5 py-1 font-mono text-[11px] transition-colors ${
+              className={`min-h-[34px] px-3 py-1.5 font-mono text-[11px] transition-colors ${
                 range === r.k ? "bg-accent text-onaccent" : "text-muted hover:text-dim"
               }`}
             >

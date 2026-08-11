@@ -185,7 +185,7 @@ export default function JournalPage() {
                           {long && (
                             <button
                               onClick={() => toggle(e.id)}
-                              className="mt-1 text-[11px] font-medium text-accent transition-opacity hover:opacity-80"
+                              className="-mx-1 mt-0.5 min-h-[32px] px-1 text-[11px] font-medium text-accent transition-opacity hover:opacity-80"
                             >
                               {expanded ? "Mostrar menos" : "Leer tesis completa"}
                             </button>
