@@ -29,10 +29,13 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 10 | 11-ago-2026 | **Tema claro (barrido de color)** | Auditoría de colores fijos en toda la app: **cero hex hardcodeados** ya en `components/`. El peor caso era `PositionChart` (modal tipo TradingView), con TODA la paleta clavada en oscuro — incluido un `#252525` que ni siquiera es de este proyecto, es de la paleta Sifrok. Como lightweight-charts pinta en canvas y no entiende variables CSS, ahora se **leen los tokens con `getComputedStyle`** y se le pasan como color, más un `MutationObserver` sobre `data-theme` que lo repinta si cambias de tema con el modal abierto. `Sparkline` pasa a `currentColor` con clase de token, y el botón del piloto deja de usar `text-[#fff]` (blanco absoluto) por `text-white`, que en tema claro es tinta oscura. |
 
+| 11 | 11-ago-2026 | **Gestión de riesgo** (`RiskPanel`) | Enseñaba los mandos pero nunca sus consecuencias. Tira de 3 cifras derivadas en vivo sobre los campos: **euros por operación** (0,75% del equity real = 1,74 €), **relación R:R** (objetivo/stop, verde si ≥1 — con esto la config rota de julio, stop ×4 / objetivo ×3 = 0,75:1, se habría visto en rojo el primer día en vez de sangrar semanas) y **acierto mínimo** para no perder. Más aviso del peor día (riesgo × máx trades) y alerta roja cuando el **freno diario está desactivado**: una salvaguarda apagada no puede vivir escondida en el texto de ayuda de un campo. |
+| 12 | 11-ago-2026 | **Registro en vivo** (`LogFeed`) | **Agrupa entradas consecutivas idénticas** con contador `×N` — el motor registraba el mismo ajuste dos veces y la lista con la línea repetida parece rota aunque el dato sea correcto. Filtros con recuento (**Todo / Operativa / Problemas**): el registro se llenaba de ajustes de trailing y encontrar un error era imposible; "Problemas" se tiñe de rojo si hay alguno. Estados vacíos según filtro. ⚠️ **Causa raíz detectada, NO corregida** (cambia comportamiento de trading, decisión del dueño): `manageOpenPositions` corre siempre que `cfg.enabled`, también en los GET de solo lectura del navegador cada 6 s → ticks solapados que mueven el stop dos veces y duplican el log. |
+
 ## Pendiente (orden sugerido por impacto)
 
-- **RiskPanel / ConfigPanel**: formularios densos, aún sin repasar por dentro.
-- **LogFeed**, **DesksOverview**, **ExpectancyPanel**, **SentimentBoard**, **CotPanel**.
+- **ConfigPanel**: formulario denso, aún sin repasar por dentro.
+- **DesksOverview**, **ExpectancyPanel**, **SentimentBoard**, **CotPanel**.
 - **CommandPalette** (⌘K) y experiencia móvil general.
 
 ## Criterio
