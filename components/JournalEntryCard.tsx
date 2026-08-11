@@ -154,7 +154,7 @@ export default function JournalEntryCard({
 
       {!open && ocultas > 0 && (
         <p className="mt-1.5 text-[11px] text-muted">
-          y {ocultas} decisión{ocultas > 1 ? "es" : ""} más
+          y {ocultas} {ocultas > 1 ? "decisiones" : "decisión"} más
         </p>
       )}
 
