@@ -163,13 +163,13 @@ export default function ConfigPanel({
         </div>
 
         <div className="grid grid-cols-2 gap-3 border-t border-industrial pt-3">
-          <NumField label="SMA_RÁPIDA" value={cfg.strategy.fast} step={1} busy={busy}
+          <NumField label="SMA rápida" value={cfg.strategy.fast} step={1} busy={busy}
             onCommit={(v) => patch({ strategy: { fast: v } })} />
-          <NumField label="SMA_LENTA" value={cfg.strategy.slow} step={1} busy={busy}
+          <NumField label="SMA lenta" value={cfg.strategy.slow} step={1} busy={busy}
             onCommit={(v) => patch({ strategy: { slow: v } })} />
-          <NumField label="RSI_PERIODO" value={cfg.strategy.rsiPeriod} step={1} busy={busy}
+          <NumField label="Periodo RSI" value={cfg.strategy.rsiPeriod} step={1} busy={busy}
             onCommit={(v) => patch({ strategy: { rsiPeriod: v } })} />
-          <NumField label="CONF_MÍN" value={cfg.strategy.minConfidence} step={0.05} busy={busy}
+          <NumField label="Confianza mínima" value={cfg.strategy.minConfidence} step={0.05} busy={busy}
             onCommit={(v) => patch({ strategy: { minConfidence: v } })} />
         </div>
 
@@ -185,9 +185,9 @@ export default function ConfigPanel({
             <span>{cfg.strategy.useRegimeFilter ? "ON" : "OFF"}</span>
           </button>
           <div className="grid grid-cols-2 gap-3">
-            <NumField label="ADX_PERIODO" value={cfg.strategy.adxPeriod} step={1} busy={busy}
+            <NumField label="Periodo ADX" value={cfg.strategy.adxPeriod} step={1} busy={busy}
               onCommit={(v) => patch({ strategy: { adxPeriod: v } })} />
-            <NumField label="ADX_UMBRAL" value={cfg.strategy.adxThreshold} step={1} busy={busy}
+            <NumField label="Umbral ADX" value={cfg.strategy.adxThreshold} step={1} busy={busy}
               onCommit={(v) => patch({ strategy: { adxThreshold: v } })} />
           </div>
         </div>

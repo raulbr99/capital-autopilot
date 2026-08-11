@@ -43,7 +43,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
         />
         <div className="max-h-[300px] overflow-y-auto">
           {filtered.length === 0 && (
-            <p className="px-4 py-6 text-center tag">SIN_RESULTADOS</p>
+            <p className="px-4 py-6 text-center text-sm text-muted">Ningún comando coincide</p>
           )}
           {filtered.map((c) => (
             <button

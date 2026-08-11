@@ -41,11 +41,14 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 13 | 11-ago-2026 | **Resumen de mesas + expectativa** | `DesksOverview`: **punto de sesión** por mesa (verde si el mercado está abierto ahora — sin él, una mesa en calma y otra fuera de horario se ven idénticas), **cupo `3/4`** en rojo si está llena, y línea de señales con **altura fija** (antes aparecía y desaparecía, y las tarjetas bailaban en cada refresco de 6 s). `deskSession()` sube a `ui.tsx`: la lógica de horarios vivía encerrada en una sola pantalla. `ExpectancyPanel`: últimos restos de estilo gritón fuera — `EXPECTATIVA_REAL`, `WIN_RATE`, `PROFIT_FACTOR`, `NET_TOTAL`, `SIN_TRADES_CERRADOS_TODAVÍA` pasan a texto normal. |
 
+| 14 | 11-ago-2026 | **Móvil (y una lección)** | Arreglada una **regresión propia de la pasada 9**: el SVG de la curva llevaba `width` fijo de 720 px hasta que el `ResizeObserver` medía, y eso sí desborda un móvil real; ahora `viewBox` + ancho CSS 100%. Tarjetas de cifras responsive (`p-4 sm:p-5`, `text-xl sm:text-2xl`, `min-w-0`, `truncate`). ⚠️ **Lo demás que parecía roto NO lo estaba**: Chrome headless en macOS clampa la ventana a ~480 px y recorta la imagen, así que una captura a 390 muestra un diseño de 480 cortado. Verificado a 480: encaja perfecto. Apuntado en la cabecera de este documento. |
+| 15 | 11-ago-2026 | **Instrumentos** (`ConfigPanel`) | Lista plana de 20 activos → **agrupada por mesa** con recuento por grupo y total del universo. **Estado en la fila**: badge `LONG` en los de solo-compra (el motor bloquea sus cortos y no había forma de saberlo desde la UI) y `PAUSA` + fila atenuada en los parados por el circuit breaker. **Borrado en dos pasos** (`✕` → `¿QUITAR?`): quitar un activo saca al bot de ese mercado en vivo. Y barrido final de `snake_case` en TODA la app (`SMA_RÁPIDA`, `RSI_PERIODO`, `CONF_MÍN`, `ADX_UMBRAL`, `WIN_RATE`, `PROFIT_FACTOR`, `NET_PNL`, `MAX_DD`, `SIN_TRADES_TODAVÍA`, `SIN_RESULTADOS`) → texto normal. |
+
 ## Pendiente (orden sugerido por impacto)
 
-- **ConfigPanel**: formulario denso, aún sin repasar por dentro.
-- **SentimentBoard**, **CotPanel**, **BacktestPanel**, **WalkForward**.
-- **CommandPalette** (⌘K) y experiencia móvil general.
+- **SentimentBoard**, **CotPanel**, **BacktestPanel**, **WalkForward** (contenido, no solo etiquetas).
+- **CommandPalette** (⌘K): comandos y jerarquía.
+- Auditoría móvil de verdad — requiere Puppeteer/Playwright (ver aviso de cabecera).
 - **CommandPalette** (⌘K) y experiencia móvil general.
 
 ## Criterio

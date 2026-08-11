@@ -85,7 +85,7 @@ export default function BacktestPanel() {
           <>
             <div className="mb-2 grid grid-cols-4 gap-px border border-industrial bg-industrial text-center">
               <Cell label="TRADES" value={String(agg.trades)} />
-              <Cell label="WIN_RATE" value={`${agg.winRate.toFixed(0)}%`} />
+              <Cell label="Aciertos" value={`${agg.winRate.toFixed(0)}%`} />
               <Cell
                 label="RETORNO"
                 value={`${(agg.returnPct ?? 0) >= 0 ? "+" : ""}${(agg.returnPct ?? 0).toFixed(1)}%`}

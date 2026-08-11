@@ -16,10 +16,10 @@ export default function Analytics({
       <div className="border border-industrial bg-soft rounded-xl">
         <SectionHead label="Rendimiento" />
         <div className="grid grid-cols-2 gap-px border-b border-industrial bg-industrial md:grid-cols-4">
-          <StatCard label="WIN_RATE" value={`${a.winRate.toFixed(0)}%`} tone="accent" />
-          <StatCard label="PROFIT_FACTOR" value={pf(a.profitFactor)} />
-          <StatCard label="NET_PNL" value={fmt(a.netPnl)} tone={a.netPnl >= 0 ? "long" : "short"} />
-          <StatCard label="MAX_DD" value={fmt(a.maxDrawdown)} tone="short" />
+          <StatCard label="Aciertos" value={`${a.winRate.toFixed(0)}%`} tone="accent" />
+          <StatCard label="Profit factor" value={pf(a.profitFactor)} />
+          <StatCard label="Resultado neto" value={fmt(a.netPnl)} tone={a.netPnl >= 0 ? "long" : "short"} />
+          <StatCard label="Drawdown máx." value={fmt(a.maxDrawdown)} tone="short" />
         </div>
         <div className="grid grid-cols-2 gap-px bg-industrial md:grid-cols-4">
           <Mini label="CERRADOS" value={String(a.closed)} />
@@ -40,7 +40,7 @@ export default function Analytics({
         <SectionHead label={`Operaciones · ${trades.length}`} />
         {trades.length === 0 ? (
           <div className="dotgrid p-8 text-center">
-            <span className="tag">SIN_TRADES_TODAVÍA</span>
+            <span className="text-sm text-muted">Sin operaciones todavía</span>
           </div>
         ) : (
           <div className="max-h-[320px] overflow-y-auto">
