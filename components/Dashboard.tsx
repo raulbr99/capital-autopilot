@@ -23,15 +23,21 @@ export default function Dashboard() {
   const [flash, setFlash] = useState<"long" | "short" | null>(null);
   const prevClosed = useRef(0);
   const prevOpened = useRef(0);
+  const [lastOk, setLastOk] = useState<number | null>(null);
   const router = useRouter();
 
   const tick = useCallback(async (active: boolean) => {
     try {
       const res = await fetch("/api/bot/tick", { method: active ? "POST" : "GET" });
       const data: Snapshot = await res.json();
-      if (!(data as any).error) setSnap(data);
+      // Solo cuenta como lectura buena si el broker respondió de verdad; si no,
+      // se conservan los datos previos pero marcados como no frescos.
+      if (!(data as any).error) {
+        setSnap(data);
+        setLastOk(Date.now());
+      }
     } catch {
-      /* transient */
+      /* la red falló: lastOk se queda atrás y la cabecera lo delata */
     }
   }, []);
 
@@ -204,6 +210,7 @@ export default function Dashboard() {
           currency: acc?.currency ?? "",
           configured,
           enabled,
+          staleMs: lastOk == null ? null : Date.now() - lastOk,
         }}
         right={
           <>

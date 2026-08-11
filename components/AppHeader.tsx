@@ -12,6 +12,7 @@ type Live = {
   currency: string;
   configured: boolean;
   enabled: boolean;
+  staleMs?: number | null;
 };
 
 /**
@@ -32,6 +33,7 @@ export default function AppHeader({
   live?: Partial<Live>;
 }) {
   const [live, setLive] = useState<Live | null>(null);
+  const [lastOk, setLastOk] = useState<number | null>(null);
 
   // Con datos inyectados por la página no se pide nada; si no, sondeo cada 30 s
   // que se detiene con la pestaña oculta (usePoll).
@@ -40,15 +42,17 @@ export default function AppHeader({
       if (injected) return;
       fetch("/api/bot/tick")
         .then((r) => r.json())
-        .then((d) =>
+        .then((d) => {
+          if (d?.error) return; // el broker falló: no refrescamos lastOk
+          setLastOk(Date.now());
           setLive({
             equity: d.account?.balance ?? null,
             dayPnlPct: d.dailyPnlPct ?? 0,
             currency: d.account?.currency ?? "",
             configured: d.configured ?? true,
             enabled: d.enabled ?? false,
-          })
-        )
+          });
+        })
         .catch(() => {
           /* la cabecera nunca rompe la página */
         });
@@ -86,7 +90,13 @@ export default function AppHeader({
           </div>
         )}
         {right}
-        {v.configured != null && <ConnBadge configured={!!v.configured} enabled={!!v.enabled} />}
+        {v.configured != null && (
+          <ConnBadge
+            configured={!!v.configured}
+            enabled={!!v.enabled}
+            staleMs={injected ? injected.staleMs : lastOk == null ? null : Date.now() - lastOk}
+          />
+        )}
         <ThemeToggle />
         <Clock className="hidden font-mono text-sm text-white lg:block" />
       </div>

@@ -223,14 +223,40 @@ export function Sparkline({
   );
 }
 
-/** Estado de conexión con el broker. Compartido por la cabecera de todas las páginas. */
-export function ConnBadge({ configured, enabled }: { configured: boolean; enabled: boolean }) {
-  const color = !configured ? "bg-short" : enabled ? "bg-long" : "bg-accent";
-  const label = !configured ? "sin credenciales" : enabled ? "live" : "conectado";
+/**
+ * Estado de conexión con el broker. Ojo con `staleMs`: si el broker deja de
+ * responder (pasó de verdad: Capital cayó por mantenimiento el 27-jun y devolvía
+ * 401 en todo), la pantalla se queda con los últimos datos buenos. Sin decirlo,
+ * un badge verde "live" sobre cifras congeladas es peor que no mostrar nada.
+ */
+export function ConnBadge({
+  configured,
+  enabled,
+  staleMs,
+}: {
+  configured: boolean;
+  enabled: boolean;
+  staleMs?: number | null;
+}) {
+  const stale = staleMs != null && staleMs > 60_000;
+  const mins = stale ? Math.floor(staleMs! / 60_000) : 0;
+  const color = stale ? "bg-short" : !configured ? "bg-short" : enabled ? "bg-long" : "bg-accent";
+  const label = stale
+    ? `sin datos · ${mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h`}`
+    : !configured
+    ? "sin credenciales"
+    : enabled
+    ? "live"
+    : "conectado";
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-industrial px-3 py-1.5">
-      <span className={`h-2 w-2 rounded-full ${color} ${enabled ? "animate-pulseDot" : ""}`} />
-      <span className="text-[11px] font-medium text-dim">{label}</span>
+    <div
+      className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
+        stale ? "border-short/50 bg-short/10" : "border-industrial"
+      }`}
+      title={stale ? "El broker no responde: las cifras en pantalla son las últimas conocidas" : undefined}
+    >
+      <span className={`h-2 w-2 rounded-full ${color} ${enabled && !stale ? "animate-pulseDot" : ""}`} />
+      <span className={`text-[11px] font-medium ${stale ? "text-short" : "text-dim"}`}>{label}</span>
     </div>
   );
 }
@@ -331,4 +357,37 @@ export function useReturnFocus(active: boolean) {
     const prev = document.activeElement as HTMLElement | null;
     return () => prev?.focus?.();
   }, [active]);
+}
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+/**
+ * Encierra el tabulador dentro del modal. Sin esto, seguir pulsando Tab saca el
+ * foco a la página de detrás —que sigue ahí, tapada— y quien navega con teclado
+ * acaba operando a ciegas sobre controles que no ve.
+ */
+export function useFocusTrap(ref: React.RefObject<HTMLElement>, active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab" || !ref.current) return;
+      const items = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+        (el) => el.offsetParent !== null
+      );
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const cur = document.activeElement;
+      if (e.shiftKey && (cur === first || !ref.current.contains(cur))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && cur === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [ref, active]);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useReturnFocus } from "./ui";
+import { useFocusTrap, useReturnFocus } from "./ui";
 
 export type Command = { id: string; label: string; hint?: string; run: () => void };
 
@@ -10,7 +10,9 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   useReturnFocus(open);
+  useFocusTrap(boxRef, open);
 
   // Busca en la etiqueta Y en la categoría: "riesgo" debe encontrar sus mandos
   const filtered = useMemo(() => {
@@ -82,6 +84,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
       aria-label="Paleta de comandos"
     >
       <div
+        ref={boxRef}
         className="mx-4 w-full max-w-lg overflow-hidden rounded-xl border border-cement bg-soft shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
