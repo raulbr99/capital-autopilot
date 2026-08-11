@@ -142,6 +142,14 @@ export default function Dashboard() {
     return Object.values(byDesk).some((n) => n > cfg.maxPerDesk);
   })();
 
+  // El resultado del día en el título: así se vigila desde una pestaña de fondo
+  // o desde la lista de apps, sin volver a la pantalla.
+  useEffect(() => {
+    if (!snap) return;
+    const signo = dayPnlPct >= 0 ? "+" : "";
+    document.title = `${signo}${dayPnlPct.toFixed(2)}% · ${fmt(lastEquity)} € — Capital Autopilot`;
+  }, [snap, dayPnlPct, lastEquity]);
+
   const markers = trades
     .filter((t) => t.status === "closed" && t.closedTs)
     .map((t) => ({ ts: t.closedTs!, dir: t.direction, pnl: t.pnl }));

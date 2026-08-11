@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { syncThemeColor } from "./ui";
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -10,6 +11,7 @@ export default function ThemeToggle() {
       | "dark"
       | "light") || "dark";
     setTheme(cur);
+    syncThemeColor(cur);
   }, []);
 
   const toggle = () => {
@@ -18,6 +20,7 @@ export default function ThemeToggle() {
     try {
       localStorage.setItem("theme", next);
     } catch {}
+    syncThemeColor(next);
     setTheme(next);
   };
 

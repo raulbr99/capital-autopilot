@@ -391,3 +391,19 @@ export function useFocusTrap(ref: React.RefObject<HTMLElement>, active: boolean)
     return () => document.removeEventListener("keydown", onKey);
   }, [ref, active]);
 }
+
+/**
+ * Sincroniza <meta name="theme-color"> con el tema. Instalada como PWA, ese
+ * color pinta la barra de estado del móvil: con el valor fijo en grafito, el
+ * tema claro dejaba una franja oscura encima de una app clara.
+ */
+export function syncThemeColor(theme: "dark" | "light") {
+  const color = theme === "light" ? "#F6F7F9" : "#0B0D11";
+  let tag = document.querySelector('meta[name="theme-color"]');
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.setAttribute("name", "theme-color");
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute("content", color);
+}
