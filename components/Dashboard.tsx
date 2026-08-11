@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -325,7 +325,12 @@ export default function Dashboard() {
         </section>
 
         {/* LAS 4 MESAS */}
-        <DesksOverview evals={evals} positions={positions} instruments={cfg?.instruments ?? []} />
+        <DesksOverview
+          evals={evals}
+          positions={positions}
+          instruments={cfg?.instruments ?? []}
+          maxPerDesk={cfg?.maxPerDesk ?? 4}
+        />
 
         {/* EXPECTATIVA REAL (análisis, no triage) */}
         <ExpectancyPanel className="mt-4" />
@@ -389,10 +394,12 @@ function DesksOverview({
   evals,
   positions,
   instruments,
+  maxPerDesk,
 }: {
   evals: Snapshot["evals"];
   positions: OpenPos[];
   instruments: Instrument[];
+  maxPerDesk: number;
 }) {
   const catOf = (epic: string) => instruments.find((i) => i.epic === epic)?.category;
   // posiciones de activos que ya no están en el universo (quedaron abiertas al podarlo)
@@ -406,6 +413,8 @@ function DesksOverview({
         const pnl = pos.reduce((s, p) => s + (p.upl || 0), 0);
         const longs = ev.filter((e) => e.signal?.type === "BUY").length;
         const shorts = ev.filter((e) => e.signal?.type === "SELL").length;
+        const ses = deskSession(d.key);
+        const full = pos.length >= maxPerDesk;
         return (
           <Link
             key={d.key}
@@ -417,27 +426,39 @@ function DesksOverview({
                 <DeskGlyph cat={d.key} className="h-4 w-4 shrink-0 text-accent" />
                 <span className="truncate">{d.label}</span>
               </span>
-              <span className="shrink-0 font-mono text-[10px] text-muted transition-colors group-hover:text-accent">
-                {ev.length} →
-              </span>
+              {/* Abierto o cerrado ahora mismo: sin esto, una mesa en calma y
+                  una mesa fuera de horario se ven exactamente igual. */}
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${ses.open ? "bg-long" : "bg-industrial"}`}
+                title={ses.label}
+                aria-label={ses.label}
+              />
             </div>
             <div className="mt-3 flex items-end justify-between">
               <div>
                 <p className="tag">Posiciones</p>
-                <p className="mt-0.5 font-mono text-lg font-medium text-white">{pos.length}</p>
+                <p className={`mt-0.5 font-mono text-lg font-medium tabular-nums ${full ? "text-short" : "text-white"}`}>
+                  {pos.length}
+                  <span className="text-xs font-normal text-muted">/{maxPerDesk}</span>
+                </p>
               </div>
               <div className="text-right">
                 <p className="tag">P&amp;L</p>
-                <p className={`mt-0.5 font-mono text-lg font-medium ${pnlClass(pnl)}`}>{pnlFmt(pnl)}</p>
+                <p className={`mt-0.5 font-mono text-lg font-medium tabular-nums ${pnlClass(pnl)}`}>{pnlFmt(pnl)}</p>
               </div>
             </div>
-            {(longs > 0 || shorts > 0) && (
-              <p className="mt-2 font-mono text-[10px] text-muted">
-                {longs > 0 && <span className="text-long">{longs}▲ </span>}
-                {shorts > 0 && <span className="text-short">{shorts}▼ </span>}
-                señales
-              </p>
-            )}
+            {/* altura fija: si la línea aparece y desaparece, las tarjetas bailan */}
+            <p className="mt-2 h-4 font-mono text-[10px] text-muted">
+              {longs > 0 || shorts > 0 ? (
+                <>
+                  {longs > 0 && <span className="text-long">{longs}▲ </span>}
+                  {shorts > 0 && <span className="text-short">{shorts}▼ </span>}
+                  señales · {ev.length} activos
+                </>
+              ) : (
+                <>{ev.length} activos · sin señal</>
+              )}
+            </p>
           </Link>
         );
       })}

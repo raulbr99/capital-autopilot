@@ -253,3 +253,28 @@ export function price(n: number | null | undefined) {
 export function Skeleton({ className = "" }: { className?: string }) {
   return <span className={`block animate-pulse rounded bg-industrial motion-reduce:animate-none ${className}`} aria-hidden />;
 }
+
+/**
+ * Estado de sesión de una mesa según su horario habitual (UTC). Un panel de
+ * broker siempre dice si el mercado está abierto AHORA; sin eso, un tablero
+ * lleno de "FLAT" parece averiado cuando en realidad está cerrado.
+ * Es una estimación por horario: el motor revalida con Capital antes de operar.
+ */
+export function deskSession(cat: string, now = new Date()): { open: boolean; label: string } {
+  if (cat === "crypto") return { open: true, label: "Mercado abierto · 24/7" };
+  const day = now.getUTCDay(); // 0 domingo
+  const h = now.getUTCHours() + now.getUTCMinutes() / 60;
+
+  if (cat === "stocks") {
+    // Nueva York 13:30–20:00 UTC (horario de verano), L-V
+    const open = day >= 1 && day <= 5 && h >= 13.5 && h < 20;
+    return { open, label: open ? "Sesión de Nueva York abierta" : "Bolsa de NY cerrada" };
+  }
+  // Forex y materias primas: de domingo 22:00 UTC a viernes 21:00 UTC
+  const open =
+    (day > 1 && day < 5) ||
+    (day === 1 && h >= 0) ||
+    (day === 0 && h >= 22) ||
+    (day === 5 && h < 21);
+  return { open, label: open ? "Mercado abierto" : "Mercado cerrado · fin de semana" };
+}

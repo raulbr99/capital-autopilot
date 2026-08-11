@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession } from "./ui";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -15,31 +15,6 @@ const DESKS: Record<DeskCategory, { label: string; blurb: string }> = {
   stocks: { label: "Stocks", blurb: "Acciones US · sesión de Nueva York" },
   commodities: { label: "Commodities", blurb: "Materias primas · 23/5" },
 };
-
-/**
- * Estado de sesión de la mesa según su horario habitual (UTC). Un panel de
- * broker siempre dice si el mercado está abierto AHORA; sin eso, un tablero
- * lleno de "FLAT" parece averiado cuando en realidad está cerrado.
- * Es una estimación por horario: el motor revalida con Capital antes de operar.
- */
-function sessionState(cat: DeskCategory, now = new Date()): { open: boolean; label: string } {
-  if (cat === "crypto") return { open: true, label: "Mercado abierto · 24/7" };
-  const day = now.getUTCDay(); // 0 domingo
-  const h = now.getUTCHours() + now.getUTCMinutes() / 60;
-
-  if (cat === "stocks") {
-    // Nueva York 13:30–20:00 UTC (horario de verano), L-V
-    const open = day >= 1 && day <= 5 && h >= 13.5 && h < 20;
-    return { open, label: open ? "Sesión de Nueva York abierta" : "Bolsa de NY cerrada" };
-  }
-  // Forex y materias primas: de domingo 22:00 UTC a viernes 21:00 UTC
-  const open =
-    (day > 1 && day < 5) ||
-    (day === 1 && h >= 0) ||
-    (day === 0 && h >= 22) ||
-    (day === 5 && h < 21);
-  return { open, label: open ? "Mercado abierto" : "Mercado cerrado · fin de semana" };
-}
 
 function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "long" | "short" }) {
   const c = tone === "long" ? "text-long" : tone === "short" ? "text-short" : "text-white";
@@ -96,7 +71,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   );
   const maxPerDesk = snap?.state.config.maxPerDesk ?? 4;
   const currency = snap?.account?.currency ?? "";
-  const session = sessionState(category);
+  const session = deskSession(category);
   const signals = evals.filter((e) => e.signal.type !== "FLAT").length;
 
   const runGestor = async () => {
