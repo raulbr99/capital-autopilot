@@ -70,7 +70,12 @@ async function prueba(nombre, path, accion) {
 console.log("=== Interacciones ===");
 
 await prueba("gráfico de posición (modal)", "/", async (p) => {
-  const btn = await p.$('button[title="Ver gráfico"]');
+  // Esperar al ELEMENTO, no a un tiempo fijo: con la función fría los datos
+  // pueden tardar, y dar por bueno un "no hay posiciones" que en realidad es
+  // "aún no han llegado" convierte la prueba en un adorno.
+  const btn = await p
+    .waitForSelector('button[title="Ver gráfico"]', { timeout: 20000 })
+    .catch(() => null);
   if (!btn) return "sin posiciones abiertas — no comprobable";
   await btn.click();
   await esperar(5000);
