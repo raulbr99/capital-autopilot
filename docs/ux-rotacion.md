@@ -23,9 +23,10 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 7 | 11-ago-2026 | **Lab** (`LabPage`) | El fallo de fondo no era estético: **mezclaba controles que tocan la cuenta REAL con simulaciones inofensivas, con idéntico aspecto** — invita a cambiar el riesgo creyendo que experimentas. Ahora hay dos pestañas explícitas: **Configuración** ("afecta al motor en vivo", con aviso de que entra en el siguiente ciclo y que las posiciones abiertas mantienen su stop) e **Investigación** ("simulación · no toca la cuenta", con una línea sobre por qué el walk-forward es lo único que dice algo del futuro). Además, esqueleto de carga en vez del texto "Cargando configuración…", y puntero a los límites de riesgo, que siguen en el panel junto a las posiciones que afectan (no se duplican). |
 
+| 8 | 11-ago-2026 | **Estados de carga (el "frame frío")** | Mientras no había datos, el panel pintaba equity **0**, PnL **0,00%**, 0 posiciones y el motor en **"En espera"** — o sea, afirmaba que la cuenta está vacía y el bot parado, que es justo lo contrario de informar (y la razón por la que las capturas tras deploy salían engañosas). Nuevo primitivo `Skeleton` en `ui.tsx`; `StatCard` y `MiniStat` aceptan `value={null}` y pintan hueco. Aplicado a hero del motor, equity, las 4 tarjetas de cuenta y las 3 de hoy; el botón del piloto se deshabilita y dice "Cargando…" en vez de ofrecer "Activar" sobre un estado desconocido. Los `Cargando…` en texto plano de Analítica y Diario pasan a esqueletos con la forma del contenido real. |
+
 ## Pendiente (orden sugerido por impacto)
 
-- **Estados vacíos y de carga** en toda la app (hoy: ceros y guiones).
 - **Curva de equity** (`EquityChart`): hoy es un SVG propio muy básico.
 
 ## Criterio

@@ -74,7 +74,7 @@ export function StatCard({
   tone,
 }: {
   label: string;
-  value: string;
+  value: string | null;
   unit?: string;
   tone?: "long" | "short" | "accent";
 }) {
@@ -89,10 +89,13 @@ export function StatCard({
   return (
     <div className="bg-soft p-5">
       <p className="tag">{label}</p>
-      <p className={`mt-2 font-mono text-2xl font-medium tracking-tight ${c}`}>
-        {value}{" "}
-        {unit && <span className="text-xs font-normal text-muted">{unit}</span>}
-      </p>
+      {value == null ? (
+        <Skeleton className="mt-2 h-7 w-24" />
+      ) : (
+        <p className={`mt-2 font-mono text-2xl font-medium tracking-tight ${c}`}>
+          {value} {unit && <span className="text-xs font-normal text-muted">{unit}</span>}
+        </p>
+      )}
     </div>
   );
 }
@@ -242,4 +245,12 @@ export function pdec(n: number) {
 /** Precio con los decimales propios del activo. Compartido por tabla y señales. */
 export function price(n: number | null | undefined) {
   return n == null ? "—" : fmt(n, pdec(n));
+}
+
+/**
+ * Hueco de carga. Existe para no mentir: mientras no hay datos, un "0" o un
+ * "En espera" afirman algo falso sobre el estado real de la cuenta.
+ */
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <span className={`block animate-pulse rounded bg-industrial motion-reduce:animate-none ${className}`} aria-hidden />;
 }

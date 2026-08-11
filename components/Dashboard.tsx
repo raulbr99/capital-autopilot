@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -117,6 +117,9 @@ export default function Dashboard() {
   const lastEquity = equity.length ? equity[equity.length - 1].equity : 0;
   const configured = snap?.configured ?? true;
   const enabled = cfg?.enabled ?? false;
+  // Sin snapshot no sabemos NADA: pintar 0 y "En espera" afirma que el motor
+  // está parado y la cuenta vacía, que es justo lo contrario de informar.
+  const loading = !snap;
 
   // Riesgo agregado (para vigilar dinero real)
   const openRisk = positions.reduce(
@@ -197,10 +200,16 @@ export default function Dashboard() {
           <div className={`relative min-w-0 overflow-hidden rounded-xl border bg-soft p-6 transition-shadow ${enabled ? "border-accent/40 ring-accent" : "border-industrial"}`}>
             <p className="tag">Motor</p>
             <div className="mt-4 flex items-center gap-2.5">
-              <span className={`h-2.5 w-2.5 rounded-full ${enabled ? "animate-pulseDot bg-long" : "bg-muted"}`} />
-              <span className={`font-display text-3xl font-semibold tracking-tight ${enabled ? "text-white" : "text-dim"}`}>
-                {enabled ? "Activo" : "En espera"}
-              </span>
+              {loading ? (
+                <Skeleton className="h-8 w-40" />
+              ) : (
+                <>
+                  <span className={`h-2.5 w-2.5 rounded-full ${enabled ? "animate-pulseDot bg-long" : "bg-muted"}`} />
+                  <span className={`font-display text-3xl font-semibold tracking-tight ${enabled ? "text-white" : "text-dim"}`}>
+                    {enabled ? "Activo" : "En espera"}
+                  </span>
+                </>
+              )}
             </div>
             <p className="mt-2 max-w-[280px] text-xs leading-relaxed text-muted">
               Opera en tu cuenta real de Capital.com con las señales validadas. Las órdenes son reales.
@@ -218,25 +227,25 @@ export default function Dashboard() {
 
             <button
               onClick={() => patch({ enabled: !enabled })}
-              disabled={busy || !configured}
+              disabled={busy || !configured || loading}
               className={`mt-4 w-full rounded-lg px-6 py-3.5 text-sm font-semibold transition-opacity disabled:opacity-40 ${
                 enabled ? "bg-short text-[#fff] hover:opacity-90" : "bg-accent text-onaccent hover:opacity-90"
               }`}
             >
-              {enabled ? "Detener piloto" : "Activar piloto"}
+              {loading ? "Cargando…" : enabled ? "Detener piloto" : "Activar piloto"}
             </button>
 
             {/* lo que importa HOY (no contadores de por vida) */}
             <div className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial text-center">
               <MiniStat
                 label="PNL HOY"
-                value={`${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
+                value={loading ? null : `${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
                 tone={Math.abs(dayPnlPct) < 0.005 ? undefined : dayPnlPct > 0 ? "long" : "short"}
               />
-              <MiniStat label="TRADES HOY" value={`${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
+              <MiniStat label="TRADES HOY" value={loading ? null : `${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
               <MiniStat
                 label="POSICIONES"
-                value={`${positions.length}`}
+                value={loading ? null : `${positions.length}`}
                 tone={deskFull ? "short" : undefined}
               />
             </div>
@@ -268,9 +277,13 @@ export default function Dashboard() {
             <div className="mb-3 flex items-end justify-between">
               <div>
                 <p className="tag">Equity</p>
-                <p className="mt-1.5 font-mono text-3xl font-medium tracking-tight text-white">
-                  {fmt(lastEquity)} <span className="text-sm font-normal text-muted">{acc?.currency}</span>
-                </p>
+                {loading ? (
+                  <Skeleton className="mt-1.5 h-9 w-40" />
+                ) : (
+                  <p className="mt-1.5 font-mono text-3xl font-medium tracking-tight tabular-nums text-white">
+                    {fmt(lastEquity)} <span className="text-sm font-normal text-muted">{acc?.currency}</span>
+                  </p>
+                )}
               </div>
             </div>
             <EquityChart data={equity} markers={markers} />
@@ -279,12 +292,12 @@ export default function Dashboard() {
 
         {/* STATS */}
         <section className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
-          <StatCard label="Efectivo" value={acc ? fmt(acc.deposit) : "—"} unit={acc?.currency} />
-          <StatCard label="Disponible" value={acc ? fmt(acc.available) : "—"} unit={acc?.currency} />
-          <StatCard label="PnL flotante" value={pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < 0.005 ? undefined : floatPnl > 0 ? "long" : "short"} />
+          <StatCard label="Efectivo" value={loading ? null : acc ? fmt(acc.deposit) : "—"} unit={acc?.currency} />
+          <StatCard label="Disponible" value={loading ? null : acc ? fmt(acc.available) : "—"} unit={acc?.currency} />
+          <StatCard label="PnL flotante" value={loading ? null : pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < 0.005 ? undefined : floatPnl > 0 ? "long" : "short"} />
           <StatCard
             label="Posiciones"
-            value={`${positions.length}`}
+            value={loading ? null : `${positions.length}`}
             unit={deskFull ? "mesa sobre el límite" : cfg ? `máx ${cfg.maxPerDesk}/mesa` : undefined}
             tone={deskFull ? "short" : undefined}
           />
@@ -475,11 +488,15 @@ function Ticker({ evals }: { evals: Snapshot["evals"] }) {
   );
 }
 
-function MiniStat({ label, value, tone }: { label: string; value: string | number; tone?: "long" | "short" }) {
+function MiniStat({ label, value, tone }: { label: string; value: string | number | null; tone?: "long" | "short" }) {
   const c = tone === "long" ? "text-long" : tone === "short" ? "text-short" : "text-white";
   return (
     <div className="bg-soft py-3.5">
-      <p className={`font-mono text-xl font-medium tabular-nums ${c}`}>{value}</p>
+      {value == null ? (
+        <Skeleton className="mx-auto h-6 w-14" />
+      ) : (
+        <p className={`font-mono text-xl font-medium tabular-nums ${c}`}>{value}</p>
+      )}
       <p className="tag mt-0.5">{label}</p>
     </div>
   );

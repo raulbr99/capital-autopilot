@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TradeRecord, DeskCategory } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -107,7 +107,17 @@ export default function AnalyticsPage() {
         </div>
 
         {loading ? (
-          <p className="mt-10 text-center text-sm text-muted">Cargando…</p>
+          <div className="mt-6 space-y-4" aria-busy>
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="bg-soft p-5">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="mt-2 h-7 w-24" />
+                </div>
+              ))}
+            </div>
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
         ) : a.closed === 0 ? (
           <div className="mt-6 rounded-xl border border-industrial bg-soft p-16 text-center">
             <p className="text-base font-medium text-dim">Sin operaciones cerradas todavía</p>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { JournalEntry, JournalAction } from "./types";
 import AppHeader from "./AppHeader";
+import { Skeleton } from "./ui";
 
 const ACT: Record<string, { label: string; cls: string }> = {
   OPEN: { label: "ABRE", cls: "bg-long/15 text-long" },
@@ -122,7 +123,11 @@ export default function JournalPage() {
         </div>
 
         {loading ? (
-          <p className="text-center text-sm text-muted">Cargando…</p>
+          <div className="space-y-3" aria-busy>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-28 rounded-xl" />
+            ))}
+          </div>
         ) : shown.length === 0 ? (
           <div className="rounded-xl border border-industrial bg-soft p-16 text-center">
             <p className="text-base font-medium text-dim">El gestor IA aún no ha escrito nada</p>
