@@ -47,10 +47,11 @@ Sirve para no repetir apartado y para saber qué queda.
 | 16 | 11-ago-2026 | **Backtest honesto** (`lib/sim.ts`) | No es UX, es veracidad: el simulador **no modelaba ningún coste** — entraba al cierre y salía al nivel exacto de SL/TP. Todo backtest y todo walk-forward salían optimistas, y el sesgo crece cuanto más corto es el marco (en 1 min el spread puede ser la mitad del rango de la vela). El dato ya venía de Capital (`bid`/`ask` por vela) y `getPrices` lo tiraba al promediar. Ahora `Candle.spread` se conserva y cada operación paga la **horquilla entera una vez**; `SimResult` devuelve `spreadCost`/`spreadPctOfGross` y el panel lo muestra. Verificado en vivo: EURUSD 4H → 0,11 € de horquilla, 1 % del bruto. ⚠️ Afecta al walk-forward (comparte `simulate`): los edges validados en su día estaban medidos SIN costes. |
 | 17 | 11-ago-2026 | **Walk-forward** (`WalkForward`) | Daba veredictos ("Ventaja probable") **sin mirar el tamaño de muestra**: con 5 operaciones fuera de muestra eso es ruido presentado como evidencia. Ahora marca `muestra corta · N` por debajo de 20 y las hunde en el orden. **Ranking** por calidad fuera de muestra + resumen ("N validados · M con ventaja · K con muestra corta") — con 20 activos, una lista sin orden esconde lo poco que sirve. Jerga traducida: `FOLD`→Ventana, `DEGRADACIÓN IS→OOS`→Retención, `PARÁMS (f/s/sl/tp)` explicado, y la introducción explica en cristiano por qué solo cuenta lo de fuera de muestra y qué significa retención <60 % (sobreajuste). |
 
+| 18 | 11-ago-2026 | **Paleta de comandos** (⌘K) | Le faltaba lo esencial: **no se podía navegar con el teclado**. Una paleta que obliga a coger el ratón no es una paleta. Ahora ↑↓ recorren, ↵ ejecuta, `esc` cierra, con resaltado, autoscroll y sincronía ratón↔teclado. **Agrupada por categoría** (Motor · Mesas · Ir a · Vista) y la búsqueda mira etiqueta **y** categoría (escribir "mesa" saca las cuatro). Comandos de 5 → 11: las 4 mesas, cambio de tema (misma clave `localStorage` que el toggle, así no se desincronizan) y etiquetas que dicen el estado real ("Stops por volatilidad: desactivar" en vez de "Toggle SL/TP por ATR"). Pie con las teclas disponibles. |
+
 ## Pendiente (orden sugerido por impacto)
 
 - **SentimentBoard**, **CotPanel** (contenido, no solo etiquetas).
-- **CommandPalette** (⌘K): comandos y jerarquía.
 - Auditoría móvil de verdad — requiere Puppeteer/Playwright (ver aviso de cabecera).
 - **CommandPalette** (⌘K) y experiencia móvil general.
 

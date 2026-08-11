@@ -146,11 +146,46 @@ export default function Dashboard() {
     .map((t) => ({ ts: t.closedTs!, dir: t.direction, pnl: t.pnl }));
 
   const commands: Command[] = [
-    { id: "toggle", label: enabled ? "Detener piloto" : "Activar piloto", hint: "ENGINE", run: () => patch({ enabled: !enabled }) },
-    { id: "lab", label: "Ir al Lab (estrategia + ajustes)", hint: "PÁGINA", run: () => router.push("/lab") },
-    { id: "perf", label: "Ir a Analítica", hint: "PÁGINA", run: () => router.push("/analytics") },
-    { id: "journal", label: "Ir al Diario IA", hint: "PÁGINA", run: () => router.push("/journal") },
-    { id: "atr", label: "Toggle SL/TP por ATR", hint: "RISK", run: () => patch({ risk: { useAtrStops: !cfg?.risk.useAtrStops } }) },
+    // Motor
+    {
+      id: "toggle",
+      label: enabled ? "Detener el piloto" : "Activar el piloto",
+      hint: "Motor",
+      run: () => patch({ enabled: !enabled }),
+    },
+    {
+      id: "atr",
+      label: `Stops por volatilidad (ATR): ${cfg?.risk.useAtrStops ? "desactivar" : "activar"}`,
+      hint: "Motor",
+      run: () => patch({ risk: { useAtrStops: !cfg?.risk.useAtrStops } }),
+    },
+    // Mesas
+    ...DESK_META.map((d) => ({
+      id: `desk-${d.key}`,
+      label: `Mesa ${d.label}`,
+      hint: "Mesas",
+      run: () => router.push(`/${d.key}`),
+    })),
+    // Páginas
+    { id: "perf", label: "Analítica del rendimiento", hint: "Ir a", run: () => router.push("/analytics") },
+    { id: "journal", label: "Diario del Gestor IA", hint: "Ir a", run: () => router.push("/journal") },
+    { id: "lab", label: "Lab · estrategia, backtest y ajustes", hint: "Ir a", run: () => router.push("/lab") },
+    // Vista
+    {
+      id: "theme",
+      label: "Cambiar entre tema claro y oscuro",
+      hint: "Vista",
+      run: () => {
+        const el = document.documentElement;
+        const next = el.getAttribute("data-theme") === "light" ? "dark" : "light";
+        el.setAttribute("data-theme", next);
+        try {
+          localStorage.setItem("theme", next);
+        } catch {
+          /* modo privado */
+        }
+      },
+    },
   ];
 
   return (
