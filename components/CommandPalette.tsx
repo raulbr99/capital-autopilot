@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useReturnFocus } from "./ui";
 
 export type Command = { id: string; label: string; hint?: string; run: () => void };
 
@@ -9,6 +10,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
+  useReturnFocus(open);
 
   // Busca en la etiqueta Y en la categoría: "riesgo" debe encontrar sus mandos
   const filtered = useMemo(() => {

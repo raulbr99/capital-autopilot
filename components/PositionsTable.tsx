@@ -120,16 +120,16 @@ export default function PositionsTable({
             <table className="w-full text-left font-mono text-xs">
               <thead>
                 <tr className="border-b border-industrial text-muted">
-                  <th className="px-4 py-2 font-normal">ACTIVO</th>
-                  <th className="px-4 py-2 font-normal">DIR</th>
-                  <th className="px-4 py-2 text-right font-normal">SIZE</th>
-                  <th className="px-4 py-2 text-right font-normal">ENTRADA</th>
-                  <th className="px-4 py-2 text-right font-normal">PRECIO</th>
-                  <th className="px-4 py-2 text-right font-normal">SL · TP</th>
-                  <th className="px-4 py-2 text-right font-normal">DIST→SL</th>
-                  <th className="px-4 py-2 text-right font-normal">RIESGO</th>
-                  <th className="px-4 py-2 text-right font-normal">PNL · R</th>
-                  <th className="px-4 py-2 font-normal"></th>
+                  <th scope="col" className="px-4 py-2 font-normal">ACTIVO</th>
+                  <th scope="col" className="px-4 py-2 font-normal">DIR</th>
+                  <th scope="col" className="px-4 py-2 text-right font-normal">SIZE</th>
+                  <th scope="col" className="px-4 py-2 text-right font-normal">ENTRADA</th>
+                  <th scope="col" className="px-4 py-2 text-right font-normal">PRECIO</th>
+                  <th scope="col" className="px-4 py-2 text-right font-normal">SL · TP</th>
+                  <th scope="col" className="px-4 py-2 text-right font-normal">DIST→SL</th>
+                  <th scope="col" className="px-4 py-2 text-right font-normal">RIESGO</th>
+                  <th scope="col" className="px-4 py-2 text-right font-normal">PNL · R</th>
+                  <th scope="col" className="px-4 py-2 font-normal"></th>
                 </tr>
               </thead>
               <tbody>

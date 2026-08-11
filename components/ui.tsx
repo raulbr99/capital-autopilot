@@ -319,3 +319,16 @@ export function usePoll(fn: () => void, ms: number, deps: React.DependencyList =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ms, ...deps]);
 }
+
+/**
+ * Devuelve el foco al elemento que abrió el modal. Sin esto, al cerrar con
+ * Escape el foco se queda en el body y quien navega con teclado vuelve al
+ * principio de la página en vez de a donde estaba.
+ */
+export function useReturnFocus(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const prev = document.activeElement as HTMLElement | null;
+    return () => prev?.focus?.();
+  }, [active]);
+}

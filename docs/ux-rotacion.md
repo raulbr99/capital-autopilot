@@ -53,12 +53,15 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 20 | 11-ago-2026 | **COT** (`CotPanel`) | Cerraba la lista de apartados. (1) **Antigüedad visible**: el COT es semanal y refleja posiciones del martes anterior; sin decirlo se lee como si fuera de hoy — ahora muestra "hace N d" y la nota aclara que es contexto de fondo, nunca señal de entrada. (2) **Porcentaje numérico** sobre la barra: a ojo no se distingue un 72 % de un 88 %, y esa diferencia es la que separa "sesgo" de "masificado". (3) **Chip MASIF.** en posicionamientos extremos (≥80 % a un lado, hoy el oro al 88,5 %): el mercado ya está todo del mismo lado, lo que suele avisar de agotamiento en vez de confirmar la tendencia — el prompt del Gestor ya razonaba así y la interfaz no lo reflejaba. (4) Marca del 50 % en la barra como referencia. |
 
+| 21 | 11-ago-2026 | **Clasificación por mesa** (`AnalyticsPage`) | `DESK_OF` era un mapa a mano de **47 activos** frente a los 20 del universo real (27 restos de la poda de julio). Hoy funcionaba de casualidad, pero el fallo estaba armado al revés: al **añadir** un instrumento, sus operaciones desaparecerían del filtro por mesa en silencio. Ahora se deriva de `cfg.instruments` (fuente de verdad) y el mapa queda como `LEGACY_DESK` podado a los 27 **retirados**, cuyos trades siguen en el histórico. |
+| 22 | 11-ago-2026 | **Sondeo** (`usePoll`) | Siete relojes (6 s / 12 s / 20 s / 30 s / 5 min) corrían **para siempre**, también con la pestaña oculta o el móvil en el bolsillo — el estado normal de una PWA. Y no es tráfico barato: cada `GET /api/bot/tick` consulta a Capital de verdad. Nuevo hook `usePoll` que para con `document.hidden`, rearranca al volver y dispara una **lectura inmediata** en ese momento (la sensación al mirar es idéntica). Efecto lateral: menos ticks solapados = menos duplicados de log y de movimientos de stop. |
+| 23 | 11-ago-2026 | **Accesibilidad** | El panel principal **no tenía ni un encabezado** (`<h1>`): con lector de pantalla se aterrizaba sin orientación. Añadido en `sr-only` + `<h2>` en la tarjeta de motor. `aria-live="polite"` en el estado del motor y las cifras del día, que cambian solas y hasta ahora no se anunciaban nunca. `scope="col"` en las 10 cabeceras de la tabla de posiciones. **Foco en modales**: nuevo `useReturnFocus` que lo devuelve al elemento que abrió (antes, al cerrar con Escape, el foco caía al body y volvías al principio de la página), y el modal de gráfico ahora lleva el foco a su botón de cerrar al abrirse. |
+
 ## Pendiente
 
-Lista original **completada** (20 pasadas). Ideas para siguientes vueltas: auditoría móvil real
-(requiere Puppeteer, ver aviso de cabecera), accesibilidad con lector de pantalla, rendimiento
-(la home hace 2 peticiones cada 6-12 s), y el `DESK_OF` hardcodeado de `AnalyticsPage`, que
-duplica el universo del config y puede desincronizarse.
+Lista original **completada** + 3 vueltas extra. Queda: auditoría móvil real (requiere Puppeteer,
+ver aviso de cabecera) y una pasada de accesibilidad más profunda (trampa de foco con Tab dentro
+de los modales, contraste medido, recorrido completo con lector de pantalla).
 - Auditoría móvil de verdad — requiere Puppeteer/Playwright (ver aviso de cabecera).
 - **CommandPalette** (⌘K) y experiencia móvil general.
 

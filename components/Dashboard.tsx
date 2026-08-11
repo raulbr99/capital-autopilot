@@ -223,13 +223,16 @@ export default function Dashboard() {
       />
 
       <main className="mx-auto max-w-[1400px] overflow-x-clip px-5 py-6 md:px-8">
+        {/* La página no tenía ningún encabezado: con lector de pantalla se
+            aterrizaba sin orientación ninguna. Visualmente lo aporta la marca. */}
+        <h1 className="sr-only">Panel de mando · Capital Autopilot</h1>
         {!configured && <ConfigWarning />}
 
         {/* HERO */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
           <div className={`relative min-w-0 overflow-hidden rounded-xl border bg-soft p-5 transition-shadow sm:p-6 ${enabled ? "border-accent/40 ring-accent" : "border-industrial"}`}>
-            <p className="tag">Motor</p>
-            <div className="mt-4 flex items-center gap-2.5">
+            <h2 className="tag">Motor</h2>
+            <div className="mt-4 flex items-center gap-2.5" aria-live="polite">
               {loading ? (
                 <Skeleton className="h-8 w-40" />
               ) : (
@@ -266,7 +269,10 @@ export default function Dashboard() {
             </button>
 
             {/* lo que importa HOY (no contadores de por vida) */}
-            <div className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial text-center">
+            <div
+              className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial text-center"
+              aria-live="polite"
+            >
               <MiniStat
                 label="PNL HOY"
                 value={loading ? null : `${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}

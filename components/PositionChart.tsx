@@ -10,7 +10,7 @@ import {
   type ISeriesApi,
 } from "lightweight-charts";
 import type { OpenPos } from "./types";
-import { fmt, pnlClass, pnlFmt } from "./ui";
+import { fmt, pnlClass, pnlFmt, useReturnFocus } from "./ui";
 
 type Candle = { time: string; open: number; high: number; low: number; close: number };
 
@@ -36,6 +36,14 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useReturnFocus(true);
+
+  // El modal se abre sin foco dentro: quien navega con teclado seguiría en la
+  // página de detrás. Lo llevamos al botón de cerrar, que es la salida.
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
 
   const dec = pdec(pos.entry);
   const cur = pos.currentPrice ?? pos.entry;
@@ -209,6 +217,7 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
             </div>
             <button
               onClick={onClose}
+              ref={closeRef}
               aria-label="Cerrar"
               className="rounded-md border border-cement px-2.5 py-1 text-xs text-muted transition hover:border-short hover:text-white"
             >
