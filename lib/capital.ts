@@ -307,7 +307,15 @@ export async function reducePosition(
   return r;
 }
 
-export type Candle = { time: string; open: number; high: number; low: number; close: number };
+export type Candle = {
+  time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  /** Horquilla real (ask−bid) al cierre de la vela. Es el coste de operar. */
+  spread?: number;
+};
 
 export async function getPrices(
   epic: string,
@@ -330,9 +338,16 @@ export async function getPrices(
     high: mid(p.highPrice),
     low: mid(p.lowPrice),
     close: mid(p.closePrice),
+    spread: spreadOf(p.closePrice),
   }));
   pricesCache.set(key, { d: out, t: Date.now() });
   return out;
+}
+
+/** ask − bid al cierre; undefined si el feed no lo trae. */
+function spreadOf(p: any): number | undefined {
+  if (p && typeof p.bid === "number" && typeof p.ask === "number") return Math.abs(p.ask - p.bid);
+  return undefined;
 }
 
 function mid(p: any): number {

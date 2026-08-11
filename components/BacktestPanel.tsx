@@ -84,19 +84,29 @@ export default function BacktestPanel() {
         {agg && (
           <>
             <div className="mb-2 grid grid-cols-4 gap-px border border-industrial bg-industrial text-center">
-              <Cell label="TRADES" value={String(agg.trades)} />
+              <Cell label="Operaciones" value={String(agg.trades)} />
               <Cell label="Aciertos" value={`${agg.winRate.toFixed(0)}%`} />
               <Cell
-                label="RETORNO"
+                label="Retorno"
                 value={`${(agg.returnPct ?? 0) >= 0 ? "+" : ""}${(agg.returnPct ?? 0).toFixed(1)}%`}
                 tone={(agg.returnPct ?? 0) >= 0 ? "long" : "short"}
               />
               <Cell
-                label="P&L NOCIONAL"
+                label="P&L nocional"
                 value={fmt(agg.netPnl)}
                 tone={agg.netPnl >= 0 ? "long" : "short"}
               />
             </div>
+            {typeof agg.spreadCost === "number" && agg.spreadCost > 0 && (
+              <p className="mb-2 flex items-start gap-1.5 rounded-lg border border-industrial bg-base px-3 py-2 text-[11px] leading-relaxed text-dim">
+                <span aria-hidden>💸</span>
+                <span>
+                  Incluye <span className="font-mono text-white">{fmt(agg.spreadCost)} €</span> de
+                  horquilla ({agg.trades} operaciones × spread real del activo). Un backtest sin este
+                  coste siempre sale a favor, y más cuanto más corto sea el marco temporal.
+                </span>
+              </p>
+            )}
             <p className="mb-3 text-[10px] leading-relaxed text-muted">
               Cada trade arriesga el mismo % de un equity nocional de 1.000 € → el P&L es
               comparable entre activos (BTC ya no se dispara). El <span className="text-dim">retorno %</span> es

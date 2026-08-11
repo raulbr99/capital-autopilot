@@ -37,6 +37,12 @@ export type SimResult = SimMetrics & {
   returnPct: number; // netPnl como % del equity nocional (comparable entre activos)
   tradeList: SimTrade[];
   equityCurve: number[];
+  /** Euros que se llevó la horquilla. Un backtest sin esto siempre miente a favor. */
+  spreadCost: number;
+  /** % del beneficio bruto que se come el spread. */
+  spreadPctOfGross: number;
+  /** Horquilla mediana usada (0 si el feed no la trae). */
+  medianSpread: number;
 };
 
 export function metricsOf(trades: { pnl: number }[]): SimMetrics {
@@ -87,6 +93,15 @@ export function simulate(
     | { dir: "BUY" | "SELL"; entry: number; sl: number; tp: number; size: number; i: number }
     | null = null;
   const tradeList: SimTrade[] = [];
+  // Coste real de operar: entras por el lado malo y sales por el otro, así que
+  // cada trade paga la horquilla ENTERA una vez. Sin esto, el backtest premia
+  // estrategias de muchas operaciones cortas que en vivo pierden dinero.
+  const spreads = candles.map((c) => c.spread).filter((x): x is number => typeof x === "number" && x > 0);
+  const medianSpread = spreads.length
+    ? spreads.slice().sort((a, b) => a - b)[Math.floor(spreads.length / 2)]
+    : 0;
+  const spreadAt = (i: number) => candles[i]?.spread ?? medianSpread;
+  let spreadCost = 0;
   const equityCurve: number[] = [];
   let eq = 0;
 
@@ -105,7 +120,9 @@ export function simulate(
       }
       if (exit !== null) {
         const dir = open.dir === "BUY" ? 1 : -1;
-        const pnl = (exit - open.entry) * dir * open.size;
+        const cost = spreadAt(i) * open.size;
+        spreadCost += cost;
+        const pnl = (exit - open.entry) * dir * open.size - cost;
         tradeList.push({
           dir: open.dir,
           entry: open.entry,
@@ -146,10 +163,14 @@ export function simulate(
   }
 
   const m = metricsOf(tradeList);
+  const grossWin = tradeList.filter((t) => t.pnl > 0).reduce((s2, t) => s2 + t.pnl, 0);
   return {
     ...m,
     returnPct: (m.netPnl / BASE_EQUITY) * 100,
     tradeList,
     equityCurve,
+    spreadCost,
+    spreadPctOfGross: grossWin > 0 ? (spreadCost / grossWin) * 100 : 0,
+    medianSpread,
   };
 }

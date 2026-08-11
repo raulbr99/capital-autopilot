@@ -18,6 +18,8 @@ export type BacktestResult = {
   returnPct: number; // % sobre equity nocional — comparable entre activos
   profitFactor: number;
   maxDrawdown: number;
+  spreadCost: number;
+  spreadPctOfGross: number;
   equityCurve: { i: number; equity: number }[];
   sample: { dir: "BUY" | "SELL"; entry: number; exit: number; pnl: number }[];
 };
@@ -38,6 +40,8 @@ export function backtest(
     winRate: r.winRate,
     netPnl: r.netPnl,
     returnPct: r.returnPct,
+    spreadCost: r.spreadCost,
+    spreadPctOfGross: r.spreadPctOfGross,
     profitFactor: r.profitFactor,
     maxDrawdown: r.maxDrawdown,
     equityCurve: r.equityCurve.map((equity, i) => ({ i, equity })),

@@ -35,6 +35,7 @@ export async function GET(req: Request) {
       trades: results.reduce((s, r) => s + r.trades, 0),
       netPnl: results.reduce((s, r) => s + r.netPnl, 0),
       wins: results.reduce((s, r) => s + r.wins, 0),
+      spreadCost: results.reduce((s, r) => s + (r.spreadCost || 0), 0),
     };
     return NextResponse.json({
       configured: true,
