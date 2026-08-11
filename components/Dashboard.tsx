@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -135,7 +135,7 @@ export default function Dashboard() {
     if (!cfg) return false;
     const byDesk: Record<string, number> = {};
     for (const p of positions) {
-      const d = cfg.instruments.find((i) => i.epic === p.epic)?.category || "otros";
+      const d = deskOfEpic(cfg.instruments, p.epic);
       byDesk[d] = (byDesk[d] || 0) + 1;
     }
     return Object.values(byDesk).some((n) => n > cfg.maxPerDesk);
@@ -466,9 +466,9 @@ function DesksOverview({
   instruments: Instrument[];
   maxPerDesk: number;
 }) {
-  const catOf = (epic: string) => instruments.find((i) => i.epic === epic)?.category;
+  const catOf = (epic: string) => deskOfEpic(instruments, epic);
   // posiciones de activos que ya no están en el universo (quedaron abiertas al podarlo)
-  const legacy = positions.filter((p) => !catOf(p.epic));
+  const legacy = positions.filter((p) => catOf(p.epic) === "otros");
   return (
     <section className="mt-4">
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

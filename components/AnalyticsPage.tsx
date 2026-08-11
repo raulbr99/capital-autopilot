@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TradeRecord, DeskCategory } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -59,9 +59,11 @@ export default function AnalyticsPage() {
 
   usePoll(load, 20000);
 
+  // Universo vivo por encima del legado: añadir un instrumento no debe hacerlo
+  // desaparecer del filtro, y los retirados deben seguir filtrándose.
   const deskOf = useMemo(() => {
-    const m = new Map<string, DeskCategory>(Object.entries(LEGACY_DESK) as [string, DeskCategory][]);
-    for (const i of instruments) if (i.category) m.set(i.epic, i.category);
+    const m = new Map<string, string>(Object.entries(LEGACY_DESK));
+    for (const [epic, cat] of deskMap(instruments)) if (cat !== "otros") m.set(epic, cat);
     return (epic: string) => m.get(epic);
   }, [instruments]);
 

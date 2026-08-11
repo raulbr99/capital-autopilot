@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap } from "./ui";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -52,11 +52,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   usePoll(load, 12000, [load]);
 
   const instruments = snap?.state.config.instruments ?? [];
-  const epicCat = useMemo(() => {
-    const m = new Map<string, string>();
-    instruments.forEach((i) => m.set(i.epic, i.category || ""));
-    return m;
-  }, [instruments]);
+  const epicCat = useMemo(() => deskMap(instruments), [instruments]);
 
   const evals = (snap?.evals ?? []).filter((e) => epicCat.get(e.epic) === category);
   const positions = (snap?.openPositions ?? []).filter((p) => epicCat.get(p.epic) === category);

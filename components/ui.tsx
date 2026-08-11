@@ -458,3 +458,25 @@ export function positionRisk(p: {
   const dist = Math.abs(p.entry - p.stopLevel) * p.size;
   return { risk: locked ? 0 : dist, locked, lockedGain: locked ? dist : 0 };
 }
+
+/**
+ * Mesa a la que pertenece un activo, según el universo configurado.
+ *
+ * Estaba resuelto de cuatro formas distintas (dos en el mismo fichero), y de
+ * eso depende qué se ve en cada mesa, el cupo por mesa y el filtrado de la
+ * analítica. Las posiciones de activos ya retirados caen en "otros": siguen
+ * abiertas y no deben desaparecer de los recuentos.
+ */
+export function deskOfEpic(
+  instruments: { epic: string; category?: string }[] | undefined,
+  epic: string
+): string {
+  return instruments?.find((i) => i.epic === epic)?.category || "otros";
+}
+
+/** Versión memoizable: devuelve un Map listo para consultar en bucles. */
+export function deskMap(instruments: { epic: string; category?: string }[] | undefined) {
+  const m = new Map<string, string>();
+  for (const i of instruments ?? []) m.set(i.epic, i.category || "otros");
+  return m;
+}
