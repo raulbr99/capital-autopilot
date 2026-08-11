@@ -145,17 +145,32 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
                   >
                     <div className="flex items-center gap-3">
                       <span className="font-display text-sm">{r.epic}</span>
-                      <span className={`rounded border px-2 py-0.5 text-[9px] font-medium ${VERDICT[r.verdict].cls}`}>
-                        {VERDICT[r.verdict].label}
-                      </span>
-                      {r.oosAggregate.trades < MIN_OOS && (
-                        <span
-                          className="rounded border border-cement px-2 py-0.5 text-[9px] text-muted"
-                          title={`Solo ${r.oosAggregate.trades} operaciones fuera de muestra: por debajo de ${MIN_OOS} el veredicto es ruido`}
-                        >
-                          muestra corta · {r.oosAggregate.trades}
-                        </span>
-                      )}
+                      {(() => {
+                        // Con muestra corta el veredicto NO se pinta en verde:
+                        // decir "ventaja probable" en la tarjeta y "0 con
+                        // ventaja" en el resumen es contradecirse en pantalla.
+                        const corta = r.oosAggregate.trades < MIN_OOS;
+                        return (
+                          <>
+                            <span
+                              className={`whitespace-nowrap rounded border px-2 py-0.5 text-[9px] font-medium ${
+                                corta ? "border-cement text-muted" : VERDICT[r.verdict].cls
+                              }`}
+                              title={corta ? "Sin muestra suficiente para sostener este veredicto" : undefined}
+                            >
+                              {VERDICT[r.verdict].label}
+                            </span>
+                            {corta && (
+                              <span
+                                className="whitespace-nowrap rounded border border-cement px-2 py-0.5 text-[9px] text-muted"
+                                title={`Solo ${r.oosAggregate.trades} operaciones fuera de muestra: por debajo de ${MIN_OOS} el veredicto es ruido`}
+                              >
+                                sin muestra · {r.oosAggregate.trades}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     <Sparkline data={r.oosEquity} up={r.oosAggregate.netPnl >= 0} w={110} h={30} />
                   </button>
@@ -233,7 +248,9 @@ function Cmp({
       <p className="tag">{label}</p>
       <p className="font-mono text-sm">
         <span className={oos >= (factor ? 1 : 0) ? "text-long" : "text-short"}>{f(oos)}</span>
-        <span className="text-muted"> · is {f(is)}</span>
+        <span className="text-muted" title="Dentro de muestra (el tramo donde se optimizó)">
+          {" "}· dentro {f(is)}
+        </span>
       </p>
     </div>
   );
