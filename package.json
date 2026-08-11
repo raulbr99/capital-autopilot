@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "autopilot": "node scripts/autopilot.mjs",
-    "lint": "next lint"
+    "lint": "next lint",
+    "audit": "node scripts/audit-smoke.mjs && node scripts/audit-mobile.mjs && node scripts/audit-contrast.mjs",
+    "audit:smoke": "node scripts/audit-smoke.mjs",
+    "audit:mobile": "node scripts/audit-mobile.mjs",
+    "audit:contrast": "node scripts/audit-contrast.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",

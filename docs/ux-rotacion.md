@@ -71,3 +71,18 @@ Paleta y tokens de `globals.css` (grafito + iris, tema claro y oscuro). Nada de 
 Sifrok. Referencia: paneles de brokers modernos — densidad alta pero jerarquía clara,
 números tabulares y monoespaciados, color solo con significado (verde/rojo = dinero),
 estado del sistema siempre visible.
+
+## Herramientas de verificación (pasadas 24-30)
+
+Tres auditores con Puppeteer, en `scripts/`. Se lanzan con `npm run audit` (o
+`audit:smoke` / `audit:mobile` / `audit:contrast` por separado) contra producción
+o contra cualquier URL que se les pase.
+
+| Script | Qué comprueba | Por qué existe |
+|---|---|---|
+| `audit-smoke.mjs` | **Interacciones reales**: abre el modal del gráfico y verifica que dibuja, ⌘K con navegación por teclado, cambio de tema, filtros, pestañas del Lab, desplegado de tesis. Escucha `pageerror` y errores de consola en cada página. | El modal del gráfico estuvo **19 despliegues reventando la app** por una sintaxis de color que la librería no parsea, y compiló bien en todos. Compilar no es verificar. |
+| `audit-mobile.mjs` | Emulación de dispositivo real (375/390 px): desbordamiento horizontal, elementos que sobresalen y objetivos táctiles <32 px. | Chrome headless clampa la ventana a ~480 px: con `--window-size` no se puede auditar por debajo. |
+| `audit-contrast.mjs` | Ratio WCAG de cada texto contra su fondo **efectivo**, en los dos temas. | Los tokens se calibraron contra el fondo de página, pero se usan sobre chips más claros; medir en vez de estimar. |
+
+Nota: `audit-smoke` reintenta la navegación una vez. Un timeout puntual de red no
+es un fallo de la app, y una herramienta que grita "roto" por eso deja de usarse.
