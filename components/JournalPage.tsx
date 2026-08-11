@@ -5,6 +5,7 @@ import type { JournalEntry } from "./types";
 import AppHeader from "./AppHeader";
 import { Skeleton, usePoll } from "./ui";
 import JournalEntryCard, { summarize } from "./JournalEntryCard";
+import LessonsPanel from "./LessonsPanel";
 
 const DESK_FILTERS = [
   { key: "all", label: "Todas" },
@@ -84,6 +85,10 @@ export default function JournalPage() {
               {shown.length} entradas · {traded} con operación
             </span>
           )}
+        </div>
+
+        <div className="mb-6">
+          <LessonsPanel desk={desk} />
         </div>
 
         {loading ? (
