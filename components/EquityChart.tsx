@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { pnlClass, pnlFmt } from "./ui";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { fmt, pnlClass, pnlFmt } from "./ui";
 
 type Point = { ts: number; equity: number };
 type Marker = { ts: number; dir: "BUY" | "SELL"; pnl?: number };
@@ -35,7 +35,7 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <span className={`font-mono text-xs ${pnlClass(delta)}`}>
+        <span className={`font-mono text-xs tabular-nums ${pnlClass(delta)}`}>
           {pnlFmt(delta)}€ <span className="text-muted">({pnlFmt(deltaPct)}%) en el periodo</span>
         </span>
         <div className="flex overflow-hidden rounded-md border border-industrial">
@@ -43,6 +43,7 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
             <button
               key={r.k}
               onClick={() => setRange(r.k)}
+              aria-pressed={range === r.k}
               className={`px-2.5 py-1 font-mono text-[11px] transition-colors ${
                 range === r.k ? "bg-accent text-onaccent" : "text-muted hover:text-dim"
               }`}
@@ -57,12 +58,60 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
   );
 }
 
-function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
-  const W = 720;
-  const H = 200;
-  const pad = 8;
+const H = 200;
+const AXIS_H = 18; // banda inferior para las fechas
+const PAD_R = 48; // espacio para los valores del eje
+const PAD_Y = 10;
 
-  if (!data || data.length < 2) {
+function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(720);
+  const [hover, setHover] = useState<number | null>(null);
+
+  // Medimos el ancho real en píxeles: con viewBox estirado, el trazo y los
+  // puntos se deforman horizontalmente y delatan el gráfico como casero.
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(240, e.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const geom = useMemo(() => {
+    if (!data || data.length < 2) return null;
+    const values = data.map((d) => d.equity);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const flat = max === min;
+    const span = max - min || 1;
+    const plotW = w - PAD_R;
+    const plotH = H - AXIS_H;
+    const t0 = data[0].ts;
+    const tN = data[data.length - 1].ts || t0 + 1;
+    const tSpan = tN - t0 || 1;
+
+    const x = (i: number) => (i / (data.length - 1)) * plotW;
+    const xt = (ts: number) => ((ts - t0) / tSpan) * plotW;
+    const y = (v: number) => (flat ? plotH / 2 : plotH - PAD_Y - ((v - min) / span) * (plotH - PAD_Y * 2));
+
+    const line = data.map((d, i) => `${x(i)},${y(d.equity)}`).join(" ");
+    const area = `0,${plotH} ${line} ${plotW},${plotH}`;
+
+    // Zona bajo agua: entre el máximo alcanzado y la curva (el drawdown vivido)
+    let peak = values[0];
+    const peakPts: string[] = [];
+    data.forEach((d, i) => {
+      peak = Math.max(peak, d.equity);
+      peakPts.push(`${x(i)},${y(peak)}`);
+    });
+    const back = data.map((_, i) => `${x(data.length - 1 - i)},${y(values[data.length - 1 - i])}`);
+    const ddArea = `${peakPts.join(" ")} ${back.join(" ")}`;
+
+    return { values, min, max, plotW, plotH, x, xt, y, line, area, ddArea, up: values[values.length - 1] >= values[0] };
+  }, [data, w]);
+
+  if (!geom) {
     return (
       <div className="dotgrid flex h-[200px] flex-col items-center justify-center rounded-lg border border-industrial text-center">
         <p className="text-sm font-medium text-dim">Sin datos de equity en este rango</p>
@@ -71,53 +120,101 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
     );
   }
 
-  const values = data.map((d) => d.equity);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const flat = max === min;
-  const range = max - min || 1;
-  const t0 = data[0].ts;
-  const tN = data[data.length - 1].ts || t0 + 1;
-  const tRange = tN - t0 || 1;
+  const { values, min, max, plotW, plotH, x, xt, y, line, area, ddArea, up } = geom;
+  const tone = up ? "long" : "short";
+  const hi = hover != null ? data[hover] : null;
+  const fecha = (ts: number) =>
+    new Date(ts).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 
-  const x = (i: number) => pad + (i / (data.length - 1)) * (W - pad * 2);
-  const xt = (ts: number) => pad + ((ts - t0) / tRange) * (W - pad * 2);
-  const y = (v: number) => (flat ? H / 2 : H - pad - ((v - min) / range) * (H - pad * 2));
-
-  const line = data.map((d, i) => `${x(i)},${y(d.equity)}`).join(" ");
-  const area = `${pad},${H - pad} ${line} ${W - pad},${H - pad}`;
-
-  let peak = values[0];
-  const ddPts: string[] = [];
-  data.forEach((d, i) => {
-    peak = Math.max(peak, d.equity);
-    ddPts.push(`${x(i)},${y(peak)}`);
-  });
-  const ddArea = `${ddPts.join(" ")} ${data
-    .map((d, i) => `${x(data.length - 1 - i)},${y(values[data.length - 1 - i])}`)
-    .join(" ")}`;
-
-  const up = values[values.length - 1] >= values[0];
-  const stroke = up ? "#34C98A" : "#F2567A";
+  /** Índice del punto más cercano al cursor. */
+  const onMove = (e: React.PointerEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    if (px > plotW) return setHover(null);
+    setHover(Math.max(0, Math.min(data.length - 1, Math.round((px / plotW) * (data.length - 1)))));
+  };
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-[200px] w-full">
-      <defs>
-        <linearGradient id="eqfill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {[0.25, 0.5, 0.75].map((g) => (
-        <line key={g} x1={pad} x2={W - pad} y1={pad + g * (H - pad * 2)} y2={pad + g * (H - pad * 2)} stroke="#8891a0" strokeOpacity="0.18" strokeWidth="1" />
-      ))}
-      <polygon points={ddArea} fill="#F2567A" opacity="0.06" />
-      <polygon points={area} fill="url(#eqfill)" />
-      <polyline points={line} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      {markers.map((m, i) => (
-        <circle key={i} cx={xt(m.ts)} cy={H - pad - 4} r="2.5" fill={(m.pnl ?? 0) >= 0 ? "#34C98A" : "#F2567A"} />
-      ))}
-      <circle cx={x(data.length - 1)} cy={y(values[values.length - 1])} r="3.5" fill={stroke} />
-    </svg>
+    <div
+      ref={wrap}
+      className="relative touch-pan-y"
+      onPointerMove={onMove}
+      onPointerLeave={() => setHover(null)}
+    >
+      <svg width={w} height={H} className="block overflow-visible" role="img" aria-label="Curva de equity">
+        <defs>
+          <linearGradient id="eqfill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" className={up ? "text-long" : "text-short"} stopColor="currentColor" stopOpacity="0.26" />
+            <stop offset="100%" className={up ? "text-long" : "text-short"} stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* rejilla recesiva + valor de referencia a la derecha */}
+        {[0, 0.5, 1].map((g) => {
+          const gy = PAD_Y + g * (plotH - PAD_Y * 2);
+          const val = max - g * (max - min);
+          return (
+            <g key={g}>
+              <line x1={0} x2={plotW} y1={gy} y2={gy} className="stroke-industrial" strokeWidth="1" />
+              <text x={plotW + 8} y={gy + 3.5} className="fill-muted font-mono text-[10px]">
+                {fmt(val, values[0] > 1000 ? 0 : 2)}
+              </text>
+            </g>
+          );
+        })}
+
+        <polygon points={ddArea} className="fill-short" opacity="0.07" />
+        <polygon points={area} fill="url(#eqfill)" />
+        <polyline
+          points={line}
+          fill="none"
+          className={up ? "stroke-long" : "stroke-short"}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+
+        {/* operaciones cerradas, sobre la banda inferior */}
+        {markers.map((m, i) => (
+          <circle
+            key={i}
+            cx={xt(m.ts)}
+            cy={plotH - 3}
+            r="2.5"
+            className={(m.pnl ?? 0) >= 0 ? "fill-long" : "fill-short"}
+            opacity="0.75"
+          />
+        ))}
+
+        {/* punto actual */}
+        <circle cx={x(data.length - 1)} cy={y(values[values.length - 1])} r="3.5" className={up ? "fill-long" : "fill-short"} />
+
+        {/* cruz de lectura: sin esto el gráfico es una forma sin cifras */}
+        {hi && (
+          <g>
+            <line x1={x(hover!)} x2={x(hover!)} y1={0} y2={plotH} className="stroke-cement" strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx={x(hover!)} cy={y(hi.equity)} r="4.5" className={`${up ? "fill-long" : "fill-short"} stroke-soft`} strokeWidth="2" />
+          </g>
+        )}
+
+        {/* fechas de los extremos */}
+        <text x={0} y={H - 4} className="fill-muted font-mono text-[10px]">
+          {new Date(data[0].ts).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+        </text>
+        <text x={plotW} y={H - 4} textAnchor="end" className="fill-muted font-mono text-[10px]">
+          {new Date(data[data.length - 1].ts).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+        </text>
+      </svg>
+
+      {hi && (
+        <div
+          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-lg border border-cement bg-raised px-2.5 py-1.5 shadow-elevated"
+          style={{ left: Math.min(Math.max(x(hover!), 52), plotW - 52) }}
+        >
+          <p className="font-mono text-[11px] tabular-nums text-white">{fmt(hi.equity)} €</p>
+          <p className="font-mono text-[9px] text-muted">{fecha(hi.ts)}</p>
+        </div>
+      )}
+    </div>
   );
 }
