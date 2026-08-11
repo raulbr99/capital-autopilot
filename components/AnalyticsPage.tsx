@@ -297,7 +297,18 @@ export default function AnalyticsPage() {
 
             {/* historial */}
             <section className="mt-4 rounded-xl border border-industrial bg-soft">
-              <SectionHead label={`Historial · ${closedTrades.length}`} />
+              <SectionHead
+                label={`Historial · ${closedTrades.length}`}
+                right={
+                  <button
+                    onClick={() => exportarCsv(closedTrades, desk || epic || "todo")}
+                    className="rounded-md border border-cement px-2.5 py-1 text-[11px] font-medium text-dim transition-colors hover:border-accent hover:text-accent"
+                    title="Descargar las operaciones filtradas en CSV"
+                  >
+                    ↓ CSV
+                  </button>
+                }
+              />
               <TradeTable trades={closedTrades} />
             </section>
           </>
@@ -387,6 +398,57 @@ function DailyBars({ data }: { data: { date: string; pnl: number }[] }) {
       })}
     </div>
   );
+}
+
+/**
+ * Descarga el histórico filtrado en CSV. Hasta ahora los datos solo salían por
+ * la API: para Hacienda, para analizarlos fuera o simplemente para conservarlos
+ * había que pelearse con curl. Exporta lo que se está viendo, filtros incluidos.
+ */
+function exportarCsv(trades: TradeRecord[], etiqueta: string) {
+  const cab = [
+    "apertura",
+    "cierre",
+    "activo",
+    "direccion",
+    "tamano",
+    "entrada",
+    "salida",
+    "pnl_eur",
+    "duracion_min",
+    "origen",
+    "motivo",
+  ];
+  const esc = (v: unknown) => {
+    const t = String(v ?? "");
+    return /[",;\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const iso = (ms?: number) => (ms ? new Date(ms).toISOString().slice(0, 19).replace("T", " ") : "");
+  const filas = trades.map((t) =>
+    [
+      iso(t.ts),
+      iso(t.closedTs),
+      t.epic,
+      t.direction === "BUY" ? "LARGO" : "CORTO",
+      t.size,
+      t.entry,
+      t.exit ?? "",
+      t.pnl ?? "",
+      t.closedTs && t.ts ? Math.round((t.closedTs - t.ts) / 60000) : "",
+      (t.reason || "").startsWith("IA:") ? "gestor_ia" : "motor_tecnico",
+      (t.reason || "").replace(/^IA:\s*/, ""),
+    ]
+      .map(esc)
+      .join(",")
+  );
+  // BOM para que Excel respete los acentos al abrirlo
+  const csv = "\uFEFF" + [cab.join(","), ...filas].join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `capital-autopilot-${etiqueta}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /** Cuánto estuvo abierta la operación. */
