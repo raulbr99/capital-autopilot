@@ -1,21 +1,81 @@
 "use client";
 
 import type { BotConfig } from "./types";
-import { SectionHead, NumField } from "./ui";
+import { SectionHead, NumField, fmt } from "./ui";
 
 export default function RiskPanel({
   cfg,
   busy,
   patch,
+  equity,
+  currency,
 }: {
   cfg: BotConfig;
   busy: boolean;
   patch: (b: any) => void;
+  equity?: number;
+  currency?: string;
 }) {
   const r = cfg.risk;
+
+  // Traducir los mandos a sus consecuencias: un panel de riesgo que solo
+  // enseña los números que introduces no informa de nada. Lo que importa es
+  // cuántos euros arriesgas y qué acierto mínimo exige esa relación.
+  const riesgoEur = equity && r.sizingMode === "percent" ? (equity * r.riskPercent) / 100 : null;
+  const rr = r.useAtrStops
+    ? r.atrStopMult > 0
+      ? r.atrTpMult / r.atrStopMult
+      : null
+    : cfg.stopDistance > 0
+    ? cfg.profitDistance / cfg.stopDistance
+    : null;
+  const equilibrio = rr && rr > 0 ? 100 / (1 + rr) : null;
+  const peorDia = riesgoEur != null ? riesgoEur * r.maxTradesPerDay : null;
+
   return (
     <div className="border border-industrial bg-soft rounded-xl">
       <SectionHead label="Gestión de riesgo" />
+
+      {/* Consecuencias en vivo de la configuración actual */}
+      <div className="grid grid-cols-3 gap-px border-b border-industrial bg-industrial">
+        <Consequence
+          label="Por operación"
+          value={riesgoEur != null ? `${fmt(riesgoEur)}` : "—"}
+          sub={riesgoEur != null ? `${currency ?? ""} si salta el stop` : "modo unidades fijas"}
+        />
+        <Consequence
+          label="Relación R:R"
+          value={rr ? `${rr.toFixed(2)}:1` : "—"}
+          sub={rr ? (rr >= 1 ? "ganas más de lo que arriesgas" : "arriesgas más de lo que ganas") : ""}
+          tone={rr ? (rr >= 1 ? "long" : "short") : undefined}
+        />
+        <Consequence
+          label="Acierto mínimo"
+          value={equilibrio ? `${equilibrio.toFixed(0)}%` : "—"}
+          sub={equilibrio ? "para no perder dinero" : ""}
+        />
+      </div>
+
+      {/* Avisos: un límite de seguridad apagado no puede pasar desapercibido */}
+      {(r.maxDailyLossPct <= 0 || peorDia != null) && (
+        <div className="space-y-1.5 border-b border-industrial px-4 py-3">
+          {peorDia != null && (
+            <p className="text-[11px] leading-relaxed text-muted">
+              Con {r.maxTradesPerDay} operaciones al día y {cfg.maxPerDesk} por mesa, el peor día abriendo
+              el cupo completo arriesga <span className="font-mono text-dim">≈{fmt(peorDia)} {currency ?? ""}</span> en
+              posiciones nuevas.
+            </p>
+          )}
+          {r.maxDailyLossPct <= 0 && (
+            <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-short">
+              <span aria-hidden>⚠️</span>
+              Freno diario <span className="font-medium">desactivado</span>: nada detiene al bot si encadena
+              pérdidas en una misma jornada.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="space-y-4 p-4">
         {/* sizing mode */}
         <div>
@@ -133,6 +193,27 @@ export default function RiskPanel({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Consequence({
+  label,
+  value,
+  sub,
+  tone,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "long" | "short";
+}) {
+  const c = tone === "long" ? "text-long" : tone === "short" ? "text-short" : "text-white";
+  return (
+    <div className="min-w-0 bg-soft px-3 py-2.5">
+      <p className="tag whitespace-nowrap">{label}</p>
+      <p className={`mt-0.5 font-mono text-base font-medium tabular-nums ${c}`}>{value}</p>
+      {sub && <p className="mt-0.5 text-[10px] leading-tight text-muted">{sub}</p>}
     </div>
   );
 }

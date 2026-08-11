@@ -311,7 +311,7 @@ export default function Dashboard() {
           </div>
 
           <div className="min-w-0 space-y-4">
-            {cfg && <RiskPanel cfg={cfg} busy={busy} patch={patch} />}
+            {cfg && <RiskPanel cfg={cfg} busy={busy} patch={patch} equity={lastEquity} currency={acc?.currency} />}
             <Link
               href="/lab"
               className="block rounded-xl border border-industrial bg-soft p-5 transition-colors hover:border-cement"
