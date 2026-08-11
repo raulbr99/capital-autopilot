@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { fmt, pnlClass, pnlFmt } from "./ui";
 
 type Point = { ts: number; equity: number };
@@ -70,18 +70,24 @@ const PAD_R = 48; // espacio para los valores del eje
 const PAD_Y = 10;
 
 function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
-  const wrap = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320); // se corrige al medir; nunca debe empujar el layout
   const [hover, setHover] = useState<number | null>(null);
 
-  // Medimos el ancho real en píxeles: con viewBox estirado, el trazo y los
-  // puntos se deforman horizontalmente y delatan el gráfico como casero.
-  useEffect(() => {
-    const el = wrap.current;
+  /**
+   * Medimos el ancho real del contenedor. Va como REF DE CALLBACK a propósito:
+   * con un useEffect de dependencias vacías, el observador se intentaba montar
+   * en el primer render — cuando aún no hay datos y este componente devuelve el
+   * estado vacío, así que la ref era null y no llegaba a crearse NUNCA. El
+   * viewBox se quedaba en 320 y el SVG se dibujaba letterboxeado, ocupando un
+   * tercio de su tarjeta. Con la callback, se observa en cuanto el nodo existe.
+   */
+  const observador = useRef<ResizeObserver | null>(null);
+  const wrap = useCallback((el: HTMLDivElement | null) => {
+    observador.current?.disconnect();
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setW(Math.max(240, e.contentRect.width)));
-    ro.observe(el);
-    return () => ro.disconnect();
+    setW(Math.max(240, el.getBoundingClientRect().width));
+    observador.current = new ResizeObserver(([e]) => setW(Math.max(240, e.contentRect.width)));
+    observador.current.observe(el);
   }, []);
 
   const geom = useMemo(() => {
