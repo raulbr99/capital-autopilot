@@ -8,6 +8,7 @@ import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
 import SentimentBoard from "./SentimentBoard";
 import CotPanel from "./CotPanel";
+import JournalEntryCard from "./JournalEntryCard";
 
 const DESKS: Record<DeskCategory, { label: string; blurb: string }> = {
   forex: { label: "Forex", blurb: "Divisas · 24/5" },
@@ -200,44 +201,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
               </div>
               <div className="max-h-[600px] space-y-2 overflow-y-auto p-3">
                 {journal.map((e) => (
-                  <div key={e.id} className="rounded-lg border border-industrial bg-base p-3">
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className="font-mono text-[10px] text-muted">
-                        {new Date(e.ts).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}
-                      </span>
-                      <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[9px] text-accent">
-                        conf {Math.round((e.confidence || 0) * 100)}%
-                      </span>
-                    </div>
-                    <p className="text-[12px] leading-relaxed text-dim [overflow-wrap:anywhere]">{e.thesis}</p>
-                    {Array.isArray(e.actions) && e.actions.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {e.actions.map((a: any, i: number) => {
-                          const run = a.outcome === "opened" || a.outcome === "closed";
-                          const blocked = a.outcome === "vetoed" || a.outcome === "skipped" || a.outcome === "error";
-                          const cls = blocked
-                            ? "bg-industrial text-muted"
-                            : a.action === "OPEN"
-                            ? "bg-long/15 text-long"
-                            : a.action === "CLOSE"
-                            ? "bg-short/15 text-short"
-                            : "bg-industrial text-muted";
-                          const label = a.action === "OPEN" ? "ABRE" : a.action === "CLOSE" ? "CIERRA" : "ESPERA";
-                          const mark = run ? "✓ " : a.outcome === "vetoed" ? "✕ " : blocked ? "⊘ " : "";
-                          return (
-                            <span
-                              key={i}
-                              title={a.outcomeNote || ""}
-                              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${cls} ${blocked ? "opacity-70" : ""}`}
-                            >
-                              {mark}
-                              {label} {a.epic || ""}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <JournalEntryCard key={e.id} entry={e} compact />
                 ))}
               </div>
             </div>
