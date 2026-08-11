@@ -21,9 +21,10 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 6 | 11-ago-2026 | **Diario IA** (`JournalPage`) | Era un muro de prosa: tesis de 800+ caracteres, todas desplegadas, y las entradas de puro HOLD (el 90%) pesaban igual que aquellas en las que el bot operó de verdad. Ahora: **tesis plegada a 2 líneas** con "Leer tesis completa"; **resumen de resultado por entrada** (`2 ejecutadas` / `1 sin ejecutar` / `sin operaciones`) para saber qué pasó sin leer; **triaje visual** — punto del timeline y borde en verde si se operó, rojo si algo quedó bloqueado, apagado si fue HOLD; **agrupado por día** con separador (un diario se lee por jornadas) y hora en cada entrada; contador de "N entradas · M con operación". `JournalEntry.desk` tipado (se accedía con `as any`). |
 
+| 7 | 11-ago-2026 | **Lab** (`LabPage`) | El fallo de fondo no era estético: **mezclaba controles que tocan la cuenta REAL con simulaciones inofensivas, con idéntico aspecto** — invita a cambiar el riesgo creyendo que experimentas. Ahora hay dos pestañas explícitas: **Configuración** ("afecta al motor en vivo", con aviso de que entra en el siguiente ciclo y que las posiciones abiertas mantienen su stop) e **Investigación** ("simulación · no toca la cuenta", con una línea sobre por qué el walk-forward es lo único que dice algo del futuro). Además, esqueleto de carga en vez del texto "Cargando configuración…", y puntero a los límites de riesgo, que siguen en el panel junto a las posiciones que afectan (no se duplican). |
+
 ## Pendiente (orden sugerido por impacto)
 
-- **Lab** (`LabPage`, `ConfigPanel`, `BacktestPanel`, `WalkForward`): formularios densos.
 - **Estados vacíos y de carga** en toda la app (hoy: ceros y guiones).
 - **Curva de equity** (`EquityChart`): hoy es un SVG propio muy básico.
 
