@@ -65,7 +65,7 @@ const PAD_Y = 10;
 
 function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
   const wrap = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(720);
+  const [w, setW] = useState(320); // se corrige al medir; nunca debe empujar el layout
   const [hover, setHover] = useState<number | null>(null);
 
   // Medimos el ancho real en píxeles: con viewBox estirado, el trazo y los
@@ -142,11 +142,18 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
   return (
     <div
       ref={wrap}
-      className="relative touch-pan-y"
+      className="relative w-full max-w-full touch-pan-y"
       onPointerMove={onMove}
       onPointerLeave={() => setHover(null)}
     >
-      <svg width={w} height={H} className="block overflow-visible" role="img" aria-label="Curva de equity">
+      <svg
+        width={w}
+        height={H}
+        viewBox={`0 0 ${w} ${H}`}
+        className="block w-full overflow-visible"
+        role="img"
+        aria-label="Curva de equity"
+      >
         <defs>
           <linearGradient id="eqfill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" className={up ? "text-long" : "text-short"} stopColor="currentColor" stopOpacity="0.26" />
