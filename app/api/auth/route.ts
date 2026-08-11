@@ -3,6 +3,14 @@ import { COOKIE } from "@/middleware";
 
 export const dynamic = "force-dynamic";
 
+/** Estado de la puerta: si hay protección configurada y si hay sesión abierta. */
+export async function GET(req: Request) {
+  const pass = process.env.DASHBOARD_PASSWORD;
+  const cookie = req.headers.get("cookie") || "";
+  const tieneSesion = !!pass && cookie.includes(`${COOKIE}=${pass}`);
+  return NextResponse.json({ protegido: !!pass, sesion: tieneSesion });
+}
+
 /** Comprueba la contraseña y deja la cookie de sesión (30 días). */
 export async function POST(req: Request) {
   const pass = process.env.DASHBOARD_PASSWORD;
