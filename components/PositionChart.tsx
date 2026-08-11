@@ -10,7 +10,7 @@ import {
   type ISeriesApi,
 } from "lightweight-charts";
 import type { OpenPos } from "./types";
-import { fmt, pnlClass, pnlFmt, useFocusTrap, useReturnFocus } from "./ui";
+import { fmt, pdec, pnlClass, pnlFmt, useFocusTrap, useReturnFocus } from "./ui";
 
 type Candle = { time: string; open: number; high: number; low: number; close: number };
 
@@ -23,11 +23,6 @@ const RES = [
   { k: "DAY", label: "1D", max: 200 },
   { k: "WEEK", label: "1W", max: 150 },
 ];
-
-function pdec(n: number) {
-  const a = Math.abs(n);
-  return a < 10 ? 5 : a < 100 ? 3 : a < 1000 ? 2 : 1;
-}
 
 export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose: () => void }) {
   const [res, setRes] = useState("HOUR_4");
