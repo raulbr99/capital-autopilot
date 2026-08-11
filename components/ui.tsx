@@ -233,15 +233,19 @@ export function ConnBadge({
   configured,
   enabled,
   staleMs,
+  offline,
 }: {
   configured: boolean;
   enabled: boolean;
   staleMs?: number | null;
+  offline?: boolean;
 }) {
-  const stale = staleMs != null && staleMs > 60_000;
+  const stale = offline || (staleMs != null && staleMs > 60_000);
   const mins = stale ? Math.floor(staleMs! / 60_000) : 0;
   const color = stale ? "bg-short" : !configured ? "bg-short" : enabled ? "bg-long" : "bg-accent";
-  const label = stale
+  const label = offline
+    ? "sin conexión"
+    : stale
     ? `sin datos · ${mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h`}`
     : !configured
     ? "sin credenciales"
@@ -253,7 +257,13 @@ export function ConnBadge({
       className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
         stale ? "border-short/50 bg-short/10" : "border-industrial"
       }`}
-      title={stale ? "El broker no responde: las cifras en pantalla son las últimas conocidas" : undefined}
+      title={
+        offline
+          ? "Este dispositivo no tiene red: las cifras son las últimas conocidas"
+          : stale
+          ? "El broker no responde: las cifras en pantalla son las últimas conocidas"
+          : undefined
+      }
     >
       <span className={`h-2 w-2 rounded-full ${color} ${enabled && !stale ? "animate-pulseDot" : ""}`} />
       <span className={`text-[11px] font-medium ${stale ? "text-short" : "text-dim"}`}>{label}</span>
@@ -406,4 +416,24 @@ export function syncThemeColor(theme: "dark" | "light") {
     document.head.appendChild(tag);
   }
   tag.setAttribute("content", color);
+}
+
+/**
+ * ¿Hay conexión? Instalada como PWA se abre en el metro, en un ascensor o con
+ * el avión activado: el caparazón carga desde caché y, sin avisar, la pantalla
+ * enseña un estado que no puede verificar. Mejor decirlo.
+ */
+export function useOnline() {
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const set = () => setOnline(navigator.onLine);
+    set();
+    window.addEventListener("online", set);
+    window.addEventListener("offline", set);
+    return () => {
+      window.removeEventListener("online", set);
+      window.removeEventListener("offline", set);
+    };
+  }, []);
+  return online;
 }

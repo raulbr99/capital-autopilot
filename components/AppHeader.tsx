@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import Nav from "./Nav";
 import ThemeToggle from "./ThemeToggle";
-import { Clock, ConnBadge, fmt, pnlClass, pnlFmt, usePoll } from "./ui";
+import { Clock, ConnBadge, fmt, pnlClass, pnlFmt, usePoll, useOnline } from "./ui";
 
 type Live = {
   equity: number | null;
@@ -13,6 +13,7 @@ type Live = {
   configured: boolean;
   enabled: boolean;
   staleMs?: number | null;
+  offline?: boolean;
 };
 
 /**
@@ -34,6 +35,7 @@ export default function AppHeader({
 }) {
   const [live, setLive] = useState<Live | null>(null);
   const [lastOk, setLastOk] = useState<number | null>(null);
+  const online = useOnline();
 
   // Con datos inyectados por la página no se pide nada; si no, sondeo cada 30 s
   // que se detiene con la pestaña oculta (usePoll).
@@ -95,6 +97,7 @@ export default function AppHeader({
             configured={!!v.configured}
             enabled={!!v.enabled}
             staleMs={injected ? injected.staleMs : lastOk == null ? null : Date.now() - lastOk}
+            offline={injected ? !!injected.offline : !online}
           />
         )}
         <ThemeToggle />

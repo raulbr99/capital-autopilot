@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -24,6 +24,7 @@ export default function Dashboard() {
   const prevClosed = useRef(0);
   const prevOpened = useRef(0);
   const [lastOk, setLastOk] = useState<number | null>(null);
+  const online = useOnline();
   const router = useRouter();
 
   const tick = useCallback(async (active: boolean) => {
@@ -219,6 +220,7 @@ export default function Dashboard() {
           configured,
           enabled,
           staleMs: lastOk == null ? null : Date.now() - lastOk,
+          offline: !online,
         }}
         right={
           <>
@@ -241,6 +243,20 @@ export default function Dashboard() {
         {/* La página no tenía ningún encabezado: con lector de pantalla se
             aterrizaba sin orientación ninguna. Visualmente lo aporta la marca. */}
         <h1 className="sr-only">Panel de mando · Capital Autopilot</h1>
+
+        {/* Sin red, el caparazón carga de la caché y los datos no llegan nunca:
+            sin este aviso, la pantalla se queda 'cargando' sin explicación. */}
+        {!online && (
+          <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-short/30 bg-short/5 px-4 py-3">
+            <span aria-hidden>📡</span>
+            <p className="text-[12.5px] leading-relaxed text-dim">
+              <span className="font-medium text-short">Sin conexión.</span> Estás viendo la última
+              información conocida, no la actual.{" "}
+              <span className="text-white">El bot sigue operando en el servidor</span>: sus decisiones y
+              tus stops no dependen de este dispositivo.
+            </p>
+          </div>
+        )}
         {!configured && <ConfigWarning />}
 
         {/* HERO */}
