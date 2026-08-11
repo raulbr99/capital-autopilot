@@ -60,9 +60,12 @@ export default function SignalMatrix({ evals }: { evals: EpicEval[] }) {
           </div>
         }
       />
-      <div className="grid grid-cols-1 gap-px bg-industrial p-px sm:grid-cols-2 xl:grid-cols-3">
+      {/* Separadores por BORDE en cada tarjeta, no por fondo con gap: con un
+          número impar de activos, el hueco de la última fila dejaba ver el
+          fondo separador y parecía una tarjeta rota. */}
+      <div className="grid grid-cols-1 bg-soft sm:grid-cols-2 xl:grid-cols-3">
         {sorted.length === 0 && (
-          <div className="col-span-full bg-soft px-5 py-9 text-center">
+          <div className="col-span-full border-b border-industrial bg-soft px-5 py-9 text-center">
             <p className="text-sm font-medium text-dim">
               {evals.length === 0 ? "Sin activos en seguimiento" : "Ningún activo cumple el filtro"}
             </p>
@@ -94,7 +97,7 @@ function SignalCard({ e }: { e: EpicEval }) {
 
   return (
     <div
-      className={`group relative overflow-hidden p-4 transition hover:bg-raised ${
+      className={`group relative overflow-hidden border-b border-r border-industrial p-4 transition hover:bg-raised ${
         active ? "bg-soft" : "bg-soft/60"
       }`}
     >

@@ -50,6 +50,12 @@ export default function JournalEntryCard({
 }) {
   const [open, setOpen] = useState(false);
   const sum = summarize(entry.actions);
+  // Los HOLD sin activo no aportan nada y llegan de cinco en cinco (uno por
+  // instrumento evaluado): se resumen en una sola línea en vez de una fila de
+  // etiquetas idénticas y vacías.
+  const todas = Array.isArray(entry.actions) ? entry.actions : [];
+  const esperasVacias = todas.filter((a) => a.action === "HOLD" && !a.epic).length;
+  const acciones = todas.filter((a) => !(a.action === "HOLD" && !a.epic));
   const thesis = entry.thesis || "—";
   const long = thesis.length > THESIS_LIMIT;
   const quiet = sum.kind === "held";
@@ -96,9 +102,9 @@ export default function JournalEntryCard({
         </button>
       )}
 
-      {Array.isArray(entry.actions) && entry.actions.length > 0 && (
+      {acciones.length > 0 && (
         <div className="mt-2 space-y-1.5 border-t border-industrial pt-2">
-          {entry.actions.map((a, i) => {
+          {acciones.map((a, i) => {
             const oc = a.outcome && a.outcome !== "held" ? OUTCOME[a.outcome] : null;
             const notRun =
               !!a.outcome && a.outcome !== "opened" && a.outcome !== "closed" && a.outcome !== "held";
@@ -132,6 +138,12 @@ export default function JournalEntryCard({
             );
           })}
         </div>
+      )}
+
+      {esperasVacias > 0 && (
+        <p className="mt-2 border-t border-industrial pt-2 text-[11px] text-muted">
+          Sin acción en {esperasVacias} {esperasVacias === 1 ? "activo" : "activos"} más.
+        </p>
       )}
     </div>
   );
