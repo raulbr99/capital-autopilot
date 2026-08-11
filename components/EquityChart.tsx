@@ -30,13 +30,19 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
   }, [data, markers, range]);
 
   const delta = filtered.length >= 2 ? filtered[filtered.length - 1].equity - filtered[0].equity : 0;
-  const deltaPct = filtered.length >= 2 && filtered[0].equity ? (delta / filtered[0].equity) * 100 : 0;
+  // En la curva de P&L ACUMULADO la serie arranca en 0, así que el porcentaje
+  // no está definido: mostrar "(0.00%)" ahí no informa, desinforma.
+  const base = filtered.length ? filtered[0].equity : 0;
+  const deltaPct = filtered.length >= 2 && Math.abs(base) > 0.01 ? (delta / base) * 100 : null;
 
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className={`font-mono text-xs tabular-nums ${pnlClass(delta)}`}>
-          {pnlFmt(delta)}€ <span className="text-muted">({pnlFmt(deltaPct)}%) en el periodo</span>
+          {pnlFmt(delta)}€{" "}
+          <span className="text-muted">
+            {deltaPct != null ? `(${pnlFmt(deltaPct)}%) ` : ""}en el periodo
+          </span>
         </span>
         <div className="flex overflow-hidden rounded-md border border-industrial">
           {RANGES.map((r) => (

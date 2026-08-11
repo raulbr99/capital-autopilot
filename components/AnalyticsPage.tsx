@@ -241,7 +241,9 @@ export default function AnalyticsPage() {
             </section>
 
             {/* curva PnL + por instrumento */}
-            <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_400px]">
+            {/* items-start: sin esto, la tarjeta de la curva se estiraba hasta
+                la altura de la lista de instrumentos y dejaba un hueco muerto */}
+            <section className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_400px]">
               <div className="rounded-xl border border-industrial bg-soft">
                 <SectionHead label="PnL acumulado" />
                 <div className="p-5">
