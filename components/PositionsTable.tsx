@@ -3,7 +3,11 @@
 import { useState } from "react";
 import type { OpenPos } from "./types";
 import { SectionHead, fmt, price, pnlClass, pnlFmt } from "./ui";
-import PositionChart from "./PositionChart";
+import dynamic from "next/dynamic";
+
+// El modal del gráfico arrastra lightweight-charts (~56 kB). Como solo se abre
+// al pulsar, se carga en ese momento en vez de en cada visita a la página.
+const PositionChart = dynamic(() => import("./PositionChart"), { ssr: false });
 
 const ChartIcon = (
   <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
