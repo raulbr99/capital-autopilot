@@ -1,5 +1,5 @@
 /* Service worker mínimo: instalable + offline shell, sin tocar los datos en vivo. */
-const CACHE = "capital-autopilot-v2";
+const CACHE = "capital-autopilot-v3";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
@@ -20,6 +20,26 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return; // POST (tick, etc.) intacto
   const url = new URL(req.url);
   if (url.pathname.startsWith("/api/")) return; // datos SIEMPRE frescos (network)
+
+  // Recursos de Next (/_next/static): llevan hash en el nombre, así que su
+  // contenido nunca cambia -> cache-first. Sin esto, offline llegaba el HTML
+  // pero NO el JavaScript: se veía un cascarón estático sin app dentro.
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icon")) {
+    e.respondWith(
+      caches.match(req).then(
+        (hit) =>
+          hit ||
+          fetch(req).then((res) => {
+            if (res && res.ok) {
+              const copia = res.clone();
+              caches.open(CACHE).then((c) => c.put(req, copia)).catch(() => {});
+            }
+            return res;
+          })
+      )
+    );
+    return;
+  }
   // Navegaciones: network-first con fallback al caparazón cacheado.
   // CLAVE: cada carga buena REFRESCA la copia. Antes solo se guardaba al
   // instalar el SW, así que sin red se servía un caparazón congelado de días
