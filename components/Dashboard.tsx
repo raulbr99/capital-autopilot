@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -45,20 +45,15 @@ export default function Dashboard() {
     }
   }, []);
 
-  // arranque + loops + reloj
+  // Calienta la sesión de Capital una vez al montar
   useEffect(() => {
-    tick(false);
-    loadTrades();
     fetch("/api/capital/session").catch(() => {});
-    // solo-lectura: el navegador NO opera (evita gastar IA cada 6s).
-    // El trading autónomo lo dispara el cron cada 15 min.
-    const t1 = setInterval(() => tick(false), TICK_MS);
-    const t2 = setInterval(loadTrades, TRADES_MS);
-    return () => {
-      clearInterval(t1);
-      clearInterval(t2);
-    };
-  }, [tick, loadTrades]);
+  }, []);
+
+  // Sondeo solo-lectura, en pausa con la pestaña oculta: cada tick consulta a
+  // Capital de verdad, así que sondear con el móvil guardado es gasto puro.
+  usePoll(() => tick(false), TICK_MS, [tick]);
+  usePoll(loadTrades, TRADES_MS, [loadTrades]);
 
   // alertas: flash + beep cuando cambian aperturas/cierres
   useEffect(() => {

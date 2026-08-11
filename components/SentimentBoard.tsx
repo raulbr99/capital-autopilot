@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { usePoll } from "./ui";
 
 type Ape = {
   ticker: string;
@@ -119,23 +120,15 @@ export default function SentimentBoard({ className = "" }: { className?: string 
   const [d, setD] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let alive = true;
-    const load = () =>
-      fetch("/api/bot/sentiment")
-        .then((r) => r.json())
-        .then((x) => {
-          if (alive && !x.error) setD(x);
-        })
-        .catch(() => {})
-        .finally(() => alive && setLoading(false));
-    load();
-    const t = setInterval(load, 5 * 60 * 1000); // refresco cada 5 min
-    return () => {
-      alive = false;
-      clearInterval(t);
-    };
-  }, []);
+  usePoll(() => {
+    fetch("/api/bot/sentiment")
+      .then((r) => r.json())
+      .then((x) => {
+        if (!x.error) setD(x);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, 5 * 60 * 1000);
 
   const maxMentions = Math.max(1, ...(d?.stocks ?? []).map((s) => s.mentions));
   const stocks = [...(d?.stocks ?? [])].sort((a, b) => b.mentions - a.mentions);

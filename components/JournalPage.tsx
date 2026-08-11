@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { JournalEntry, JournalAction } from "./types";
 import AppHeader from "./AppHeader";
-import { Skeleton } from "./ui";
+import { Skeleton, usePoll } from "./ui";
 
 const ACT: Record<string, { label: string; cls: string }> = {
   OPEN: { label: "ABRE", cls: "bg-long/15 text-long" },
@@ -49,22 +49,13 @@ export default function JournalPage() {
   const [desk, setDesk] = useState("all");
   const [open, setOpen] = useState<Set<number>>(new Set());
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const r = await fetch("/api/bot/journal");
-        const d = await r.json();
-        setEntries(d.entries || []);
-      } catch {
-        /* */
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-    const t1 = setInterval(load, 30000);
-    return () => clearInterval(t1);
-  }, []);
+  usePoll(() => {
+    fetch("/api/bot/journal")
+      .then((r) => r.json())
+      .then((d) => setEntries(d.entries || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, 30000);
 
   const shown = useMemo(
     () => entries.filter((e) => desk === "all" || e.desk === desk),

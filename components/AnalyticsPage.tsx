@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TradeRecord, DeskCategory } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -37,27 +37,27 @@ export default function AnalyticsPage() {
   const [epic, setEpic] = useState<string>("");
   const [desk, setDesk] = useState<string>("");
 
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch("/api/bot/trades");
+      const d = await r.json();
+      setTrades(d.trades || []);
+    } catch {
+      /* */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const r = await fetch("/api/bot/trades");
-        const d = await r.json();
-        setTrades(d.trades || []);
-      } catch {
-        /* */
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
     // El universo manda: la clasificación por mesa se lee del config en vivo
     fetch("/api/bot/tick")
       .then((r) => r.json())
       .then((d) => setInstruments(d?.state?.config?.instruments ?? []))
       .catch(() => {});
-    const t1 = setInterval(load, 20000);
-    return () => clearInterval(t1);
   }, []);
+
+  usePoll(load, 20000);
 
   const deskOf = useMemo(() => {
     const m = new Map<string, DeskCategory>(Object.entries(LEGACY_DESK) as [string, DeskCategory][]);

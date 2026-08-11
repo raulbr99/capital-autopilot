@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const fmt = (n: number, d = 2) =>
   (Number.isFinite(n) ? n : 0).toLocaleString("en-US", {
@@ -277,4 +277,45 @@ export function deskSession(cat: string, now = new Date()): { open: boolean; lab
     (day === 0 && h >= 22) ||
     (day === 5 && h < 21);
   return { open, label: open ? "Mercado abierto" : "Mercado cerrado · fin de semana" };
+}
+
+/**
+ * Sondeo consciente de la visibilidad. Con la pestaña oculta —o el móvil en el
+ * bolsillo, que en una PWA es lo normal— seguir preguntando cada 6 s gasta
+ * batería y datos, y cada tick consulta a Capital de verdad. Aquí el reloj se
+ * para al ocultarse y se dispara una lectura inmediata al volver, así que al
+ * mirar la pantalla los datos están frescos igualmente.
+ */
+export function usePoll(fn: () => void, ms: number, deps: React.DependencyList = []) {
+  const saved = useRef(fn);
+  useEffect(() => {
+    saved.current = fn;
+  });
+
+  useEffect(() => {
+    let id: ReturnType<typeof setInterval> | null = null;
+    const stop = () => {
+      if (id) clearInterval(id);
+      id = null;
+    };
+    const start = () => {
+      stop();
+      id = setInterval(() => saved.current(), ms);
+    };
+    const onVis = () => {
+      if (document.hidden) stop();
+      else {
+        saved.current(); // al volver, refresco inmediato
+        start();
+      }
+    };
+    saved.current();
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ms, ...deps]);
 }

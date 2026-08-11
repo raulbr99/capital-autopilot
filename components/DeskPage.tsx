@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll } from "./ui";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -35,23 +35,20 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const [firing, setFiring] = useState(false);
   const [fireMsg, setFireMsg] = useState<{ ok: boolean; text: string; url?: string } | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [s, j] = await Promise.all([
-          fetch("/api/bot/tick").then((r) => r.json()),
-          fetch("/api/bot/journal").then((r) => r.json()),
-        ]);
-        setSnap(s);
-        setJournal(((j.entries || []) as JournalEntry[]).filter((e: any) => (e.desk || null) === category));
-      } catch {
-        /* */
-      }
-    };
-    load();
-    const t = setInterval(load, 12000);
-    return () => clearInterval(t);
+  const load = useCallback(async () => {
+    try {
+      const [s, j] = await Promise.all([
+        fetch("/api/bot/tick").then((r) => r.json()),
+        fetch("/api/bot/journal").then((r) => r.json()),
+      ]);
+      setSnap(s);
+      setJournal(((j.entries || []) as JournalEntry[]).filter((e) => (e.desk || null) === category));
+    } catch {
+      /* */
+    }
   }, [category]);
+
+  usePoll(load, 12000, [load]);
 
   const instruments = snap?.state.config.instruments ?? [];
   const epicCat = useMemo(() => {

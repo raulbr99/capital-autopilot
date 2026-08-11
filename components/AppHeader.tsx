@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Nav from "./Nav";
 import ThemeToggle from "./ThemeToggle";
-import { Clock, ConnBadge, fmt, pnlClass, pnlFmt } from "./ui";
+import { Clock, ConnBadge, fmt, pnlClass, pnlFmt, usePoll } from "./ui";
 
 type Live = {
   equity: number | null;
@@ -33,32 +33,29 @@ export default function AppHeader({
 }) {
   const [live, setLive] = useState<Live | null>(null);
 
-  useEffect(() => {
-    if (injected) return; // la página ya tiene los datos: no duplicamos peticiones
-    let alive = true;
-    const load = async () => {
-      try {
-        const r = await fetch("/api/bot/tick");
-        const d = await r.json();
-        if (!alive) return;
-        setLive({
-          equity: d.account?.balance ?? null,
-          dayPnlPct: d.dailyPnlPct ?? 0,
-          currency: d.account?.currency ?? "",
-          configured: d.configured ?? true,
-          enabled: d.enabled ?? false,
+  // Con datos inyectados por la página no se pide nada; si no, sondeo cada 30 s
+  // que se detiene con la pestaña oculta (usePoll).
+  usePoll(
+    () => {
+      if (injected) return;
+      fetch("/api/bot/tick")
+        .then((r) => r.json())
+        .then((d) =>
+          setLive({
+            equity: d.account?.balance ?? null,
+            dayPnlPct: d.dailyPnlPct ?? 0,
+            currency: d.account?.currency ?? "",
+            configured: d.configured ?? true,
+            enabled: d.enabled ?? false,
+          })
+        )
+        .catch(() => {
+          /* la cabecera nunca rompe la página */
         });
-      } catch {
-        /* la cabecera nunca rompe la página */
-      }
-    };
-    load();
-    const id = setInterval(load, 30_000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [injected]);
+    },
+    30_000,
+    [injected]
+  );
 
   const v: Partial<Live> = injected ?? live ?? {};
 
