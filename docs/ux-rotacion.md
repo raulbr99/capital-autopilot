@@ -5,6 +5,13 @@ Sirve para no repetir apartado y para saber qué queda.
 
 > ⚠️ El auto-deploy de Vercel desde GitHub está roto (último automático: 4-jul-2026).
 > Después de cada push hay que lanzar `vercel deploy --prod --yes` a mano.
+>
+> ⚠️ **Verificación en móvil:** Chrome headless en macOS fuerza un ancho **mínimo de ventana
+> de ~480 px** y recorta la imagen al tamaño pedido. Una captura con `--window-size=390`
+> muestra una maquetación de 480 px cortada a 390: **parece un desbordamiento y no lo es**.
+> Comprobado: a 480 px todo encaja; el "corte" a 390 desaparece. Para auditar de verdad
+> anchos <480 hace falta emulación de dispositivo (Puppeteer/Playwright con `deviceScaleFactor`),
+> no `--window-size`.
 
 ## Hecho
 
