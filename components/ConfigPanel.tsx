@@ -5,6 +5,14 @@ import type { BotConfig } from "./types";
 import { RESOLUTIONS } from "./types";
 import { SectionHead, NumField } from "./ui";
 
+const DESK_ORDER = [
+  { key: "forex", label: "Forex" },
+  { key: "crypto", label: "Crypto" },
+  { key: "stocks", label: "Stocks" },
+  { key: "commodities", label: "Commodities" },
+  { key: "otros", label: "Sin mesa" },
+];
+
 export default function ConfigPanel({
   cfg,
   busy,
@@ -17,7 +25,13 @@ export default function ConfigPanel({
   notifyEnv: { telegram: boolean; discord: boolean };
 }) {
   const [w, setW] = useState("");
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const instruments = cfg.instruments ?? [];
+  const byDesk = instruments.reduce<Record<string, typeof instruments>>((acc, i) => {
+    const k = i.category || "otros";
+    (acc[k] ||= []).push(i);
+    return acc;
+  }, {});
   const add = () => {
     const v = w.toUpperCase().trim();
     if (!v || instruments.some((i) => i.epic === v)) return;
@@ -46,12 +60,32 @@ export default function ConfigPanel({
       <SectionHead label="Instrumentos y señal" />
       <div className="space-y-4 p-4">
         <div>
-          <p className="tag mb-2">INSTRUMENTOS (activo · resolución de señal)</p>
-          <div className="space-y-1.5">
-            {instruments.map((i) => (
-              <div key={i.epic} className="flex items-center gap-1.5">
-                <span className="flex-1 border border-cement bg-industrial px-2 py-1.5 font-mono text-[11px] text-white">
-                  {i.epic}
+          <div className="mb-2 flex items-baseline justify-between">
+            <p className="tag">Universo · {instruments.length} instrumentos</p>
+            <p className="text-[10px] text-muted">activo · resolución · ADX · pausa</p>
+          </div>
+          {/* Agrupado por mesa: 20 activos en lista plana no hay quien los lea */}
+          <div className="space-y-3">
+            {DESK_ORDER.filter((d) => byDesk[d.key]?.length).map((d) => (
+              <div key={d.key}>
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted">
+                  {d.label} <span className="text-dim">{byDesk[d.key].length}</span>
+                </p>
+                <div className="space-y-1.5">
+            {byDesk[d.key].map((i) => (
+              <div key={i.epic} className={`flex items-center gap-1.5 ${i.paused ? "opacity-55" : ""}`}>
+                <span className="flex min-w-0 flex-1 items-center gap-1.5 border border-cement bg-industrial px-2 py-1.5 font-mono text-[11px] text-white">
+                  <span className="truncate">{i.epic}</span>
+                  {i.longOnly && (
+                    <span className="shrink-0 rounded bg-long/15 px-1 text-[8px] text-long" title="Solo compras: el motor bloquea los cortos">
+                      LONG
+                    </span>
+                  )}
+                  {i.paused && (
+                    <span className="shrink-0 rounded bg-short/15 px-1 text-[8px] text-short" title="Pausado: no abre nuevas posiciones">
+                      PAUSA
+                    </span>
+                  )}
                 </span>
                 <select
                   value={i.resolution}
@@ -86,14 +120,31 @@ export default function ConfigPanel({
                 >
                   ⛔
                 </button>
-                <button
-                  onClick={() => remove(i.epic)}
-                  disabled={busy}
-                  aria-label={`Quitar ${i.epic}`}
-                  className="rounded-md border border-cement px-2 py-1.5 font-mono text-[11px] text-muted hover:border-short hover:text-short"
-                >
-                  ✕
-                </button>
+                {/* Quitar un activo saca al bot de ese mercado: se confirma */}
+                {confirmDel === i.epic ? (
+                  <button
+                    onClick={() => {
+                      remove(i.epic);
+                      setConfirmDel(null);
+                    }}
+                    disabled={busy}
+                    className="rounded-md border border-short bg-short/10 px-2 py-1.5 font-mono text-[9px] text-short"
+                  >
+                    ¿QUITAR?
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDel(i.epic)}
+                    disabled={busy}
+                    aria-label={`Quitar ${i.epic}`}
+                    className="rounded-md border border-cement px-2 py-1.5 font-mono text-[11px] text-muted hover:border-short hover:text-short"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+                </div>
               </div>
             ))}
           </div>
