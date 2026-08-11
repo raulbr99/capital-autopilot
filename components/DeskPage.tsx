@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
 import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap } from "./ui";
 import AppHeader from "./AppHeader";
@@ -35,6 +35,9 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const [busy, setBusy] = useState(false);
   const [firing, setFiring] = useState(false);
   const [fireMsg, setFireMsg] = useState<{ ok: boolean; text: string; url?: string } | null>(null);
+  // Momento del disparo: sirve para reconocer la decisión que llegue DESPUÉS
+  const [firedAt, setFiredAt] = useState<number | null>(null);
+  const [esperaSeg, setEsperaSeg] = useState(0);
 
   const load = useCallback(async () => {
     try {
@@ -50,6 +53,32 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   }, [category]);
 
   usePoll(load, 12000, [load]);
+
+  // Mientras se espera al Gestor, un contador — y en cuanto aparece una entrada
+  // de diario POSTERIOR al disparo, se anuncia. Antes el botón decía "decidirá
+  // en ~1 min" y te dejaba ahí: sin saber si llegó, falló, o qué decidió.
+  useEffect(() => {
+    if (!firedAt) return;
+    const t = setInterval(() => setEsperaSeg(Math.floor((Date.now() - firedAt) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [firedAt]);
+
+  const decisionNueva = useMemo(
+    () => (firedAt ? journal.find((e) => new Date(e.ts).getTime() > firedAt) : undefined),
+    [journal, firedAt]
+  );
+
+  useEffect(() => {
+    if (!decisionNueva) return;
+    const n = (decisionNueva.actions || []).filter(
+      (a) => a.outcome === "opened" || a.outcome === "closed"
+    ).length;
+    setFireMsg({
+      ok: true,
+      text: n ? `Decisión recibida · ${n} operación${n > 1 ? "es" : ""}` : "Decisión recibida · sin operar",
+    });
+    setFiredAt(null);
+  }, [decisionNueva]);
 
   const instruments = snap?.state.config.instruments ?? [];
   const epicCat = useMemo(() => deskMap(instruments), [instruments]);
@@ -72,8 +101,11 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
     try {
       const res = await fetch(`/api/bot/run-gestor?desk=${category}`, { method: "POST" });
       const d = await res.json();
-      if (d.ok) setFireMsg({ ok: true, text: "Gestor lanzado — decidirá en ~1 min", url: d.sessionUrl });
-      else setFireMsg({ ok: false, text: d.error || "No se pudo lanzar" });
+      if (d.ok) {
+        setFireMsg({ ok: true, text: "Gestor lanzado — pensando…", url: d.sessionUrl });
+        setFiredAt(Date.now());
+        setEsperaSeg(0);
+      } else setFireMsg({ ok: false, text: d.error || "No se pudo lanzar" });
     } catch (e) {
       setFireMsg({ ok: false, text: e instanceof Error ? e.message : "Error de red" });
     } finally {
@@ -124,7 +156,13 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             >
               {firing ? "Lanzando…" : "▶ Ejecutar Gestor ahora"}
             </button>
-            {fireMsg && (
+            {firedAt != null && (
+              <p className="flex items-center gap-1.5 text-right text-xs text-accent">
+                <span className="h-1.5 w-1.5 animate-pulseDot rounded-full bg-accent" />
+                Pensando… {esperaSeg}s
+              </p>
+            )}
+            {fireMsg && firedAt == null && (
               <p className={`text-right text-xs ${fireMsg.ok ? "text-long" : "text-short"}`}>
                 {fireMsg.text}
                 {fireMsg.url && (
