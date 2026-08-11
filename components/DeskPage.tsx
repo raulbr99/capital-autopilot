@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk } from "./ui";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -63,10 +63,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const deskPnl = positions.reduce((s, p) => s + (p.upl || 0), 0);
   // Exposición nocional y riesgo hasta el stop: las dos cifras que mira un operador
   const exposure = positions.reduce((s, p) => s + Math.abs(p.size * p.entry), 0);
-  const riskAtStop = positions.reduce(
-    (s, p) => s + (p.stopLevel != null ? Math.abs(p.entry - p.stopLevel) * p.size : 0),
-    0
-  );
+  const riskAtStop = positions.reduce((s, p) => s + (positionRisk(p).risk ?? 0), 0);
   const maxPerDesk = snap?.state.config.maxPerDesk ?? 4;
   const currency = snap?.account?.currency ?? "";
   const session = deskSession(category);

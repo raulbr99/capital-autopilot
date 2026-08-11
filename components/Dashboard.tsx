@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -123,11 +123,9 @@ export default function Dashboard() {
   // está parado y la cuenta vacía, que es justo lo contrario de informar.
   const loading = !snap;
 
-  // Riesgo agregado (para vigilar dinero real)
-  const openRisk = positions.reduce(
-    (s, p) => s + (p.stopLevel != null ? Math.abs(p.entry - p.stopLevel) * p.size : 0),
-    0
-  );
+  // Riesgo agregado (para vigilar dinero real). Las posiciones cuyo stop ya
+  // está por delante de la entrada NO arriesgan nada: sumarlas inflaba la cifra.
+  const openRisk = positions.reduce((s, p) => s + (positionRisk(p).risk ?? 0), 0);
   const dayPnlPct = snap?.dailyPnlPct ?? 0;
   const killPct = cfg?.risk.maxDailyLossPct ?? 0;
   const lossUsed = dayPnlPct < 0 ? Math.min(-dayPnlPct / killPct, 1) : 0; // 0..1 del presupuesto de pérdida diaria

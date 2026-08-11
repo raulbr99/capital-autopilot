@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { OpenPos } from "./types";
-import { SectionHead, fmt, price, pnlClass, pnlFmt } from "./ui";
+import { SectionHead, fmt, price, pnlClass, pnlFmt, positionRisk } from "./ui";
 import dynamic from "next/dynamic";
 
 // El modal del gráfico arrastra lightweight-charts (~56 kB). Como solo se abre
@@ -18,13 +18,7 @@ const ChartIcon = (
 
 function derive(p: OpenPos) {
   const cur = p.currentPrice ?? p.entry;
-  // ¿El stop ya pasó de la entrada? Entonces la gestión activa lo movió a
-  // beneficio: no hay riesgo, hay ganancia asegurada. Tratar esa distancia
-  // como "riesgo" daría un denominador minúsculo y una R absurda (+21R).
-  const locked =
-    p.stopLevel != null && (p.direction === "BUY" ? p.stopLevel > p.entry : p.stopLevel < p.entry);
-  const lockedGain = locked ? Math.abs(p.stopLevel! - p.entry) * p.size : 0;
-  const risk = p.stopLevel != null ? (locked ? 0 : Math.abs(p.entry - p.stopLevel) * p.size) : null;
+  const { risk, locked, lockedGain } = positionRisk(p);
   const distPct = p.stopLevel != null && cur ? (Math.abs(cur - p.stopLevel) / cur) * 100 : null;
   const distTone = distPct == null ? "text-muted" : distPct < 0.5 ? "text-short" : "text-dim";
   // ¿el precio actual favorece la posición? (LONG sube / SHORT baja)

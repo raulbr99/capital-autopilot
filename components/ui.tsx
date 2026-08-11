@@ -437,3 +437,24 @@ export function useOnline() {
   }, []);
   return online;
 }
+
+/**
+ * Riesgo real de una posición hasta su stop.
+ *
+ * El matiz que se escapaba: cuando la gestión activa mueve el stop POR DELANTE
+ * de la entrada, la posición ya no arriesga nada — tiene beneficio asegurado.
+ * Contar esa distancia como "riesgo" infla el total y, peor, da una R absurda
+ * (llegó a marcar +21R). Vive aquí porque se calculaba en tres sitios y solo
+ * uno de ellos contemplaba el caso.
+ */
+export function positionRisk(p: {
+  direction: "BUY" | "SELL";
+  entry: number;
+  size: number;
+  stopLevel?: number | null;
+}) {
+  if (p.stopLevel == null) return { risk: null as number | null, locked: false, lockedGain: 0 };
+  const locked = p.direction === "BUY" ? p.stopLevel > p.entry : p.stopLevel < p.entry;
+  const dist = Math.abs(p.entry - p.stopLevel) * p.size;
+  return { risk: locked ? 0 : dist, locked, lockedGain: locked ? dist : 0 };
+}
