@@ -102,11 +102,11 @@ export default function CotPanel({
                 {/* Marca del 50 %: sin referencia, la barra no dice de qué lado cae */}
                 <span className="absolute inset-y-0 left-1/2 w-px bg-muted/40" aria-hidden />
               </div>
-              <span className={`w-28 shrink-0 text-right font-mono text-[11px] ${long ? "text-long" : short ? "text-short" : "text-muted"}`}>
+              <span className={`flex w-40 shrink-0 items-center justify-end gap-1 whitespace-nowrap font-mono text-[11px] ${long ? "text-long" : short ? "text-short" : "text-muted"}`}>
                 {c.bias === "neutral" ? "neutral" : long ? "▲ net long" : "▼ net short"}
                 {crowded(c.pctLong) && (
                   <span
-                    className="ml-1 rounded bg-accent/15 px-1 py-0.5 text-[8px] text-accent"
+                    className="rounded bg-accent/15 px-1 py-0.5 text-[8px] text-accent"
                     title="Posicionamiento extremo: casi todos al mismo lado. Suele avisar de agotamiento, no confirmar la tendencia."
                   >
                     MASIF.
