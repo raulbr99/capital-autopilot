@@ -204,7 +204,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
           />
         </div>
 
-        {category === "stocks" && <SentimentBoard className="mb-5" />}
+        {category === "stocks" && <SentimentBoard className="mb-5" evals={evals} />}
         {(category === "forex" || category === "commodities") && (
           <CotPanel category={category} className="mb-5" />
         )}

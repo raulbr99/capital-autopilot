@@ -116,7 +116,31 @@ function Delta({ pct }: { pct: number | null }) {
   );
 }
 
-export default function SentimentBoard({ className = "" }: { className?: string }) {
+/** Señal técnica del activo, para cruzarla con el buzz en la misma fila. */
+function SignalChip({ tipo }: { tipo?: "BUY" | "SELL" | "FLAT" }) {
+  if (!tipo) return <span className="text-muted">—</span>;
+  const cls =
+    tipo === "BUY"
+      ? "bg-long/15 text-long"
+      : tipo === "SELL"
+      ? "bg-short/15 text-short"
+      : "bg-industrial text-muted";
+  return (
+    <span className={`rounded px-1.5 py-0.5 font-mono text-[9px] ${cls}`}>
+      {tipo === "BUY" ? "LONG" : tipo === "SELL" ? "SHORT" : "FLAT"}
+    </span>
+  );
+}
+
+export default function SentimentBoard({
+  className = "",
+  evals = [],
+}: {
+  className?: string;
+  /** Señales del motor: sin ellas, buzz y técnico viven en dos tablas que el
+   *  lector tiene que cruzar a mano desplazándose arriba y abajo. */
+  evals?: { epic: string; signal: { type: "BUY" | "SELL" | "FLAT" } }[];
+}) {
   const [d, setD] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -134,6 +158,7 @@ export default function SentimentBoard({ className = "" }: { className?: string 
   const stocks = [...(d?.stocks ?? [])].sort((a, b) => b.mentions - a.mentions);
   const priceMap = new Map((d?.prices ?? []).map((p) => [p.symbol, p]));
   const earnMap = new Map((d?.earnings ?? []).map((e) => [e.symbol, e]));
+  const signalMap = new Map(evals.map((e) => [e.epic, e.signal?.type]));
   const blocked = (d?.earnings ?? []).filter((e) => e.daysUntil != null && e.daysUntil <= 7);
   const marketState = d?.prices?.[0]?.marketState ?? "";
 
@@ -168,7 +193,7 @@ export default function SentimentBoard({ className = "" }: { className?: string 
         {/* Buzz de tus acciones */}
         <div className="min-w-0">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">
-            Menciones (buzz) · Δ24h · rank · precio (pre/post) · resultados
+            Menciones (buzz) · Δ24h · rank · precio (pre/post) · resultados · señal
           </p>
           <div className="space-y-1.5">
             {stocks.slice(0, 14).map((s) => (
@@ -194,6 +219,9 @@ export default function SentimentBoard({ className = "" }: { className?: string 
                 </span>
                 <span className="w-10 shrink-0 text-right">
                   <EarningsCell e={earnMap.get(s.ticker)} />
+                </span>
+                <span className="w-12 shrink-0 text-right">
+                  <SignalChip tipo={signalMap.get(s.ticker)} />
                 </span>
               </div>
             ))}
