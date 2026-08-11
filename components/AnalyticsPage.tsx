@@ -33,6 +33,7 @@ const DESK_FILTERS = [
 export default function AnalyticsPage() {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [instruments, setInstruments] = useState<{ epic: string; category?: DeskCategory }[]>([]);
+  const [equity, setEquity] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [epic, setEpic] = useState<string>("");
   const [desk, setDesk] = useState<string>("");
@@ -53,7 +54,10 @@ export default function AnalyticsPage() {
     // El universo manda: la clasificación por mesa se lee del config en vivo
     fetch("/api/bot/tick")
       .then((r) => r.json())
-      .then((d) => setInstruments(d?.state?.config?.instruments ?? []))
+      .then((d) => {
+        setInstruments(d?.state?.config?.instruments ?? []);
+        setEquity(typeof d?.account?.balance === "number" ? d.account.balance : null);
+      })
       .catch(() => {});
   }, []);
 
@@ -148,10 +152,37 @@ export default function AnalyticsPage() {
           <>
             {/* KPIs */}
             <section className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
-              <Kpi label="PnL neto" value={pnlFmt(a.netPnl)} tone={Math.abs(a.netPnl) < 0.005 ? undefined : a.netPnl > 0 ? "long" : "short"} big />
-              <Kpi label="Win rate" value={`${a.winRate.toFixed(0)}%`} tone="accent" big />
-              <Kpi label="Profit factor" value={pf(a.profitFactor)} big />
-              <Kpi label="Max drawdown" value={fmt(a.maxDrawdown)} tone="short" big />
+              <Kpi
+                label="PnL neto"
+                value={pnlFmt(a.netPnl)}
+                sub={equity ? `${pnlFmt((a.netPnl / equity) * 100)}% del capital` : "€"}
+                tone={Math.abs(a.netPnl) < 0.005 ? undefined : a.netPnl > 0 ? "long" : "short"}
+                big
+              />
+              {/* El color lo decide el umbral, no el capricho: verde solo si
+                  el acierto basta para ser rentable con ese payoff. */}
+              <Kpi
+                label="Win rate"
+                value={`${a.winRate.toFixed(0)}%`}
+                sub={`equilibrio en ${a.breakevenWinRate.toFixed(0)}%`}
+                tone={a.winRate >= a.breakevenWinRate ? "long" : "short"}
+                big
+              />
+              <Kpi
+                label="Profit factor"
+                value={pf(a.profitFactor)}
+                sub={a.profitFactor >= 1 ? "gana más de lo que pierde" : "pierde más de lo que gana"}
+                tone={a.profitFactor >= 1 ? "long" : "short"}
+                big
+              />
+              {/* Un drawdown en euros no dice nada sin saber sobre qué capital */}
+              <Kpi
+                label="Max drawdown"
+                value={fmt(a.maxDrawdown)}
+                sub={equity ? `${((a.maxDrawdown / equity) * 100).toFixed(1)}% del capital` : "peor racha acumulada"}
+                tone="short"
+                big
+              />
               <Kpi label="Operaciones" value={String(a.closed)} sub={`${a.wins}G / ${a.losses}P`} />
               <Kpi label="Expectancy" value={fmt(a.expectancy)} sub="por operación" />
               <Kpi label="Media ganancia" value={`+${fmt(a.avgWin)}`} sub={`−${fmt(a.avgLoss)} media pérdida`} />
