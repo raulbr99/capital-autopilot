@@ -15,6 +15,9 @@ type Cot = {
 };
 type Data = { fetchedAt: string; reportDate: string | null; forex: Cot[]; commodities: Cot[] };
 
+/** ≥80 % de un lado = todos en la misma barca. */
+const crowded = (pctLong: number) => pctLong >= 80 || pctLong <= 20;
+
 const NAMES: Record<string, string> = {
   EUR: "Euro",
   GBP: "Libra",
@@ -60,12 +63,22 @@ export default function CotPanel({
 
   const rows = category === "forex" ? d?.forex : d?.commodities;
 
+  // Antigüedad del informe: el COT es semanal y refleja posiciones del martes
+  // anterior. Sin decirlo, se lee como si fuera de hoy.
+  const ageDays = d?.reportDate
+    ? Math.floor((Date.now() - new Date(d.reportDate).getTime()) / 86_400_000)
+    : null;
+
   return (
     <div className={`rounded-xl border border-industrial bg-soft ${className}`}>
       <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
         <h2 className="tag">COT · posicionamiento institucional</h2>
         <span className="font-mono text-[10px] text-muted">
-          {loading && !d ? "cargando…" : d?.reportDate ? `CFTC · ${d.reportDate}` : ""}
+          {loading && !d
+            ? "cargando…"
+            : d?.reportDate
+            ? `CFTC · ${d.reportDate}${ageDays != null ? ` · hace ${ageDays} d` : ""}`
+            : ""}
         </span>
       </div>
       <div className="space-y-2.5 p-4">
@@ -75,12 +88,30 @@ export default function CotPanel({
           return (
             <div key={c.symbol} className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-sm font-medium text-white">{NAMES[c.symbol] ?? c.symbol}</span>
-              <div className="flex h-5 min-w-0 flex-1 overflow-hidden rounded bg-industrial/40" title={`${c.longs.toLocaleString()} long · ${c.shorts.toLocaleString()} short`}>
+              <div
+                className="relative flex h-5 min-w-0 flex-1 overflow-hidden rounded bg-industrial/40"
+                title={`${c.longs.toLocaleString()} long · ${c.shorts.toLocaleString()} short`}
+              >
                 <div className="h-full bg-long/40" style={{ width: `${c.pctLong}%` }} />
                 <div className="h-full bg-short/40" style={{ width: `${100 - c.pctLong}%` }} />
+                {/* La cifra: a ojo no se distingue un 72 % de un 88 %, y esa
+                    diferencia es la que separa "sesgo" de "masificado". */}
+                <span className="absolute inset-y-0 left-2 flex items-center font-mono text-[10px] tabular-nums text-dim">
+                  {c.pctLong.toFixed(0)}% long
+                </span>
+                {/* Marca del 50 %: sin referencia, la barra no dice de qué lado cae */}
+                <span className="absolute inset-y-0 left-1/2 w-px bg-muted/40" aria-hidden />
               </div>
               <span className={`w-28 shrink-0 text-right font-mono text-[11px] ${long ? "text-long" : short ? "text-short" : "text-muted"}`}>
                 {c.bias === "neutral" ? "neutral" : long ? "▲ net long" : "▼ net short"}
+                {crowded(c.pctLong) && (
+                  <span
+                    className="ml-1 rounded bg-accent/15 px-1 py-0.5 text-[8px] text-accent"
+                    title="Posicionamiento extremo: casi todos al mismo lado. Suele avisar de agotamiento, no confirmar la tendencia."
+                  >
+                    MASIF.
+                  </span>
+                )}
               </span>
               <span className="w-14 shrink-0 text-right font-mono text-[10px] text-muted" title="Cambio vs semana previa">
                 {c.change != null ? fmtK(c.change) : ""}
@@ -91,8 +122,11 @@ export default function CotPanel({
         {!loading && (!rows || rows.length === 0) && <p className="text-xs text-muted">Sin datos COT.</p>}
       </div>
       <p className="border-t border-industrial px-5 py-2.5 text-[10px] leading-relaxed text-muted">
-        Net de especuladores (no-comerciales, CFTC, semanal). Dinero grande net-long = sesgo alcista; net-short = bajista.
-        Δ = cambio de posición vs la semana previa (flujo).
+        Net de especuladores (no-comerciales, CFTC). Informe <span className="text-dim">semanal</span>: refleja
+        posiciones del martes anterior, así que es contexto de fondo, nunca una señal de entrada.
+        Net-long = sesgo alcista; net-short = bajista; Δ = flujo vs la semana previa.{" "}
+        <span className="text-accent">MASIF.</span> marca un posicionamiento extremo (≥80 % a un lado):
+        el mercado ya está todo del mismo lado y suele avisar de agotamiento.
       </p>
     </div>
   );

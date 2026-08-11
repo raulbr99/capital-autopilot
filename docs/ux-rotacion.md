@@ -51,9 +51,14 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 19 | 11-ago-2026 | **Sentimiento** (`SentimentBoard`) | La API devolvía `earnings` de las 8 acciones y **la interfaz los ignoraba por completo** — justo el dato que el Gestor usa como REGLA DURA (no abre con resultados a ≤7 días, porque el hueco de apertura se salta el stop). Quien mira el tablero veía menos que la IA que decide. Ahora cada fila lleva los **días hasta resultados** (rojo ≤7 con aviso de que el motor no abrirá ahí, ámbar ≤21, con BPA estimado en el tooltip) y, si hay alguno bloqueado, un **banner arriba** nombrando los activos. |
 
-## Pendiente (orden sugerido por impacto)
+| 20 | 11-ago-2026 | **COT** (`CotPanel`) | Cerraba la lista de apartados. (1) **Antigüedad visible**: el COT es semanal y refleja posiciones del martes anterior; sin decirlo se lee como si fuera de hoy — ahora muestra "hace N d" y la nota aclara que es contexto de fondo, nunca señal de entrada. (2) **Porcentaje numérico** sobre la barra: a ojo no se distingue un 72 % de un 88 %, y esa diferencia es la que separa "sesgo" de "masificado". (3) **Chip MASIF.** en posicionamientos extremos (≥80 % a un lado, hoy el oro al 88,5 %): el mercado ya está todo del mismo lado, lo que suele avisar de agotamiento en vez de confirmar la tendencia — el prompt del Gestor ya razonaba así y la interfaz no lo reflejaba. (4) Marca del 50 % en la barra como referencia. |
 
-- **CotPanel** (contenido, no solo etiquetas) — último apartado sin repasar.
+## Pendiente
+
+Lista original **completada** (20 pasadas). Ideas para siguientes vueltas: auditoría móvil real
+(requiere Puppeteer, ver aviso de cabecera), accesibilidad con lector de pantalla, rendimiento
+(la home hace 2 peticiones cada 6-12 s), y el `DESK_OF` hardcodeado de `AnalyticsPage`, que
+duplica el universo del config y puede desincronizarse.
 - Auditoría móvil de verdad — requiere Puppeteer/Playwright (ver aviso de cabecera).
 - **CommandPalette** (⌘K) y experiencia móvil general.
 
