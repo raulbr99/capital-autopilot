@@ -57,7 +57,9 @@ body {
   border-radius: 4px;
 }
 
-/* Movimiento reducido: apagar pulsos/ticker/transiciones decorativas */
+/* Movimiento reducido: apagar pulsos, cinta y transiciones decorativas.
+   Con solo acortar la duración, la cinta SALTABA a su posición final en vez de
+   quedarse quieta; se cancela la animación para dejarla donde empieza. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -65,6 +67,11 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-ticker {
+    animation: none !important;
+    transform: none !important;
   }
 }
 
@@ -127,19 +134,4 @@ body {
   background: rgb(var(--cement));
   border: 3px solid rgb(var(--ink));
   border-radius: 8px;
-}
-
-*:focus-visible {
-  outline: 2px solid rgb(var(--accent) / 0.7);
-  outline-offset: 1px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
 }
