@@ -7,16 +7,20 @@ import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
-const DESK_OF: Record<string, DeskCategory> = {
-  NZDUSD: "forex", EURUSD: "forex", GBPJPY: "forex", EURJPY: "forex", USDCHF: "forex",
-  BTCUSD: "crypto", ETHUSD: "crypto",
-  AAPL: "stocks", NVDA: "stocks", TSLA: "stocks", MSFT: "stocks", AMZN: "stocks",
-  GOOGL: "stocks", META: "stocks", NFLX: "stocks", AMD: "stocks", MU: "stocks", AVGO: "stocks",
-  QCOM: "stocks", SMCI: "stocks", ARM: "stocks", SNOW: "stocks", CRWD: "stocks", PLTR: "stocks",
-  COIN: "stocks", MSTR: "stocks", HOOD: "stocks", SOFI: "stocks", GME: "stocks", BABA: "stocks",
-  DIS: "stocks", BA: "stocks", UBER: "stocks", PYPL: "stocks", ORCL: "stocks", CRM: "stocks",
-  ADBE: "stocks", JPM: "stocks", V: "stocks", WMT: "stocks", XOM: "stocks", PFE: "stocks",
-  GOLD: "commodities", SILVER: "commodities", OIL_CRUDE: "commodities", NATURALGAS: "commodities", COPPER: "commodities",
+/**
+ * Mesa de activos RETIRADOS del universo. Solo sirve de respaldo: sus
+ * operaciones siguen en el histórico y deben poder filtrarse. Los activos
+ * vigentes salen de la configuración en vivo, para que añadir uno nuevo no
+ * lo haga desaparecer del filtro por mesa sin que nadie se entere.
+ */
+const LEGACY_DESK: Record<string, DeskCategory> = {
+  TSLA: "stocks", NFLX: "stocks", AMD: "stocks", MU: "stocks",
+  AVGO: "stocks", QCOM: "stocks", SMCI: "stocks", ARM: "stocks",
+  SNOW: "stocks", CRWD: "stocks", PLTR: "stocks", COIN: "stocks",
+  MSTR: "stocks", HOOD: "stocks", SOFI: "stocks", GME: "stocks",
+  BABA: "stocks", DIS: "stocks", BA: "stocks", UBER: "stocks",
+  PYPL: "stocks", ORCL: "stocks", CRM: "stocks", ADBE: "stocks",
+  WMT: "stocks", XOM: "stocks", PFE: "stocks",
 };
 const DESK_FILTERS = [
   { key: "", label: "Todas" },
@@ -28,6 +32,7 @@ const DESK_FILTERS = [
 
 export default function AnalyticsPage() {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
+  const [instruments, setInstruments] = useState<{ epic: string; category?: DeskCategory }[]>([]);
   const [loading, setLoading] = useState(true);
   const [epic, setEpic] = useState<string>("");
   const [desk, setDesk] = useState<string>("");
@@ -45,9 +50,20 @@ export default function AnalyticsPage() {
       }
     };
     load();
+    // El universo manda: la clasificación por mesa se lee del config en vivo
+    fetch("/api/bot/tick")
+      .then((r) => r.json())
+      .then((d) => setInstruments(d?.state?.config?.instruments ?? []))
+      .catch(() => {});
     const t1 = setInterval(load, 20000);
     return () => clearInterval(t1);
   }, []);
+
+  const deskOf = useMemo(() => {
+    const m = new Map<string, DeskCategory>(Object.entries(LEGACY_DESK) as [string, DeskCategory][]);
+    for (const i of instruments) if (i.category) m.set(i.epic, i.category);
+    return (epic: string) => m.get(epic);
+  }, [instruments]);
 
   const epics = useMemo(
     () => Array.from(new Set(trades.map((t) => t.epic))).sort(),
@@ -55,8 +71,8 @@ export default function AnalyticsPage() {
   );
 
   const filtered = useMemo(
-    () => trades.filter((t) => (!epic || t.epic === epic) && (!desk || DESK_OF[t.epic] === desk)),
-    [trades, epic, desk]
+    () => trades.filter((t) => (!epic || t.epic === epic) && (!desk || deskOf(t.epic) === desk)),
+    [trades, epic, desk, deskOf]
   );
 
   const a = useMemo(() => analyze(filtered), [filtered]);
