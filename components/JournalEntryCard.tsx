@@ -59,6 +59,18 @@ export default function JournalEntryCard({
   const thesis = entry.thesis || "—";
   const long = thesis.length > THESIS_LIMIT;
   const quiet = sum.kind === "held";
+  // La tesis se plegaba pero las razones de cada acción no, así que una entrada
+  // sin operar seguía ocupando media pantalla. Se muestran dos y el resto entra
+  // en el mismo desplegable.
+  const MAX_VISIBLES = 2;
+  const ocultas = Math.max(0, acciones.length - MAX_VISIBLES);
+  const visibles = open ? acciones : acciones.slice(0, MAX_VISIBLES);
+  const desplegable = long || ocultas > 0;
+  const etiqueta = open
+    ? "Mostrar menos"
+    : long
+    ? "Leer tesis completa"
+    : `Ver las ${acciones.length} decisiones`;
 
   return (
     <div
@@ -93,18 +105,18 @@ export default function JournalEntryCard({
       >
         {thesis}
       </p>
-      {long && (
+      {desplegable && (
         <button
           onClick={() => setOpen((o) => !o)}
           className="-mx-1 mt-0.5 min-h-[32px] px-1 text-[11px] font-medium text-accent transition-opacity hover:opacity-80"
         >
-          {open ? "Mostrar menos" : "Leer tesis completa"}
+          {etiqueta}
         </button>
       )}
 
-      {acciones.length > 0 && (
+      {visibles.length > 0 && (
         <div className="mt-2 space-y-1.5 border-t border-industrial pt-2">
-          {acciones.map((a, i) => {
+          {visibles.map((a, i) => {
             const oc = a.outcome && a.outcome !== "held" ? OUTCOME[a.outcome] : null;
             const notRun =
               !!a.outcome && a.outcome !== "opened" && a.outcome !== "closed" && a.outcome !== "held";
@@ -138,6 +150,12 @@ export default function JournalEntryCard({
             );
           })}
         </div>
+      )}
+
+      {!open && ocultas > 0 && (
+        <p className="mt-1.5 text-[11px] text-muted">
+          y {ocultas} decisión{ocultas > 1 ? "es" : ""} más
+        </p>
       )}
 
       {esperasVacias > 0 && (
