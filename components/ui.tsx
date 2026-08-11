@@ -200,7 +200,6 @@ export function Sparkline({
   const y = (val: number) => h - ((val - min) / range) * (h - 4) - 2;
   const line = data.map((d, i) => `${x(i).toFixed(1)},${y(d).toFixed(1)}`).join(" ");
   const isUp = up ?? data[data.length - 1] >= data[0];
-  const c = isUp ? "#34C98A" : "#F2567A";
   // Fluido: viewBox como sistema de coordenadas interno + width 100% para que
   // llene su contenedor (antes el ancho fijo desbordaba las tarjetas en móvil).
   return (
@@ -209,12 +208,12 @@ export function Sparkline({
       width="100%"
       height={h}
       preserveAspectRatio="none"
-      className="block w-full overflow-visible"
+      className={`block w-full overflow-visible ${isUp ? "text-long" : "text-short"}`}
     >
       <polyline
         points={line}
         fill="none"
-        stroke={c}
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinejoin="round"
         strokeLinecap="round"

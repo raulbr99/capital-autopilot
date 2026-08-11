@@ -46,27 +46,44 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
+    // lightweight-charts pinta en canvas y no entiende variables CSS: hay que
+    // leer los tokens del tema y pasárselos como color. Sin esto el gráfico
+    // sale siempre oscuro, también sobre el tema claro.
+    const tok = (name: string, alpha?: number) => {
+      const raw = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
+      const rgb = raw || "122 130 142";
+      return alpha == null ? `rgb(${rgb})` : `rgb(${rgb} / ${alpha})`;
+    };
+    const C = {
+      text: tok("muted"),
+      grid: tok("industrial", 0.6),
+      border: tok("industrial"),
+      up: tok("long"),
+      down: tok("short"),
+      entry: tok("dim"),
+      tp: tok("accent"),
+    };
     const chart = createChart(el, {
       width: el.clientWidth || 760,
       height: 360,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "#8b94a3",
+        textColor: C.text,
         fontFamily: "ui-monospace, SFMono-Regular, monospace",
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.04)" },
-        horzLines: { color: "rgba(255,255,255,0.04)" },
+        vertLines: { color: C.grid },
+        horzLines: { color: C.grid },
       },
       crosshair: { mode: CrosshairMode.Normal },
-      rightPriceScale: { borderColor: "#252525" },
-      timeScale: { borderColor: "#252525", timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: C.border },
+      timeScale: { borderColor: C.border, timeVisible: true, secondsVisible: false },
     });
     const series = chart.addCandlestickSeries({
-      upColor: "#34C98A",
-      downColor: "#F2567A",
-      wickUpColor: "#34C98A",
-      wickDownColor: "#F2567A",
+      upColor: C.up,
+      downColor: C.down,
+      wickUpColor: C.up,
+      wickDownColor: C.down,
       borderVisible: false,
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
     });
@@ -81,16 +98,35 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
             axisLabelVisible: true,
             title,
           });
-    mkLine(pos.entry, "#9aa3b2", "Entrada", true);
-    mkLine(pos.stopLevel, "#F2567A", "SL");
-    mkLine(pos.limitLevel, "#6E7CF7", "TP");
+    mkLine(pos.entry, C.entry, "Entrada", true);
+    mkLine(pos.stopLevel, C.down, "SL");
+    mkLine(pos.limitLevel, C.tp, "TP");
 
     chartRef.current = chart;
     seriesRef.current = series;
 
     const onResize = () => chartRef.current && el && chart.applyOptions({ width: el.clientWidth });
     window.addEventListener("resize", onResize);
+
+    // Si se cambia de tema con el modal abierto, repintar con los tokens nuevos
+    const themeObs = new MutationObserver(() => {
+      chart.applyOptions({
+        layout: { textColor: tok("muted") },
+        grid: { vertLines: { color: tok("industrial", 0.6) }, horzLines: { color: tok("industrial", 0.6) } },
+        rightPriceScale: { borderColor: tok("industrial") },
+        timeScale: { borderColor: tok("industrial") },
+      });
+      series.applyOptions({
+        upColor: tok("long"),
+        downColor: tok("short"),
+        wickUpColor: tok("long"),
+        wickDownColor: tok("short"),
+      });
+    });
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
     return () => {
+      themeObs.disconnect();
       window.removeEventListener("resize", onResize);
       chart.remove();
       chartRef.current = null;
