@@ -87,12 +87,12 @@ export function StatCard({
       ? "text-accent"
       : "text-white";
   return (
-    <div className="bg-soft p-5">
-      <p className="tag">{label}</p>
+    <div className="min-w-0 bg-soft p-4 sm:p-5">
+      <p className="tag truncate">{label}</p>
       {value == null ? (
         <Skeleton className="mt-2 h-7 w-24" />
       ) : (
-        <p className={`mt-2 font-mono text-2xl font-medium tracking-tight ${c}`}>
+        <p className={`mt-2 truncate font-mono text-xl font-medium tracking-tight sm:text-2xl ${c}`}>
           {value} {unit && <span className="text-xs font-normal text-muted">{unit}</span>}
         </p>
       )}

@@ -197,7 +197,7 @@ export default function Dashboard() {
 
         {/* HERO */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
-          <div className={`relative min-w-0 overflow-hidden rounded-xl border bg-soft p-6 transition-shadow ${enabled ? "border-accent/40 ring-accent" : "border-industrial"}`}>
+          <div className={`relative min-w-0 overflow-hidden rounded-xl border bg-soft p-5 transition-shadow sm:p-6 ${enabled ? "border-accent/40 ring-accent" : "border-industrial"}`}>
             <p className="tag">Motor</p>
             <div className="mt-4 flex items-center gap-2.5">
               {loading ? (
@@ -273,7 +273,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="min-w-0 overflow-hidden rounded-xl border border-industrial bg-soft p-5">
+          <div className="min-w-0 overflow-hidden rounded-xl border border-industrial bg-soft p-4 sm:p-5">
             <div className="mb-3 flex items-end justify-between">
               <div>
                 <p className="tag">Equity</p>
@@ -512,13 +512,13 @@ function Ticker({ evals }: { evals: Snapshot["evals"] }) {
 function MiniStat({ label, value, tone }: { label: string; value: string | number | null; tone?: "long" | "short" }) {
   const c = tone === "long" ? "text-long" : tone === "short" ? "text-short" : "text-white";
   return (
-    <div className="bg-soft py-3.5">
+    <div className="min-w-0 bg-soft px-1 py-3.5">
       {value == null ? (
         <Skeleton className="mx-auto h-6 w-14" />
       ) : (
-        <p className={`font-mono text-xl font-medium tabular-nums ${c}`}>{value}</p>
+        <p className={`truncate font-mono text-lg font-medium tabular-nums sm:text-xl ${c}`}>{value}</p>
       )}
-      <p className="tag mt-0.5">{label}</p>
+      <p className="tag mt-0.5 truncate">{label}</p>
     </div>
   );
 }
