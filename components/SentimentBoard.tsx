@@ -21,15 +21,51 @@ type SQ = {
   extChangePct: number | null;
   extLabel: "pre-market" | "after-hours" | null;
 };
+type Earn = {
+  symbol: string;
+  nextEarningsDate?: string | null;
+  daysUntil?: number | null;
+  imminent?: boolean;
+  epsEstimate?: number | null;
+};
+
 type Data = {
   fetchedAt: string;
   stocks: Ape[];
   trending: Ape[];
   prices: SQ[];
+  earnings?: Earn[];
   news: News[];
   exaConfigured: boolean;
   exaErr?: boolean;
 };
+
+/**
+ * Resultados próximos. El Gestor lo usa como REGLA DURA (no abre con earnings
+ * a <=7 días, porque el hueco de apertura se salta el stop), así que quien mira
+ * el tablero tiene que ver lo mismo que decide la IA.
+ */
+function EarningsCell({ e }: { e?: Earn }) {
+  if (!e || e.daysUntil == null) return null;
+  const d = e.daysUntil;
+  const soon = d <= 7;
+  const near = d <= 21;
+  return (
+    <span
+      className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-[9px] ${
+        soon ? "bg-short/15 text-short" : near ? "bg-accent/10 text-accent" : "text-muted"
+      }`}
+      title={
+        soon
+          ? `Resultados en ${d} días: el motor no abre posiciones nuevas en este activo`
+          : `Próximos resultados en ${d} días${e.epsEstimate != null ? ` · BPA estimado ${e.epsEstimate.toFixed(2)}` : ""}`
+      }
+    >
+      {soon ? "⚠ " : ""}
+      {d}d
+    </span>
+  );
+}
 
 const STATE_LABEL: Record<string, string> = {
   PRE: "pre-market",
@@ -104,6 +140,8 @@ export default function SentimentBoard({ className = "" }: { className?: string 
   const maxMentions = Math.max(1, ...(d?.stocks ?? []).map((s) => s.mentions));
   const stocks = [...(d?.stocks ?? [])].sort((a, b) => b.mentions - a.mentions);
   const priceMap = new Map((d?.prices ?? []).map((p) => [p.symbol, p]));
+  const earnMap = new Map((d?.earnings ?? []).map((e) => [e.symbol, e]));
+  const blocked = (d?.earnings ?? []).filter((e) => e.daysUntil != null && e.daysUntil <= 7);
   const marketState = d?.prices?.[0]?.marketState ?? "";
 
   return (
@@ -120,11 +158,24 @@ export default function SentimentBoard({ className = "" }: { className?: string 
         </span>
       </div>
 
+      {blocked.length > 0 && (
+        <p className="flex items-start gap-2 border-b border-industrial bg-short/[0.06] px-5 py-2.5 text-[11px] leading-relaxed text-dim">
+          <span aria-hidden>⚠️</span>
+          <span>
+            <span className="font-medium text-short">
+              {blocked.map((e) => e.symbol).join(", ")}
+            </span>{" "}
+            {blocked.length === 1 ? "presenta resultados" : "presentan resultados"} en menos de una semana:
+            el motor no abrirá posiciones nuevas ahí (el hueco de apertura se salta el stop).
+          </span>
+        </p>
+      )}
+
       <div className="grid gap-5 p-4 lg:grid-cols-[1fr_320px]">
         {/* Buzz de tus acciones */}
         <div className="min-w-0">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">
-            Menciones (buzz) · Δ24h · rank · precio (pre/post)
+            Menciones (buzz) · Δ24h · rank · precio (pre/post) · resultados
           </p>
           <div className="space-y-1.5">
             {stocks.slice(0, 14).map((s) => (
@@ -147,6 +198,9 @@ export default function SentimentBoard({ className = "" }: { className?: string 
                 </span>
                 <span className="w-[72px] shrink-0 text-right">
                   <PriceCell q={priceMap.get(s.ticker)} />
+                </span>
+                <span className="w-10 shrink-0 text-right">
+                  <EarningsCell e={earnMap.get(s.ticker)} />
                 </span>
               </div>
             ))}

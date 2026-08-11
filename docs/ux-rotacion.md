@@ -49,9 +49,11 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 18 | 11-ago-2026 | **Paleta de comandos** (⌘K) | Le faltaba lo esencial: **no se podía navegar con el teclado**. Una paleta que obliga a coger el ratón no es una paleta. Ahora ↑↓ recorren, ↵ ejecuta, `esc` cierra, con resaltado, autoscroll y sincronía ratón↔teclado. **Agrupada por categoría** (Motor · Mesas · Ir a · Vista) y la búsqueda mira etiqueta **y** categoría (escribir "mesa" saca las cuatro). Comandos de 5 → 11: las 4 mesas, cambio de tema (misma clave `localStorage` que el toggle, así no se desincronizan) y etiquetas que dicen el estado real ("Stops por volatilidad: desactivar" en vez de "Toggle SL/TP por ATR"). Pie con las teclas disponibles. |
 
+| 19 | 11-ago-2026 | **Sentimiento** (`SentimentBoard`) | La API devolvía `earnings` de las 8 acciones y **la interfaz los ignoraba por completo** — justo el dato que el Gestor usa como REGLA DURA (no abre con resultados a ≤7 días, porque el hueco de apertura se salta el stop). Quien mira el tablero veía menos que la IA que decide. Ahora cada fila lleva los **días hasta resultados** (rojo ≤7 con aviso de que el motor no abrirá ahí, ámbar ≤21, con BPA estimado en el tooltip) y, si hay alguno bloqueado, un **banner arriba** nombrando los activos. |
+
 ## Pendiente (orden sugerido por impacto)
 
-- **SentimentBoard**, **CotPanel** (contenido, no solo etiquetas).
+- **CotPanel** (contenido, no solo etiquetas) — último apartado sin repasar.
 - Auditoría móvil de verdad — requiere Puppeteer/Playwright (ver aviso de cabecera).
 - **CommandPalette** (⌘K) y experiencia móvil general.
 
