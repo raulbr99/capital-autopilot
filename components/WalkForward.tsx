@@ -29,10 +29,13 @@ type WFResult = {
 };
 
 const VERDICT: Record<string, { label: string; cls: string }> = {
-  edge: { label: "VENTAJA PROBABLE", cls: "bg-long/15 text-long border-long/40" },
-  weak: { label: "VENTAJA DÉBIL", cls: "bg-accent/15 text-accent border-accent/40" },
-  none: { label: "SIN VENTAJA", cls: "bg-short/15 text-short border-short/40" },
+  edge: { label: "Ventaja probable", cls: "bg-long/15 text-long border-long/40" },
+  weak: { label: "Ventaja débil", cls: "bg-accent/15 text-accent border-accent/40" },
+  none: { label: "Sin ventaja", cls: "bg-short/15 text-short border-short/40" },
 };
+
+/** Con pocas operaciones fuera de muestra el veredicto es ruido, no evidencia. */
+const MIN_OOS = 20;
 
 export default function WalkForward({ watchlist }: { watchlist: string[] }) {
   const [loading, setLoading] = useState(false);
@@ -41,6 +44,12 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
   const [resolution, setResolution] = useState("HOUR");
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+
+  // Lo prometedor arriba: con 20 activos, una lista sin orden esconde lo poco
+  // que de verdad tiene ventaja entre lo que no.
+  const rank = (r: WFResult) =>
+    r.error ? -99 : (r.oosAggregate.trades < MIN_OOS ? -1 : 0) + (r.oosAggregate.profitFactor || 0);
+  const ranked = [...results].sort((a, b) => rank(b) - rank(a));
 
   const run = async () => {
     setLoading(true);
@@ -89,22 +98,39 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
               disabled={loading}
               className="bg-accent px-3 py-1 font-display text-[11px] text-onaccent disabled:opacity-40"
             >
-              {loading ? "…" : "▶ VALIDAR"}
+              {loading ? "…" : "▶ Validar"}
             </button>
           </div>
         }
       />
       <div className="p-4">
         <p className="mb-3 text-[11px] leading-relaxed text-muted">
-          Optimiza parámetros en datos de <span className="text-dim">entrenamiento</span> y los prueba en datos{" "}
-          <span className="text-dim">no vistos</span>, deslizando la ventana. Las métricas{" "}
-          <span className="text-white">OOS</span> son la estimación honesta de la ventaja.
+          Busca los mejores parámetros en un tramo del histórico y los prueba en el tramo{" "}
+          <span className="text-dim">siguiente, que no ha visto</span>, deslizando la ventana. Solo cuenta
+          lo que rinde <span className="text-white">fuera de muestra</span>: cualquiera puede encontrar
+          parámetros que brillan sobre el pasado que ya conoce. La{" "}
+          <span className="text-dim">retención</span> mide cuánto de la ventaja sobrevive a ese salto —
+          por debajo del 60 % es sobreajuste. Las cifras ya incluyen el coste de la horquilla.
         </p>
         {err && <p className="text-xs text-short">{err}</p>}
         {loading && <p className="font-mono text-[11px] text-accent">Validando {progress}</p>}
 
+        {results.length > 1 && (
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-industrial bg-base px-3 py-2 text-[11px]">
+            <span className="text-muted">
+              {results.filter((r) => !r.error).length} activos validados
+            </span>
+            <span className="text-long">
+              {results.filter((r) => r.verdict === "edge" && r.oosAggregate.trades >= MIN_OOS).length} con ventaja
+            </span>
+            <span className="text-muted">
+              {results.filter((r) => !r.error && r.oosAggregate.trades < MIN_OOS).length} con muestra corta
+            </span>
+          </div>
+        )}
+
         <div className="space-y-2">
-          {results.map((r) => (
+          {ranked.map((r) => (
             <div key={r.epic} className="border border-industrial bg-ink">
               {r.error ? (
                 <div className="flex items-center justify-between px-3 py-2">
@@ -119,19 +145,27 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
                   >
                     <div className="flex items-center gap-3">
                       <span className="font-display text-sm">{r.epic}</span>
-                      <span className={`border px-2 py-0.5 font-mono text-[9px] ${VERDICT[r.verdict].cls}`}>
+                      <span className={`rounded border px-2 py-0.5 text-[9px] font-medium ${VERDICT[r.verdict].cls}`}>
                         {VERDICT[r.verdict].label}
                       </span>
+                      {r.oosAggregate.trades < MIN_OOS && (
+                        <span
+                          className="rounded border border-cement px-2 py-0.5 text-[9px] text-muted"
+                          title={`Solo ${r.oosAggregate.trades} operaciones fuera de muestra: por debajo de ${MIN_OOS} el veredicto es ruido`}
+                        >
+                          muestra corta · {r.oosAggregate.trades}
+                        </span>
+                      )}
                     </div>
                     <Sparkline data={r.oosEquity} up={r.oosAggregate.netPnl >= 0} w={110} h={30} />
                   </button>
 
                   <div className="grid grid-cols-2 gap-px border-t border-industrial bg-industrial md:grid-cols-4">
-                    <Cmp label="PNL OOS" is={r.isAggregate.netPnl} oos={r.oosAggregate.netPnl} money />
-                    <Cmp label="PROFIT FACTOR" is={r.isAggregate.profitFactor} oos={r.oosAggregate.profitFactor} factor />
-                    <Cmp label="WIN RATE" is={r.isAggregate.winRate} oos={r.oosAggregate.winRate} pct />
+                    <Cmp label="P&L fuera de muestra" is={r.isAggregate.netPnl} oos={r.oosAggregate.netPnl} money />
+                    <Cmp label="Profit factor" is={r.isAggregate.profitFactor} oos={r.oosAggregate.profitFactor} factor />
+                    <Cmp label="Aciertos" is={r.isAggregate.winRate} oos={r.oosAggregate.winRate} pct />
                     <div className="bg-soft p-2.5">
-                      <p className="tag">DEGRADACIÓN IS→OOS</p>
+                      <p className="tag">Retención fuera de muestra</p>
                       <p className={`font-mono text-sm ${r.degradation >= 0.6 ? "text-long" : "text-short"}`}>
                         {(r.degradation * 100).toFixed(0)}%
                       </p>
@@ -145,8 +179,8 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
                       <table className="w-full text-left font-mono text-[10px]">
                         <thead>
                           <tr className="text-muted">
-                            <th className="px-3 py-1.5 font-normal">FOLD</th>
-                            <th className="px-3 py-1.5 font-normal">PARÁMS (f/s/sl/tp)</th>
+                            <th className="px-3 py-1.5 font-normal">Ventana</th>
+                            <th className="px-3 py-1.5 font-normal">Params (SMA r/l · stop/obj)</th>
                             <th className="px-3 py-1.5 font-normal">IS PnL</th>
                             <th className="px-3 py-1.5 font-normal">OOS PnL</th>
                             <th className="px-3 py-1.5 font-normal">OOS PF</th>
