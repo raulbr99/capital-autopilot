@@ -18,7 +18,7 @@
   --short: 242 86 122;
   --white: 231 233 238;
   --dim: 160 167 180;
-  --muted: 122 130 142; /* ≥4.5:1 sobre superficie oscura (AA) */
+  --muted: 140 148 160; /* AA (4.5:1) también sobre los chips 'industrial', no solo sobre el fondo */
 }
 
 :root[data-theme="light"] {
@@ -35,7 +35,7 @@
   --short: 214 41 92;
   --white: 23 26 33; /* texto primario (oscuro) */
   --dim: 82 89 100; /* secundario */
-  --muted: 99 106 117; /* terciario / etiquetas */
+  --muted: 92 99 110; /* terciario / etiquetas — AA sobre chips claros */
 }
 
 html,

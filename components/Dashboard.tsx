@@ -262,7 +262,7 @@ export default function Dashboard() {
               onClick={() => patch({ enabled: !enabled })}
               disabled={busy || !configured || loading}
               className={`mt-4 w-full rounded-lg px-6 py-3.5 text-sm font-semibold transition-opacity disabled:opacity-40 ${
-                enabled ? "bg-short text-white hover:opacity-90" : "bg-accent text-onaccent hover:opacity-90"
+                enabled ? "bg-short text-onaccent hover:opacity-90" : "bg-accent text-onaccent hover:opacity-90"
               }`}
             >
               {loading ? "Cargando…" : enabled ? "Detener piloto" : "Activar piloto"}
