@@ -232,3 +232,14 @@ export function ConnBadge({ configured, enabled }: { configured: boolean; enable
     </div>
   );
 }
+
+/** Decimales según la magnitud del precio (forex necesita 5, índices/cripto 1). */
+export function pdec(n: number) {
+  const a = Math.abs(n);
+  return a < 10 ? 5 : a < 100 ? 3 : a < 1000 ? 2 : 1;
+}
+
+/** Precio con los decimales propios del activo. Compartido por tabla y señales. */
+export function price(n: number | null | undefined) {
+  return n == null ? "—" : fmt(n, pdec(n));
+}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { OpenPos } from "./types";
-import { SectionHead, fmt, pnlClass, pnlFmt } from "./ui";
+import { SectionHead, fmt, price, pnlClass, pnlFmt } from "./ui";
 import PositionChart from "./PositionChart";
 
 const ChartIcon = (
@@ -11,15 +11,6 @@ const ChartIcon = (
     <path d="M13 4h-2.5M13 4v2.5" />
   </svg>
 );
-
-// Decimales según la magnitud del precio (forex necesita 5, índices/cripto 1).
-function pdec(n: number) {
-  const a = Math.abs(n);
-  return a < 10 ? 5 : a < 100 ? 3 : a < 1000 ? 2 : 1;
-}
-function price(n: number | null | undefined) {
-  return n == null ? "—" : fmt(n, pdec(n));
-}
 
 function derive(p: OpenPos) {
   const cur = p.currentPrice ?? p.entry;

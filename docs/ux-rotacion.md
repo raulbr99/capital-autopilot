@@ -15,9 +15,10 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 3 | 11-ago-2026 | **Tabla de posiciones** (`PositionsTable`) | Tres cosas que la separaban de un blotter profesional: (1) **fila de totales** — exposición, riesgo a stop y P&L sumados, antes había que sumar a ojo; (2) **P&L en múltiplos de R** (`+1.2R`) con minibarra de recorrido −1R→+2R, que es como puntúa un operador y permite comparar entre activos; (3) **confirmación en dos pasos al cerrar** (CERRAR → ¿CERRAR?), que mueve dinero real y antes se disparaba a la primera. Además `tabular-nums` en todas las columnas numéricas (las cifras ya no bailan al refrescar) y la tarjeta móvil lleva el P&L al encabezado con su R. |
 
+| 4 | 11-ago-2026 | **Matriz de señales + ticker** | Con 20 activos, la rejilla obligaba a barrer un muro de FLAT para dar con la única señal: ahora hay **triaje** (señal activa por confianza → con posición → resto) y **filtros con recuento** (Todas / Con señal / Abiertas). Las tarjetas sin señal se atenúan y las activas llevan filo de color. La **barra de confianza solo se pinta si hay señal** (un 66% bajo un FLAT sugería que pasaba algo). El **ticker pasa a ser de cotizaciones**: precio y variación —lo que se espera de una cinta— en vez del tipo de señal y su confianza, que es telemetría interna; se pausa al pasar el ratón. `pdec`/`price` suben a `ui.tsx` (estaban solo en la tabla), así que el forex deja de verse como `1.15` y muestra sus 5 decimales. Fuera el `SIN_ACTIVOS_EN_WATCHLIST` y el `POSICIÓN_ABIERTA` en mayúsculas con guiones bajos (estilo Sifrok, que este proyecto no usa). |
+
 ## Pendiente (orden sugerido por impacto)
 
-- **Matriz de señales** (`SignalMatrix`) y ticker superior.
 - **Analítica** (`AnalyticsPage`): gráficas y KPIs con criterio de dataviz.
 - **Diario IA** (`JournalPage`): legibilidad de tesis largas.
 - **Lab** (`LabPage`, `ConfigPanel`, `BacktestPanel`, `WalkForward`): formularios densos.

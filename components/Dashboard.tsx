@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -439,21 +439,37 @@ function DesksOverview({
   );
 }
 
+/**
+ * Cinta de cotizaciones. Muestra PRECIO y variación, como la de cualquier
+ * broker — antes mostraba el tipo de señal y su confianza, que es información
+ * interna del motor y no lo que se espera leer en una cinta.
+ * Se pausa al pasar el ratón para poder leer un valor concreto.
+ */
 function Ticker({ evals }: { evals: Snapshot["evals"] }) {
-  const items = evals.length > 0 ? evals : [{ epic: "—", signal: { type: "FLAT", confidence: 0 } } as any];
-  const row = [...items, ...items];
+  if (evals.length === 0) return null;
+  const row = [...evals, ...evals];
   return (
-    <div className="overflow-hidden border-b border-industrial bg-base">
-      <div className="flex w-max animate-ticker whitespace-nowrap py-2">
-        {row.map((e, i) => (
-          <span key={i} className="mx-5 inline-flex items-center gap-2 font-mono text-[11px]">
-            <span className="text-dim">{e.epic}</span>
-            <span className={e.signal.type === "BUY" ? "text-long" : e.signal.type === "SELL" ? "text-short" : "text-muted"}>
-              {e.signal.type === "BUY" ? "▲ long" : e.signal.type === "SELL" ? "▼ short" : "· flat"}
+    <div className="group overflow-hidden border-b border-industrial bg-base" aria-hidden>
+      <div className="flex w-max animate-ticker whitespace-nowrap py-2 group-hover:[animation-play-state:paused]">
+        {row.map((e, i) => {
+          const sp = e.spark || [];
+          const chg = sp.length >= 2 && sp[0] ? ((e.price - sp[0]) / sp[0]) * 100 : null;
+          const tone = chg == null ? "text-muted" : chg > 0.02 ? "text-long" : chg < -0.02 ? "text-short" : "text-muted";
+          return (
+            <span key={i} className="mx-5 inline-flex items-baseline gap-2 font-mono text-[11px] tabular-nums">
+              <span className="text-dim">{e.epic}</span>
+              <span className="text-white">{price(e.price)}</span>
+              {chg != null && (
+                <span className={tone}>
+                  {chg > 0.02 ? "▲" : chg < -0.02 ? "▼" : "·"}
+                  {chg > 0 ? "+" : ""}
+                  {chg.toFixed(2)}%
+                </span>
+              )}
+              {e.hasPosition && <span className="text-[9px] text-accent">●</span>}
             </span>
-            <span className="text-muted">{Math.round((e.signal.confidence ?? 0) * 100)}%</span>
-          </span>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
