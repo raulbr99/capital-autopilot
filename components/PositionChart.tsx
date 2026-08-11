@@ -59,10 +59,13 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
     // lightweight-charts pinta en canvas y no entiende variables CSS: hay que
     // leer los tokens del tema y pasárselos como color. Sin esto el gráfico
     // sale siempre oscuro, también sobre el tema claro.
+    // lightweight-charts trae su propio parser de color y NO entiende la
+    // sintaxis moderna con espacios —`rgb(140 148 160)`—, que es como vienen
+    // los tokens. Hay que pasárselo con comas o revienta al crear el gráfico.
     const tok = (name: string, alpha?: number) => {
       const raw = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
-      const rgb = raw || "122 130 142";
-      return alpha == null ? `rgb(${rgb})` : `rgb(${rgb} / ${alpha})`;
+      const [r, g, b] = (raw || "140 148 160").split(/[\s,]+/).map(Number);
+      return alpha == null ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
     const C = {
       text: tok("muted"),
