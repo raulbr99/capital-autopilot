@@ -59,7 +59,32 @@ export function analyze(trades: TradeRecord[]): Analytics {
     .map(([date, pnl]) => ({ date, pnl }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  const avgWin = wins.length ? grossWin / wins.length : 0;
+  const avgLoss = losses.length ? grossLoss / losses.length : 0;
+  // Payoff y punto de equilibrio: con ganadores 2× los perdedores, acertar el
+  // 34% ya es rentable. Sin este contraste, un win rate suelto no dice nada.
+  const payoff = avgLoss > 0 ? avgWin / avgLoss : 0;
+  const breakevenWinRate = payoff > 0 ? 100 / (1 + payoff) : 0;
+
+  const byDirection = (["BUY", "SELL"] as const)
+    .map((dir) => {
+      const set = closed.filter((t) => t.direction === dir);
+      const w = set.filter((t) => (t.pnl || 0) >= 0).length;
+      return {
+        dir,
+        trades: set.length,
+        wins: w,
+        winRate: set.length ? (w / set.length) * 100 : 0,
+        pnl: set.reduce((s, t) => s + (t.pnl || 0), 0),
+      };
+    })
+    .filter((d) => d.trades > 0);
+
   return {
+    payoff,
+    breakevenWinRate,
+    byDirection,
+    enough: closed.length >= 30,
     total: trades.length,
     closed: closed.length,
     open: trades.filter((t) => t.status === "open").length,
@@ -70,8 +95,8 @@ export function analyze(trades: TradeRecord[]): Analytics {
     grossWin,
     grossLoss,
     profitFactor: grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0,
-    avgWin: wins.length ? grossWin / wins.length : 0,
-    avgLoss: losses.length ? grossLoss / losses.length : 0,
+    avgWin,
+    avgLoss,
     expectancy: closed.length ? netPnl / closed.length : 0,
     maxDrawdown: maxDd,
     bestStreak: best,

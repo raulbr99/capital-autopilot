@@ -17,9 +17,10 @@ Sirve para no repetir apartado y para saber qué queda.
 
 | 4 | 11-ago-2026 | **Matriz de señales + ticker** | Con 20 activos, la rejilla obligaba a barrer un muro de FLAT para dar con la única señal: ahora hay **triaje** (señal activa por confianza → con posición → resto) y **filtros con recuento** (Todas / Con señal / Abiertas). Las tarjetas sin señal se atenúan y las activas llevan filo de color. La **barra de confianza solo se pinta si hay señal** (un 66% bajo un FLAT sugería que pasaba algo). El **ticker pasa a ser de cotizaciones**: precio y variación —lo que se espera de una cinta— en vez del tipo de señal y su confianza, que es telemetría interna; se pausa al pasar el ratón. `pdec`/`price` suben a `ui.tsx` (estaban solo en la tabla), así que el forex deja de verse como `1.15` y muestra sus 5 decimales. Fuera el `SIN_ACTIVOS_EN_WATCHLIST` y el `POSICIÓN_ABIERTA` en mayúsculas con guiones bajos (estilo Sifrok, que este proyecto no usa). |
 
+| 5 | 11-ago-2026 | **Analítica** (`AnalyticsPage`) | Tenía las cifras pero no el **criterio** para leerlas. Añadido: (1) bloque **"Mecánica del sistema"** que enfrenta el win rate con su **punto de equilibrio** (`100/(1+payoff)`) — un 35% de aciertos es excelente con payoff 2,4 y ruinoso con payoff 0,8, y sin ese contraste el dato suelto no dice nada; chip ✓/✗ según el lado en que caiga. (2) **Largos vs cortos** con barra y P&L por dirección: es el desglose que destapó el agujero de los cortos (25% vs 45%) y no estaba en la página. (3) **Aviso de muestra insuficiente** por debajo de 30 operaciones, para que nadie tome decisiones sobre ruido. `analyze()` calcula ahora `payoff`, `breakevenWinRate`, `byDirection` y `enough`. |
+
 ## Pendiente (orden sugerido por impacto)
 
-- **Analítica** (`AnalyticsPage`): gráficas y KPIs con criterio de dataviz.
 - **Diario IA** (`JournalPage`): legibilidad de tesis largas.
 - **Lab** (`LabPage`, `ConfigPanel`, `BacktestPanel`, `WalkForward`): formularios densos.
 - **Estados vacíos y de carga** en toda la app (hoy: ceros y guiones).

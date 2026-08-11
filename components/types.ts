@@ -195,4 +195,12 @@ export type Analytics = {
   byEpic: { epic: string; pnl: number; trades: number; winRate: number }[];
   pnlCurve: { ts: number; cum: number }[];
   dailyPnl: { date: string; pnl: number }[];
+  /** avgWin/avgLoss: cuántos euros ganas por cada euro que arriesgas. */
+  payoff: number;
+  /** % de aciertos necesario para no perder dinero con ese payoff. */
+  breakevenWinRate: number;
+  /** LONG vs SHORT: el desglose que destapó el agujero de los cortos. */
+  byDirection: { dir: "BUY" | "SELL"; trades: number; wins: number; winRate: number; pnl: number }[];
+  /** ¿hay muestra suficiente para que estos números signifiquen algo? */
+  enough: boolean;
 };

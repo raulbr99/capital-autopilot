@@ -130,6 +130,88 @@ export default function AnalyticsPage() {
               <Kpi label="Racha" value={`${a.bestStreak >= 0 ? "+" : ""}${a.bestStreak} / ${a.worstStreak}`} sub="mejor / peor" />
             </section>
 
+            {/* Mecánica: un win rate suelto no dice nada sin su punto de equilibrio */}
+            <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_400px]">
+              <div className="rounded-xl border border-industrial bg-soft">
+                <SectionHead label="Mecánica del sistema" />
+                <div className="space-y-3 p-5">
+                  <p className="text-sm leading-relaxed text-dim">
+                    Ganas <span className="font-mono text-long">{fmt(a.avgWin)}</span> de media y pierdes{" "}
+                    <span className="font-mono text-short">{fmt(a.avgLoss)}</span>, así que cada acierto vale{" "}
+                    <span className="font-mono text-white">{a.payoff.toFixed(2)}</span> fallos.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-industrial pt-3">
+                    <div>
+                      <p className="tag">Necesitas acertar</p>
+                      <p className="mt-0.5 font-mono text-lg tabular-nums text-dim">
+                        {a.breakevenWinRate.toFixed(0)}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="tag">Aciertas</p>
+                      <p
+                        className={`mt-0.5 font-mono text-lg tabular-nums ${
+                          a.winRate >= a.breakevenWinRate ? "text-long" : "text-short"
+                        }`}
+                      >
+                        {a.winRate.toFixed(0)}%
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-md px-2.5 py-1 text-[11px] font-medium ${
+                        a.winRate >= a.breakevenWinRate
+                          ? "bg-long/10 text-long"
+                          : "bg-short/10 text-short"
+                      }`}
+                    >
+                      {a.winRate >= a.breakevenWinRate
+                        ? "✓ por encima del equilibrio"
+                        : "✗ por debajo del equilibrio"}
+                    </span>
+                  </div>
+                  {!a.enough && (
+                    <p className="border-t border-industrial pt-3 text-xs leading-relaxed text-muted">
+                      Con {a.closed} operaciones cerradas estos números son orientativos: hacen falta
+                      unas 30 para que dejen de ser ruido estadístico.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-industrial bg-soft">
+                <SectionHead label="Largos vs cortos" />
+                <div className="p-5">
+                  {a.byDirection.length === 0 ? (
+                    <p className="text-sm text-muted">Sin operaciones cerradas.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {a.byDirection.map((d) => (
+                        <div key={d.dir}>
+                          <div className="flex items-baseline justify-between">
+                            <span className={`text-sm font-medium ${d.dir === "BUY" ? "text-long" : "text-short"}`}>
+                              {d.dir === "BUY" ? "▲ Largos" : "▼ Cortos"}
+                            </span>
+                            <span className="font-mono text-[11px] tabular-nums text-muted">
+                              {d.trades} ops · {d.winRate.toFixed(0)}% acierto
+                            </span>
+                          </div>
+                          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-industrial">
+                            <div
+                              className={`h-full ${d.dir === "BUY" ? "bg-long" : "bg-short"}`}
+                              style={{ width: `${Math.min(100, d.winRate)}%` }}
+                            />
+                          </div>
+                          <p className={`mt-1 font-mono text-sm tabular-nums ${pnlClass(d.pnl)}`}>
+                            {pnlFmt(d.pnl)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
             {/* curva PnL + por instrumento */}
             <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_400px]">
               <div className="rounded-xl border border-industrial bg-soft">
