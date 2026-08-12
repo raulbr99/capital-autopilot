@@ -86,7 +86,7 @@ export default function JournalPage() {
             <button
               key={f.key}
               onClick={() => setDesk(f.key)}
-              className={`rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
+              className={`min-h-[34px] rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
                 desk === f.key ? "bg-accent text-onaccent" : "border border-industrial text-muted hover:text-dim"
               }`}
             >

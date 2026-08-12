@@ -419,7 +419,7 @@ export default function AnalyticsPage() {
                 right={
                   <button
                     onClick={() => exportarCsv(closedTrades, desk || epic || "todo")}
-                    className="rounded-md border border-cement px-2.5 py-1 text-[11px] font-medium text-dim transition-colors hover:border-accent hover:text-accent"
+                    className="min-h-[32px] rounded-md border border-cement px-3 py-1.5 text-[11px] font-medium text-dim transition-colors hover:border-accent hover:text-accent"
                     title="Descargar las operaciones filtradas en CSV"
                   >
                     ↓ CSV

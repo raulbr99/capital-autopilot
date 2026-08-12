@@ -82,7 +82,7 @@ export default function SecurityCard() {
                       /* sin permiso de portapapeles: el texto sigue seleccionable */
                     }
                   }}
-                  className={`rounded px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                  className={`-my-1 min-h-[32px] rounded px-2.5 font-mono text-[10px] transition-colors ${
                     copiado ? "text-long" : "text-muted hover:text-accent"
                   }`}
                 >
