@@ -68,9 +68,16 @@ function EarningsCell({ e }: { e?: Earn }) {
   );
 }
 
+/**
+ * Estados de mercado de Yahoo. Faltaba PREPRE (el tramo previo al pre-market)
+ * y el fallback era pintar el valor crudo, así que el panel enseñaba literalmente
+ * "PREPRE": un enum interno de un proveedor, en mayúsculas, sin significado para
+ * nadie. Si aparece uno desconocido ahora no se enseña nada, que informa más.
+ */
 const STATE_LABEL: Record<string, string> = {
+  PREPRE: "cerrado",
   PRE: "pre-market",
-  REGULAR: "● abierto",
+  REGULAR: "abierto",
   POST: "after-hours",
   POSTPOST: "after-hours",
   CLOSED: "cerrado",
@@ -167,9 +174,16 @@ export default function SentimentBoard({
       <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
         <h2 className="tag">Sentimiento, buzz &amp; precio · acciones</h2>
         <span className="flex items-center gap-2 font-mono text-[10px] text-muted">
-          {marketState && (
-            <span className="rounded bg-industrial px-1.5 py-0.5 text-dim">
-              {STATE_LABEL[marketState] ?? marketState}
+          {STATE_LABEL[marketState] && (
+            <span
+              className={`flex items-center gap-1.5 rounded px-1.5 py-0.5 ${
+                marketState === "REGULAR" ? "bg-long/10 text-long" : "bg-industrial text-dim"
+              }`}
+            >
+              {marketState === "REGULAR" && (
+                <span className="h-1.5 w-1.5 animate-pulseDot rounded-full bg-long" />
+              )}
+              {STATE_LABEL[marketState]}
             </span>
           )}
           {loading && !d ? "cargando…" : d ? ago(d.fetchedAt) : ""}
@@ -192,9 +206,29 @@ export default function SentimentBoard({
       <div className="grid gap-5 p-4 lg:grid-cols-[1fr_320px]">
         {/* Buzz de tus acciones */}
         <div className="min-w-0">
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">
-            Menciones (buzz) · Δ24h · rank · precio (pre/post) · resultados · señal
-          </p>
+          {/*
+            Esto era una frase corrida a la izquierda ("Menciones · Δ24h · rank ·
+            precio · resultados · señal") mientras las celdas de abajo tienen
+            anchuras fijas: ninguna etiqueta caía sobre su columna. Importa más
+            de lo normal aquí porque en la misma fila conviven DOS porcentajes
+            que no significan lo mismo — el de menciones y el de precio— y sin
+            cabecera no hay forma de saber cuál es cuál.
+          */}
+          <div className="mb-1.5 flex items-center gap-3 font-mono text-[9px] uppercase tracking-wider text-muted">
+            <span className="w-12 shrink-0">Activo</span>
+            <span className="min-w-0 flex-1">Menciones · buzz</span>
+            <span className="w-14 shrink-0 text-right" title="Variación de menciones en 24 h (no es el precio)">
+              Δ menc.
+            </span>
+            <span className="w-8 shrink-0 text-right" title="Puesto en el ranking de menciones">
+              Rank
+            </span>
+            <span className="w-[72px] shrink-0 text-right">Precio</span>
+            <span className="w-10 shrink-0 text-right" title="Días hasta la publicación de resultados">
+              Res.
+            </span>
+            <span className="w-12 shrink-0 text-right">Señal</span>
+          </div>
           <div className="space-y-1.5">
             {stocks.slice(0, 14).map((s) => (
               <div key={s.ticker} className="flex items-center gap-3">
