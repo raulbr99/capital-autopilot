@@ -132,9 +132,30 @@ async function authed(
     await getSession(true);
     return authed(path, init, false);
   }
-  // Rate limit -> esperar y reintentar una vez
+  /**
+   * Rate limit (429).
+   *
+   * Antes: un único reintento a los 900 ms y, si volvía a fallar, se rendía.
+   * En el registro salían dos errores en nueve horas —"Error evaluando USDCHF
+   * (HOUR_4): Capital.com 429"— y cada uno tiene una consecuencia invisible:
+   * ese instrumento se queda SIN evaluar ese ciclo y desaparece de la rejilla
+   * de señales, porque runEngine lo captura y sigue con el siguiente. Nadie ve
+   * un hueco; simplemente hay un activo menos.
+   *
+   * El throttle de 140 ms es por proceso, así que no protege de que el cron y
+   * el sondeo del navegador coincidan en instancias distintas: ahí el burst se
+   * dobla. Con esperas escalonadas (0,9 s → 2,5 s) el segundo intento cae fuera
+   * de la ventana del límite.
+   *
+   * Solo para lecturas. Un POST que recibe 429 no se ha ejecutado, pero no
+   * merece la pena arriesgar una apertura doble por un reintento de más.
+   */
+  const metodoRL = (init.method || "GET").toUpperCase();
   if (res.status === 429 && retry) {
     await new Promise((r) => setTimeout(r, 900));
+    const segundo = await authed(path, init, false);
+    if (segundo.status !== 429 || metodoRL !== "GET") return segundo;
+    await new Promise((r) => setTimeout(r, 2500));
     return authed(path, init, false);
   }
   // Glitch transitorio de Capital: 5xx (cualquier método) o 404 en GET idempotente
