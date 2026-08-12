@@ -60,91 +60,124 @@ export default function ConfigPanel({
       <SectionHead label="Instrumentos y señal" />
       <div className="space-y-4 p-4">
         <div>
-          <div className="mb-2 flex items-baseline justify-between">
-            <p className="tag">Universo · {instruments.length} instrumentos</p>
-            <p className="text-[10px] text-muted">activo · resolución · ADX · pausa</p>
-          </div>
-          {/* Agrupado por mesa: 20 activos en lista plana no hay quien los lea */}
-          <div className="space-y-3">
+          <p className="tag mb-2">Universo · {instruments.length} instrumentos</p>
+          {/*
+            Tabla de datos, no 20 formularios apilados. Antes cada fila era una
+            caja con borde para un símbolo de 6 letras que se estiraba a todo el
+            ancho (flex-1), así que los controles quedaban a 700 px de la fila a
+            la que pertenecen y la leyenda "activo · resolución · ADX · pausa"
+            flotaba suelta arriba a la derecha sin alinearse con nada. Ahora las
+            cabeceras son reales y comparten anchura con sus celdas.
+          */}
+          <div className="overflow-hidden rounded-lg border border-industrial">
+            <div className="flex items-center gap-1.5 border-b border-industrial bg-base px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-wider text-muted">
+              <span className="flex-1">Activo</span>
+              <span className="w-[76px] text-center">Marco</span>
+              <span className="w-[40px] text-center" title="Filtro de régimen: solo opera en tendencia">ADX</span>
+              <span className="w-[40px] text-center">Pausa</span>
+              <span className="w-[36px]" aria-hidden />
+            </div>
             {DESK_ORDER.filter((d) => byDesk[d.key]?.length).map((d) => (
               <div key={d.key}>
-                <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted">
-                  {d.label} <span className="text-dim">{byDesk[d.key].length}</span>
+                <p className="border-b border-industrial bg-base/60 px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider text-dim">
+                  {d.label} <span className="text-muted">{byDesk[d.key].length}</span>
                 </p>
-                <div className="space-y-1.5">
-            {byDesk[d.key].map((i) => (
-              <div key={i.epic} className={`flex items-center gap-1.5 ${i.paused ? "opacity-55" : ""}`}>
-                <span className="flex min-w-0 flex-1 items-center gap-1.5 border border-cement bg-industrial px-2 py-1.5 font-mono text-[11px] text-white">
-                  <span className="truncate">{i.epic}</span>
-                  {i.longOnly && (
-                    <span className="shrink-0 rounded bg-long/15 px-1 text-[8px] text-long" title="Solo compras: el motor bloquea los cortos">
-                      LONG
-                    </span>
-                  )}
-                  {i.paused && (
-                    <span className="shrink-0 rounded bg-short/15 px-1 text-[8px] text-short" title="Pausado: no abre nuevas posiciones">
-                      PAUSA
-                    </span>
-                  )}
-                </span>
-                <select
-                  value={i.resolution}
-                  disabled={busy}
-                  aria-label={`Resolución de ${i.epic}`}
-                  onChange={(e) => setRes(i.epic, e.target.value)}
-                  className="min-h-[36px] rounded-md border border-cement bg-ink px-1.5 font-mono text-[10px] text-accent focus:outline-none"
-                >
-                  {RESOLUTIONS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => toggleRegime(i.epic)}
-                  disabled={busy}
-                  aria-pressed={!!i.regimeFilter}
-                  title="Filtro de régimen ADX para este activo"
-                  className={`min-h-[36px] min-w-[36px] rounded-md border px-1.5 font-mono text-[9px] ${
-                    i.regimeFilter ? "border-accent text-accent" : "border-cement text-muted"
-                  }`}
-                >
-                  ADX
-                </button>
-                <button
-                  onClick={() => togglePaused(i.epic)}
-                  disabled={busy}
-                  aria-pressed={!!i.paused}
-                  title={i.paused ? "Pausado por circuit breaker (no abre nuevas). Clic para reactivar." : "Pausar este activo (no abrirá nuevas posiciones)."}
-                  className={`min-h-[36px] min-w-[36px] rounded-md border px-1.5 font-mono text-[9px] ${
-                    i.paused ? "border-short text-short" : "border-cement text-muted"
-                  }`}
-                >
-                  ⛔
-                </button>
-                {/* Quitar un activo saca al bot de ese mercado: se confirma */}
-                {confirmDel === i.epic ? (
-                  <button
-                    onClick={() => {
-                      remove(i.epic);
-                      setConfirmDel(null);
-                    }}
-                    disabled={busy}
-                    className="min-h-[36px] rounded-md border border-short bg-short/10 px-2 font-mono text-[9px] text-short"
+                {byDesk[d.key].map((i) => (
+                  <div
+                    key={i.epic}
+                    className={`flex items-center gap-1.5 border-b border-industrial/70 px-2.5 py-1 last:border-b-0 ${
+                      i.paused ? "opacity-55" : ""
+                    }`}
                   >
-                    ¿QUITAR?
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setConfirmDel(i.epic)}
-                    disabled={busy}
-                    aria-label={`Quitar ${i.epic}`}
-                    className="min-h-[36px] min-w-[36px] rounded-md border border-cement px-2 font-mono text-[11px] text-muted hover:border-short hover:text-short"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-                </div>
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <span className="truncate font-mono text-[11px] text-white">{i.epic}</span>
+                      {i.longOnly && (
+                        <span className="shrink-0 rounded bg-long/15 px-1 text-[8px] text-long" title="Solo compras: el motor bloquea los cortos">
+                          LONG
+                        </span>
+                      )}
+                      {i.paused && (
+                        <span className="shrink-0 rounded bg-short/15 px-1 text-[8px] text-short" title="Pausado: no abre nuevas posiciones">
+                          PAUSA
+                        </span>
+                      )}
+                    </span>
+                    <select
+                      value={i.resolution}
+                      disabled={busy}
+                      aria-label={`Resolución de ${i.epic}`}
+                      onChange={(e) => setRes(i.epic, e.target.value)}
+                      className="min-h-[34px] w-[76px] rounded-md border border-cement bg-ink px-1 font-mono text-[10px] text-accent focus:outline-none"
+                    >
+                      {RESOLUTIONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => toggleRegime(i.epic)}
+                      disabled={busy}
+                      aria-pressed={!!i.regimeFilter}
+                      aria-label={`Filtro de régimen ADX en ${i.epic}`}
+                      title="Filtro de régimen ADX para este activo"
+                      className={`min-h-[34px] w-[40px] rounded-md border font-mono text-[9px] ${
+                        i.regimeFilter ? "border-accent text-accent" : "border-cement text-muted"
+                      }`}
+                    >
+                      ADX
+                    </button>
+                    {/*
+                      Era un emoji ⛔. Los emoji se pintan con su propio color y
+                      se saltan las clases de texto, así que el botón salía rojo
+                      chillón SIEMPRE: activo y pausado se veían idénticos y el
+                      estado del control era invisible. Ahora es un glifo que
+                      hereda currentColor y dibuja la ACCIÓN (pausar / reanudar),
+                      mientras la insignia de la fila dice el estado.
+                    */}
+                    <button
+                      onClick={() => togglePaused(i.epic)}
+                      disabled={busy}
+                      aria-pressed={!!i.paused}
+                      aria-label={i.paused ? `Reanudar ${i.epic}` : `Pausar ${i.epic}`}
+                      title={i.paused ? "Pausado (no abre nuevas). Clic para reactivar." : "Pausar este activo (no abrirá nuevas posiciones)."}
+                      className={`grid min-h-[34px] w-[40px] place-items-center rounded-md border ${
+                        i.paused ? "border-short text-short" : "border-cement text-muted hover:text-white"
+                      }`}
+                    >
+                      <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="currentColor" aria-hidden="true">
+                        {i.paused ? (
+                          <path d="M2 1l7 4-7 4z" />
+                        ) : (
+                          <>
+                            <rect x="1.5" y="1" width="2.6" height="8" rx="0.4" />
+                            <rect x="5.9" y="1" width="2.6" height="8" rx="0.4" />
+                          </>
+                        )}
+                      </svg>
+                    </button>
+                    {/* Quitar un activo saca al bot de ese mercado: se confirma */}
+                    {confirmDel === i.epic ? (
+                      <button
+                        onClick={() => {
+                          remove(i.epic);
+                          setConfirmDel(null);
+                        }}
+                        disabled={busy}
+                        className="min-h-[34px] rounded-md border border-short bg-short/10 px-2 font-mono text-[9px] text-short"
+                      >
+                        ¿QUITAR?
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDel(i.epic)}
+                        disabled={busy}
+                        aria-label={`Quitar ${i.epic}`}
+                        className="min-h-[34px] w-[36px] rounded-md border border-cement font-mono text-[11px] text-muted hover:border-short hover:text-short"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
