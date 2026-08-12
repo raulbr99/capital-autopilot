@@ -139,7 +139,26 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
     chartRef.current = chart;
     seriesRef.current = series;
 
-    const onResize = () => chartRef.current && el && chart.applyOptions({ width: el.clientWidth });
+    /**
+     * El ancho se fijaba al crear el gráfico —con `|| 760` de reserva— y solo
+     * se corregía al redimensionar la VENTANA, que en un modal no ocurre nunca.
+     * Si el contenedor todavía no estaba maquetado en ese instante, el lienzo
+     * se quedaba con una medida que ya no era la suya y nadie la revisaba.
+     * Medido en un iPhone de 390 px: lienzo de 266 dentro de un contenedor de
+     * 358, o sea un 26 % del modal desaprovechado y las etiquetas del eje
+     * cortadas.
+     *
+     * Cuarta vez que aparece el mismo error en este proyecto (la curva de
+     * equity, el carril de decisiones y la navegación): medir una sola vez
+     * donde el contenido llega después. Un observador lo cierra.
+     */
+    const aplicarAncho = () => {
+      const w = el?.clientWidth;
+      if (chartRef.current && w) chart.applyOptions({ width: w });
+    };
+    const anchoObs = new ResizeObserver(aplicarAncho);
+    if (el) anchoObs.observe(el);
+    const onResize = aplicarAncho;
     window.addEventListener("resize", onResize);
 
     // Si se cambia de tema con el modal abierto, repintar con los tokens nuevos
@@ -161,6 +180,7 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
 
     return () => {
       themeObs.disconnect();
+      anchoObs.disconnect();
       window.removeEventListener("resize", onResize);
       chart.remove();
       chartRef.current = null;
