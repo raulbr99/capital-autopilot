@@ -84,11 +84,17 @@ export function analyze(trades: TradeRecord[]): Analytics {
     .map((dir) => {
       const set = closed.filter((t) => t.direction === dir);
       const w = set.filter((t) => esGanadora(t.pnl)).length;
+      // Mismo criterio que el win rate de cabecera: los cierres a cero son
+      // empates y salen del denominador. Este cálculo se quedó con el reparto
+      // antiguo (w / total) cuando se unificó el resto en la pasada 54, así que
+      // "Largos vs cortos" y el KPI grande medían cosas distintas en la misma
+      // página — exactamente el fallo que aquella corrección venía a cerrar.
+      const l = set.filter((t) => esPerdedora(t.pnl)).length;
       return {
         dir,
         trades: set.length,
         wins: w,
-        winRate: set.length ? (w / set.length) * 100 : 0,
+        winRate: w + l ? (w / (w + l)) * 100 : 0,
         pnl: set.reduce((s, t) => s + (t.pnl || 0), 0),
       };
     })

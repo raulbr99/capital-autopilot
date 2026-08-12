@@ -33,6 +33,14 @@ export type Analytics = {
   byEpic: { epic: string; pnl: number; trades: number; winRate: number }[];
   pnlCurve: { ts: number; cum: number }[];
   dailyPnl: { date: string; pnl: number }[];
+  /** avgWin/avgLoss: euros ganados por cada euro perdido. */
+  payoff: number;
+  /** % de acierto necesario para no perder con ese payoff. */
+  breakevenWinRate: number;
+  /** Largos vs cortos: el desglose que destapó el agujero de los shorts. */
+  byDirection: { dir: "BUY" | "SELL"; trades: number; wins: number; winRate: number; pnl: number }[];
+  /** ¿hay muestra suficiente para que esto signifique algo? */
+  enough: boolean;
 };
 
 export function analyze(trades: TradeRecord[]): Analytics {
@@ -102,7 +110,36 @@ export function analyze(trades: TradeRecord[]): Analytics {
     .map(([date, pnl]) => ({ date, pnl }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  /**
+   * Estas cuatro métricas existían SOLO en la copia del cliente desde la
+   * pasada 5. Esta copia es la que consumen /api/bot/trades y /api/bot/report
+   * —el informe que lee el analista diario—, así que la IA que juzga el
+   * rendimiento no veía ni el umbral de equilibrio ni el reparto largos/cortos:
+   * justo los dos números que destaparon que los cortos eran el agujero.
+   */
+  const avgWin = wins.length ? grossWin / wins.length : 0;
+  const avgLoss = losses.length ? grossLoss / losses.length : 0;
+  const payoff = avgLoss > 0 ? avgWin / avgLoss : 0;
+  const byDirection = (["BUY", "SELL"] as const)
+    .map((dir) => {
+      const set = closed.filter((t) => t.direction === dir);
+      const w = set.filter((t) => esGanadora(t.pnl)).length;
+      const l = set.filter((t) => esPerdedora(t.pnl)).length;
+      return {
+        dir,
+        trades: set.length,
+        wins: w,
+        winRate: w + l ? (w / (w + l)) * 100 : 0,
+        pnl: set.reduce((s, t) => s + (t.pnl || 0), 0),
+      };
+    })
+    .filter((d) => d.trades > 0);
+
   return {
+    payoff,
+    breakevenWinRate: payoff > 0 ? 100 / (1 + payoff) : 0,
+    byDirection,
+    enough: closed.length >= 30,
     total: trades.length,
     closed: closed.length,
     open: trades.filter((t) => t.status === "open").length,
@@ -113,8 +150,8 @@ export function analyze(trades: TradeRecord[]): Analytics {
     grossWin,
     grossLoss,
     profitFactor: grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0,
-    avgWin: wins.length ? grossWin / wins.length : 0,
-    avgLoss: losses.length ? grossLoss / losses.length : 0,
+    avgWin,
+    avgLoss,
     expectancy: closed.length ? netPnl / closed.length : 0,
     maxDrawdown: maxDd,
     bestStreak: best,
