@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SectionHead, fmt, pf, Sparkline } from "./ui";
 
 type Metrics = {
@@ -44,6 +44,16 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
   const [resolution, setResolution] = useState("HOUR");
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  /**
+   * Validar el universo entero son 20 llamadas en serie: medido, entre 25 y 55
+   * segundos. No había forma de pararlo — el botón simplemente se deshabilitaba
+   * y ponía "…" — así que si te equivocabas de resolución tocaba esperar el
+   * minuto entero o recargar la página, tirando los resultados ya obtenidos.
+   */
+  const cancelar = useRef(false);
+  const aborto = useRef<AbortController | null>(null);
+  const [hecho, setHecho] = useState({ n: 0, total: 0 });
+  const [detenido, setDetenido] = useState(false);
 
   // Lo prometedor arriba: con 20 activos, una lista sin orden esconde lo poco
   // que de verdad tiene ventaja entre lo que no.
@@ -55,12 +65,24 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
     setLoading(true);
     setErr(null);
     setResults([]);
+    setDetenido(false);
+    cancelar.current = false;
+    setHecho({ n: 0, total: watchlist.length });
     const acc: WFResult[] = [];
     try {
       for (let i = 0; i < watchlist.length; i++) {
+        if (cancelar.current) {
+          setDetenido(true);
+          break;
+        }
         const epic = watchlist[i];
-        setProgress(`${epic} (${i + 1}/${watchlist.length})…`);
-        const r = await fetch(`/api/bot/walkforward?epic=${epic}&resolution=${resolution}&max=600`);
+        setProgress(epic);
+        setHecho({ n: i, total: watchlist.length });
+        aborto.current = new AbortController();
+        const r = await fetch(
+          `/api/bot/walkforward?epic=${epic}&resolution=${resolution}&max=600`,
+          { signal: aborto.current.signal }
+        );
         const data = await r.json();
         if (data.configured === false) {
           setErr("Conecta Capital.com para validar.");
@@ -68,13 +90,22 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
         }
         acc.push(data);
         setResults([...acc]);
+        setHecho({ n: i + 1, total: watchlist.length });
       }
     } catch (e: any) {
-      setErr(e.message);
+      // Abortar es una decisión del usuario, no un error que reportar
+      if (e?.name !== "AbortError") setErr(e.message);
+      else setDetenido(true);
     } finally {
       setLoading(false);
       setProgress("");
+      aborto.current = null;
     }
+  };
+
+  const detener = () => {
+    cancelar.current = true;
+    aborto.current?.abort();
   };
 
   return (
@@ -94,11 +125,12 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
               ))}
             </select>
             <button
-              onClick={run}
-              disabled={loading}
-              className="bg-accent px-3 py-1 font-display text-[11px] text-onaccent disabled:opacity-40"
+              onClick={loading ? detener : run}
+              className={`px-3 py-1 font-display text-[11px] ${
+                loading ? "border border-short text-short" : "bg-accent text-onaccent"
+              }`}
             >
-              {loading ? "…" : "▶ Validar"}
+              {loading ? "Detener" : "▶ Validar"}
             </button>
           </div>
         }
@@ -113,7 +145,27 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
           por debajo del 60 % es sobreajuste. Las cifras ya incluyen el coste de la horquilla.
         </p>
         {err && <p className="text-xs text-short">{err}</p>}
-        {loading && <p className="font-mono text-[11px] text-accent">Validando {progress}</p>}
+        {loading && (
+          <div className="mb-3">
+            <div className="mb-1 flex items-baseline justify-between font-mono text-[11px]">
+              <span className="text-accent">Validando {progress}…</span>
+              <span className="tabular-nums text-muted">
+                {hecho.n}/{hecho.total}
+              </span>
+            </div>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-industrial">
+              <div
+                className="h-full rounded-full bg-accent transition-all"
+                style={{ width: `${hecho.total ? (hecho.n / hecho.total) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        )}
+        {detenido && !loading && (
+          <p className="mb-3 font-mono text-[11px] text-muted">
+            Detenido en {results.length} de {hecho.total}. Lo validado se mantiene.
+          </p>
+        )}
 
         {results.length > 1 && (
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-industrial bg-base px-3 py-2 text-[11px]">
