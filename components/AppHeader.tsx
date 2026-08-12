@@ -91,12 +91,25 @@ export default function AppHeader({
 
       <div className="flex shrink-0 items-center gap-3">
         {/* Cotización de la cuenta: el dato que un broker nunca esconde */}
+        {/*
+          El equity estaba oculto por debajo de 640 px, así que en un móvil
+          desaparecía justo el dato que la primera pasada fijó como permanente:
+          cuánto hay en la cuenta. En el panel se ve igualmente en el hero, pero
+          en las mesas, Analítica, Diario y Lab no había ninguna otra forma de
+          saberlo sin volver atrás.
+          Medido a 390 px: el contenido llena los 350 útiles, así que en móvil se
+          enseña la versión corta —importe y variación del día, sin divisa— y la
+          navegación cede el ancho. Puede permitírselo desde que centra sola la
+          sección activa: su trabajo ahí es decir dónde estás, y eso lo sigue
+          haciendo aunque se vean menos pestañas.
+        */}
         {v.equity != null && (
-          <div className="hidden items-baseline gap-2 border-r border-industrial pr-3 sm:flex">
-            <span className="font-mono text-sm font-medium tabular-nums text-white">
-              {fmt(v.equity)} <span className="text-[11px] font-normal text-muted">{v.currency}</span>
+          <div className="flex items-baseline gap-1.5 border-r border-industrial pr-2 sm:gap-2 sm:pr-3">
+            <span className="font-mono text-[13px] font-medium tabular-nums text-white sm:text-sm">
+              {fmt(v.equity)}
+              <span className="hidden text-[11px] font-normal text-muted sm:inline"> {v.currency}</span>
             </span>
-            <span className={`font-mono text-[11px] tabular-nums ${pnlClass(v.dayPnlPct ?? 0)}`}>
+            <span className={`font-mono text-[10px] tabular-nums sm:text-[11px] ${pnlClass(v.dayPnlPct ?? 0)}`}>
               {pnlFmt(v.dayPnlPct ?? 0)}%
             </span>
           </div>
