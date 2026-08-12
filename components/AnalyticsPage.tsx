@@ -705,7 +705,17 @@ function salidaFiable(t: TradeRecord): boolean {
 
 function TradeTable({ trades }: { trades: TradeRecord[] }) {
   return (
-    <div className="max-h-[520px] overflow-auto">
+    <>
+    {/*
+      En móvil esta tabla mide 799 px dentro de una caja de 348: solo se veían
+      las columnas "Cierre" y "Activo", y la dirección, los precios, la duración
+      y el P&L quedaban fuera, alcanzables únicamente arrastrando en horizontal
+      dentro de la tarjeta. El auditor no lo marcaba porque el desbordamiento es
+      interno, no de la página. La tabla de posiciones ABIERTAS tiene su versión
+      en tarjetas desde la pasada 3; el historial —el registro de lo que el bot
+      hizo con el dinero— se quedó sin ella.
+    */}
+    <div className="hidden max-h-[520px] overflow-auto md:block">
       <table className="w-full text-left font-mono text-[12px]">
         <thead className="sticky top-0 bg-soft">
           <tr className="border-b border-industrial text-muted">
@@ -774,6 +784,65 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
           })}
         </tbody>
       </table>
+    </div>
+
+    {/* Móvil: una tarjeta por operación, con el resultado primero */}
+    <div className="max-h-[520px] space-y-2 overflow-y-auto p-3 md:hidden">
+      {trades.map((t) => {
+        const deIA = (t.reason || "").startsWith("IA:");
+        const motivo = (t.reason || "").replace(/^IA:\s*/, "");
+        return (
+          <div key={t.id} className="rounded-lg border border-industrial bg-base p-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="flex min-w-0 items-baseline gap-1.5">
+                <span className="truncate font-mono text-sm text-white">{t.epic}</span>
+                <span
+                  className={`shrink-0 rounded px-1 py-0.5 text-[8px] ${
+                    deIA ? "bg-accent/15 text-accent" : "bg-industrial text-muted"
+                  }`}
+                >
+                  {deIA ? "IA" : "TEC"}
+                </span>
+              </span>
+              <span className={`shrink-0 font-mono text-sm tabular-nums ${pnlClass(t.pnl || 0)}`}>
+                {t.pnl != null ? `${t.pnl >= 0 ? "+" : ""}${fmt(t.pnl)}` : "—"}
+              </span>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-y-2 font-mono text-[11px] tabular-nums">
+              <MiniCelda label="DIR" valor={t.direction === "BUY" ? "▲ LONG" : "▼ SHORT"} tono={t.direction === "BUY" ? "text-long" : "text-short"} />
+              <MiniCelda label="DURACIÓN" valor={duracion(t)} />
+              <MiniCelda
+                label="CIERRE"
+                valor={new Date(t.closedTs || t.ts).toLocaleString("es-ES", {
+                  day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+                })}
+              />
+              <div className="col-span-3">
+                <p className="tag">Entrada → salida</p>
+                <p className="mt-0.5 text-dim">
+                  {price(t.entry)}
+                  {salidaFiable(t) ? ` → ${price(t.exit!)}` : <span className="text-muted"> → sin registrar</span>}
+                </p>
+              </div>
+            </div>
+            {motivo && (
+              <p className="mt-2 border-t border-industrial pt-2 text-[11px] leading-snug text-muted">
+                {motivo}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+    </>
+  );
+}
+
+function MiniCelda({ label, valor, tono = "text-dim" }: { label: string; valor: string; tono?: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="tag">{label}</p>
+      <p className={`mt-0.5 truncate ${tono}`}>{valor}</p>
     </div>
   );
 }
