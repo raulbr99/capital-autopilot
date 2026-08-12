@@ -344,16 +344,48 @@ function tradeFromRow(r: any): TradeRecord {
 
 /* ---------------- EQUITY ---------------- */
 
+// Última fila escrita en esta instancia. Sin esto, CADA lectura del navegador
+// (una cada 6 s por pestaña) insertaba una fila: 1.317 al día para una curva que
+// solo dibuja 240 puntos, y sobre la base compartida con otro proyecto.
+let ultimaEquity: { ts: number; equity: number } | null = null;
+const EQUITY_MIN_MS = 120_000; // no más de una fila cada 2 min si nada cambia
+const EQUITY_MIN_DELTA = 0.01; // ni por variaciones por debajo del céntimo
+
 export async function appendEquity(pt: EquityPoint): Promise<void> {
   const s = await supa();
   if (!s) return;
+  if (
+    ultimaEquity &&
+    pt.ts - ultimaEquity.ts < EQUITY_MIN_MS &&
+    Math.abs(pt.equity - ultimaEquity.equity) < EQUITY_MIN_DELTA
+  ) {
+    return; // ni ha pasado tiempo ni ha cambiado el dinero: no hay nada que registrar
+  }
   try {
     await s.from("ap_equity").insert({
       ts: new Date(pt.ts).toISOString(),
       equity: pt.equity,
     });
+    ultimaEquity = { ts: pt.ts, equity: pt.equity };
   } catch {
     /* noop */
+  }
+}
+
+/**
+ * Poda el histórico de equity. La curva más larga que se dibuja son 240 puntos
+ * y el rango máximo del selector es "todo", así que guardar años de muestreo
+ * fino no aporta nada y la base es de plan gratuito compartido.
+ */
+export async function pruneEquity(dias = 120): Promise<number> {
+  const s = await supa();
+  if (!s) return 0;
+  try {
+    const corte = new Date(Date.now() - dias * 86_400_000).toISOString();
+    const { data } = await s.from("ap_equity").delete().lt("ts", corte).select("id");
+    return Array.isArray(data) ? data.length : 0;
+  } catch {
+    return 0;
   }
 }
 
