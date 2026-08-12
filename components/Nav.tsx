@@ -34,6 +34,15 @@ export default function Nav({ active }: { active: string }) {
   const caja = useRef<HTMLElement | null>(null);
   const actual = useRef<HTMLSpanElement | null>(null);
   const [bordes, setBordes] = useState({ izq: false, der: false });
+  const [menu, setMenu] = useState(false);
+
+  // Escape cierra el menú móvil, como el resto de capas de la app
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menu]);
 
   const medir = useCallback(() => {
     const n = caja.current;
@@ -91,8 +100,66 @@ export default function Nav({ active }: { active: string }) {
     };
   }, [medir]);
 
+  const plano = GROUPS.flat();
+  const actualItem = plano.find((i) => i.href === active);
+
   return (
-    <div className="relative min-w-0">
+    <>
+    {/*
+      MÓVIL: menú, no cinta.
+      La barra completa mide 531 px. En un teléfono el contenedor se queda entre
+      87 y 256 según la página, o sea entre un 52 % y un 84 % oculto, y ya he
+      chocado dos veces con eso raspando píxeles de la cabecera. Una cinta que
+      esconde siete de ocho destinos no es navegación: es un cajón horizontal
+      que hay que descubrir arrastrando. Un botón con la sección actual y un
+      desplegable con las ocho resuelve las dos preguntas —dónde estoy y a dónde
+      puedo ir— sin depender del gesto.
+    */}
+    <div className="relative sm:hidden">
+      <button
+        onClick={() => setMenu((m) => !m)}
+        aria-expanded={menu}
+        aria-haspopup="menu"
+        className="flex min-h-[36px] items-center gap-1.5 rounded-lg border border-industrial px-2.5 text-[12.5px] font-medium text-white"
+      >
+        <span className="max-w-[110px] truncate">{actualItem?.label ?? "Menú"}</span>
+        <span className={`text-[9px] text-muted transition-transform ${menu ? "rotate-180" : ""}`}>▼</span>
+      </button>
+      {menu && (
+        <>
+          <button
+            aria-label="Cerrar menú"
+            onClick={() => setMenu(false)}
+            className="fixed inset-0 z-40 cursor-default"
+          />
+          <div
+            role="menu"
+            className="absolute left-0 top-full z-50 mt-1.5 w-[190px] overflow-hidden rounded-lg border border-cement bg-soft shadow-elevated"
+          >
+            {GROUPS.map((grupo, gi) => (
+              <div key={gi} className={gi > 0 ? "border-t border-industrial" : ""}>
+                {grupo.map((it) => (
+                  <Link
+                    key={it.href}
+                    href={it.href}
+                    role="menuitem"
+                    onClick={() => setMenu(false)}
+                    aria-current={it.href === active ? "page" : undefined}
+                    className={`block px-3.5 py-2.5 text-[13px] ${
+                      it.href === active ? "bg-raised font-medium text-white" : "text-dim"
+                    }`}
+                  >
+                    {it.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+
+    <div className="relative hidden min-w-0 sm:block">
       <nav
         ref={caja}
         onScroll={medir}
@@ -142,5 +209,6 @@ export default function Nav({ active }: { active: string }) {
         />
       )}
     </div>
+    </>
   );
 }
