@@ -52,9 +52,31 @@ export default function Nav({ active }: { active: string }) {
     medir();
   }, [active, medir]);
 
+  /**
+   * Re-centrar cuando la barra CAMBIA DE ANCHO, no solo al montar.
+   *
+   * El equity de la cabecera aparece cuando responde la API, uno o dos segundos
+   * después de pintar: la navegación se estrecha entonces y el desplazamiento
+   * calculado antes deja de mostrar la sección activa. En /analytics a 390 px
+   * se veía "…ommodities" en lugar de "Analítica" — el mismo fallo que el
+   * observador de la curva de equity y el del carril de decisiones: medir una
+   * sola vez en un panel donde el contenido llega después.
+   */
   useEffect(() => {
+    const n = caja.current;
+    if (!n) return;
+    const recolocar = () => {
+      const el = actual.current;
+      if (el) n.scrollLeft = Math.max(0, el.offsetLeft - (n.clientWidth - el.offsetWidth) / 2);
+      medir();
+    };
+    const obs = new ResizeObserver(recolocar);
+    obs.observe(n);
     window.addEventListener("resize", medir);
-    return () => window.removeEventListener("resize", medir);
+    return () => {
+      obs.disconnect();
+      window.removeEventListener("resize", medir);
+    };
   }, [medir]);
 
   return (
