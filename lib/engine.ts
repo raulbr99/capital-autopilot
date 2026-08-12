@@ -945,7 +945,19 @@ async function reconcileClosedTrades(
       t.epic
     );
   }
+
+  // Pausa tras pérdida. El guardarraíl estaba configurado y VISIBLE en el panel
+  // ("Pausa tras pérdida: 30 min") pero nunca se activaba: cooldownUntil se leía
+  // y se guardaba, y no lo asignaba nadie. Ahora una jornada mala deja de
+  // encadenar entradas. Poner cooldownMin a 0 lo desactiva.
+  const mins = b.config.risk.cooldownMin;
+  if (per < 0 && mins > 0 && reallyClosed.length) {
+    b.cooldownUntil = Date.now() + mins * 60_000;
+    logN("info", `⏸️ Pausa de ${mins} min tras cierre en pérdida (no se abren nuevas entradas)`);
+  }
+
   b.prevDeposit = deposit;
+  await saveRuntime();
 }
 
 function base(
