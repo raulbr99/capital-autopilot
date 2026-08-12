@@ -4,6 +4,10 @@ import { bot } from "@/lib/store";
 import { loadConfig, getTrades } from "@/lib/db";
 import { analyze } from "@/lib/analytics";
 
+/** Dos decimales por defecto: el informe lo lee un modelo, no una calculadora. */
+const redondear = (n: number, d = 2) =>
+  Number.isFinite(n) ? Math.round(n * 10 ** d) / 10 ** d : n;
+
 export const dynamic = "force-dynamic";
 
 /**
@@ -44,14 +48,39 @@ export async function GET() {
         level: p.level,
         upl: p.upl,
       })),
+      /**
+       * Lo que lee el analista diario.
+       *
+       * Este bloque escogía los campos a mano, así que las cuatro métricas que
+       * se añadieron a analyze() en la pasada 93 —payoff, umbral de equilibrio,
+       * reparto largos/cortos y si hay muestra suficiente— nunca llegaron aquí.
+       * Justo las que dan sentido al resto: un 36 % de acierto no significa
+       * nada sin saber que el equilibrio está en el 45 %, y el problema de este
+       * bot son los cortos (25 % frente al 46 % de los largos), cosa invisible
+       * sin el desglose. El analista llevaba desde entonces juzgando el
+       * rendimiento con la mitad de los datos.
+       *
+       * Los números van redondeados: antes salían dobles en crudo
+       * ("profitFactor": 0.6843305843130374), que no aportan precisión y sí
+       * ruido a un texto que lee un modelo.
+       */
       performance: {
         closed: analytics.closed,
         winRate: analytics.winRate,
-        netPnl: analytics.netPnl,
-        profitFactor: analytics.profitFactor,
-        maxDrawdown: analytics.maxDrawdown,
-        expectancy: analytics.expectancy,
-        byEpic: analytics.byEpic,
+        netPnl: redondear(analytics.netPnl),
+        profitFactor: redondear(analytics.profitFactor),
+        maxDrawdown: redondear(analytics.maxDrawdown),
+        expectancy: redondear(analytics.expectancy),
+        payoff: redondear(analytics.payoff),
+        breakevenWinRate: redondear(analytics.breakevenWinRate, 1),
+        /** Con menos de 30 cerradas, todo lo de arriba es ruido estadístico. */
+        muestraSuficiente: analytics.enough,
+        byDirection: analytics.byDirection.map((d) => ({
+          ...d,
+          winRate: redondear(d.winRate, 1),
+          pnl: redondear(d.pnl),
+        })),
+        byEpic: analytics.byEpic.map((e) => ({ ...e, winRate: redondear(e.winRate, 1) })),
       },
       config: {
         watchlist: cfg.watchlist,
