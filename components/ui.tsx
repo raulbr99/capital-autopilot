@@ -600,3 +600,29 @@ export function variacion(
   if (!base) return null;
   return { pct: ((precio - base) / base) * 100, dia };
 }
+
+/**
+ * Aviso de "sin red", compartido.
+ *
+ * Vivía escrito a mano dentro del panel principal. En las mesas, Analítica, el
+ * Diario y el Lab, quedarse sin conexión solo cambiaba el punto de la cabecera
+ * — sin decir que las cifras son las últimas conocidas, ni lo más importante:
+ * que el bot sigue operando en el servidor y que tus stops no dependen de este
+ * teléfono. Es el mismo argumento que llevó a unificar el pie: un aviso que
+ * solo sale en una pantalla no es un aviso.
+ */
+export function AvisoSinConexion() {
+  const online = useOnline();
+  if (online) return null;
+  return (
+    <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-short/30 bg-short/5 px-4 py-3">
+      <span aria-hidden>📡</span>
+      <p className="text-[12.5px] leading-relaxed text-dim">
+        <span className="font-medium text-short">Sin conexión.</span> Estás viendo la última
+        información conocida, no la actual.{" "}
+        <span className="text-white">El bot sigue operando en el servidor</span>: sus decisiones y tus
+        stops no dependen de este dispositivo.
+      </p>
+    </div>
+  );
+}

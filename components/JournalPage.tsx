@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { JournalEntry } from "./types";
 import AppHeader from "./AppHeader";
-import { Skeleton, usePoll, pl, AppFooter } from "./ui";
+import { Skeleton, usePoll, pl, AppFooter, AvisoSinConexion } from "./ui";
 import JournalEntryCard, { summarize } from "./JournalEntryCard";
 import LessonsPanel from "./LessonsPanel";
 
@@ -74,6 +74,7 @@ export default function JournalPage() {
       <AppHeader active="/journal" />
 
       <main className="mx-auto max-w-[900px] px-5 py-6 md:px-8">
+        <AvisoSinConexion />
         <div className="mb-5">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-white">Diario del Gestor IA</h1>
           <p className="mt-1 text-sm text-dim">

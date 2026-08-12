@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -260,7 +260,7 @@ export default function Dashboard() {
       )}
       <CommandPalette commands={commands} />
 
-      <Ticker evals={evals} />
+      <Ticker evals={evals} obsoleta={!online} />
 
       <AppHeader
         active="/"
@@ -295,19 +295,7 @@ export default function Dashboard() {
             aterrizaba sin orientación ninguna. Visualmente lo aporta la marca. */}
         <h1 className="sr-only">Panel de mando · Capital Autopilot</h1>
 
-        {/* Sin red, el caparazón carga de la caché y los datos no llegan nunca:
-            sin este aviso, la pantalla se queda 'cargando' sin explicación. */}
-        {!online && (
-          <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-short/30 bg-short/5 px-4 py-3">
-            <span aria-hidden>📡</span>
-            <p className="text-[12.5px] leading-relaxed text-dim">
-              <span className="font-medium text-short">Sin conexión.</span> Estás viendo la última
-              información conocida, no la actual.{" "}
-              <span className="text-white">El bot sigue operando en el servidor</span>: sus decisiones y
-              tus stops no dependen de este dispositivo.
-            </p>
-          </div>
-        )}
+        <AvisoSinConexion />
         {!configured && <ConfigWarning />}
 
         {/* HERO */}
@@ -652,12 +640,27 @@ function DesksOverview({
  * interna del motor y no lo que se espera leer en una cinta.
  * Se pausa al pasar el ratón para poder leer un valor concreto.
  */
-function Ticker({ evals }: { evals: Snapshot["evals"] }) {
+function Ticker({ evals, obsoleta }: { evals: Snapshot["evals"]; obsoleta?: boolean }) {
   if (evals.length === 0) return null;
   const row = [...evals, ...evals];
+  /**
+   * Sin red, la cinta seguía desfilando con las últimas cotizaciones y sus
+   * flechas de subida y bajada, indistinguible de una cinta viva. En un panel
+   * de operativa eso es lo peor que puede hacer: el resto de la pantalla avisa
+   * de que los datos son antiguos y la cinta —que es lo que más se mira de
+   * reojo— sigue afirmando lo contrario. Se detiene y se atenúa.
+   */
   return (
-    <div className="group overflow-hidden border-b border-industrial bg-base" aria-hidden>
-      <div className="flex w-max animate-ticker whitespace-nowrap py-2 group-hover:[animation-play-state:paused]">
+    <div
+      className={`group overflow-hidden border-b border-industrial bg-base ${obsoleta ? "opacity-40 grayscale" : ""}`}
+      aria-hidden
+      title={obsoleta ? "Sin conexión: cotizaciones detenidas en la última lectura" : undefined}
+    >
+      <div
+        className={`flex w-max whitespace-nowrap py-2 ${
+          obsoleta ? "" : "animate-ticker group-hover:[animation-play-state:paused]"
+        }`}
+      >
         {row.map((e, i) => {
           // Misma ventana (~24 h) para todos los símbolos: una cinta existe
           // para comparar de un vistazo, y antes cada uno medía su propio plazo.

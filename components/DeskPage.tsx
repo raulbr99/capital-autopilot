@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion } from "./ui";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -165,6 +165,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
       <AppHeader active={`/${category}`} />
 
       <main className="mx-auto max-w-[1100px] px-5 py-6 md:px-8">
+        <AvisoSinConexion />
         {/* Barra de mesa: identidad + estado de sesión + acción principal */}
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">

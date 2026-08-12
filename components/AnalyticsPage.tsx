@@ -19,7 +19,7 @@ import type { TradeRecord, DeskCategory } from "./types";
  * único fichero duplicado.
  */
 import { analyze } from "@/lib/analytics";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -133,6 +133,7 @@ export default function AnalyticsPage() {
       <AppHeader active="/analytics" />
 
       <main className="mx-auto max-w-[1400px] px-5 py-6 md:px-8">
+        <AvisoSinConexion />
         {/* título + filtros */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

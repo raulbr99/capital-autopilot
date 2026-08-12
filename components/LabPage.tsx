@@ -1,6 +1,6 @@
 "use client";
 
-import { AppFooter } from "./ui";
+import { AppFooter, AvisoSinConexion } from "./ui";
 
 import { useCallback, useEffect, useState } from "react";
 import type { Snapshot } from "./types";
@@ -72,6 +72,7 @@ export default function LabPage() {
       <AppHeader active="/lab" />
 
       <main className="mx-auto max-w-[1100px] px-5 py-6 md:px-8">
+        <AvisoSinConexion />
         <div className="mb-4">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-white">Lab</h1>
           <p className="mt-1 text-sm text-dim">Estrategia, validación y configuración del bot.</p>
