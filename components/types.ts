@@ -1,3 +1,54 @@
+/**
+ * Tipos del cliente.
+ *
+ * Los que comparte con el motor ya NO se declaran aquí: se reexportan desde
+ * lib/model.ts, que es un módulo de solo tipos. Antes eran ocho copias a mano y
+ * cada campo nuevo había que añadirlo en los dos sitios; olvidarlo no rompía la
+ * compilación, simplemente dejaba a una mitad de la aplicación sin ver el dato.
+ */
+import type {
+  BotConfig,
+  DeskCategory,
+  EquityPoint,
+  Instrument,
+  LogEntry,
+  NotifyConfig,
+  RiskConfig,
+  TradeRecord,
+} from "@/lib/model";
+export type {
+  BotConfig,
+  DeskCategory,
+  EquityPoint,
+  Instrument,
+  LogEntry,
+  NotifyConfig,
+  RiskConfig,
+  TradeRecord,
+};
+export { RESOLUTIONS, DEFAULT_RESOLUTION } from "@/lib/model";
+export type { StrategyConfig } from "@/lib/strategy";
+
+/**
+ * Posición abierta tal y como la pinta el cliente. Su gemelo vive en
+ * lib/engine.ts y ese SÍ es inevitable: engine.ts importa Capital, Supabase y
+ * el motor entero, así que no puede cruzar al navegador. Anotado en ambos lados.
+ */
+export type OpenPos = {
+  key: string;
+  epic: string;
+  direction: "BUY" | "SELL";
+  size: number;
+  entry: number;
+  upl: number;
+  dealId?: string;
+  stopLevel?: number | null;
+  limitLevel?: number | null;
+  currentPrice?: number | null;
+  /** Momento de apertura (ISO), para marcarlo en el gráfico. */
+  openedAt?: string;
+};
+
 export type Signal = {
   type: "BUY" | "SELL" | "FLAT";
   confidence: number;
@@ -15,33 +66,7 @@ export type EpicEval = {
   spark: number[];
 };
 
-export type DeskCategory = "forex" | "crypto" | "stocks" | "commodities";
-export type Instrument = { epic: string; resolution: string; regimeFilter?: boolean; category?: DeskCategory; longOnly?: boolean; paused?: boolean };
-export const RESOLUTIONS = [
-  "MINUTE",
-  "MINUTE_5",
-  "MINUTE_15",
-  "MINUTE_30",
-  "HOUR",
-  "HOUR_4",
-  "DAY",
-  "WEEK",
-];
 
-export type OpenPos = {
-  key: string;
-  epic: string;
-  direction: "BUY" | "SELL";
-  size: number;
-  entry: number;
-  upl: number;
-  dealId?: string;
-  stopLevel?: number | null;
-  limitLevel?: number | null;
-  currentPrice?: number | null;
-  /** Momento de apertura (ISO), para marcarlo en el gráfico. */
-  openedAt?: string;
-};
 
 export type Account = {
   accountId: string;
@@ -52,86 +77,17 @@ export type Account = {
   currency: string;
 };
 
-export type LogEntry = {
-  id: string;
-  ts: number;
-  level: "info" | "signal" | "trade" | "veto" | "error" | "kill";
-  epic?: string;
-  message: string;
-};
 
-export type TradeRecord = {
-  id: string;
-  ts: number;
-  closedTs?: number;
-  epic: string;
-  direction: "BUY" | "SELL";
-  size: number;
-  entry: number;
-  exit?: number;
-  pnl?: number;
-  status: "open" | "closed";
-  dryRun: boolean;
-  reason: string;
-};
 
-export type StrategyConfig = {
-  fast: number;
-  slow: number;
-  rsiPeriod: number;
-  rsiBuyBelow: number;
-  rsiSellAbove: number;
-  minConfidence: number;
-  useRegimeFilter: boolean;
-  adxPeriod: number;
-  adxThreshold: number;
-};
 
-export type RiskConfig = {
-  sizingMode: "fixed" | "percent" | "margin";
-  riskPercent: number;
-  marginPct?: number;
-  useAtrStops: boolean;
-  atrPeriod: number;
-  atrStopMult: number;
-  atrTpMult: number;
-  maxDailyLossPct: number;
-  maxTradesPerDay: number;
-  cooldownMin: number;
-  activeManage?: boolean;
-  breakevenAtr?: number;
-  trailAtr?: number;
-  trailDistAtr?: number;
-  scaleOutAtr?: number;
-  scaleOutPct?: number;
-};
 
-export type NotifyConfig = {
-  telegram: boolean;
-  discord: boolean;
-  onTrade: boolean;
-  onKill: boolean;
-};
 
-export type BotConfig = {
-  enabled: boolean;
-  aiFilter: boolean;
-  aiCooldownMin: number;
-  pmMode: boolean;
-  cloudPm: boolean;
-  committee: boolean;
-  committeeMinApprovals?: number;
-  committeeMinApprovalsShort?: number;
-  instruments: Instrument[];
-  watchlist: string[];
-  sizePerTrade: number;
-  maxPerDesk: number;
-  stopDistance: number;
-  profitDistance: number;
-  strategy: StrategyConfig;
-  risk: RiskConfig;
-  notify: NotifyConfig;
-};
+
+
+
+
+
+
 
 export type State = {
   config: BotConfig;
