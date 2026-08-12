@@ -24,7 +24,16 @@ const RES = [
   { k: "WEEK", label: "1W", max: 150 },
 ];
 
-export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose: () => void }) {
+export default function PositionChart({
+  pos,
+  onClose,
+  divisa = "",
+}: {
+  pos: OpenPos;
+  onClose: () => void;
+  /** Divisa de la cuenta: el P&L de la cabecera llevaba un € fijo. */
+  divisa?: string;
+}) {
   const [res, setRes] = useState("HOUR_4");
   const [loading, setLoading] = useState(true);
   const [empty, setEmpty] = useState(false);
@@ -247,7 +256,10 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
             <span className={`font-mono text-xs ${pos.direction === "BUY" ? "text-long" : "text-short"}`}>
               {pos.direction === "BUY" ? "▲ LONG" : "▼ SHORT"}
             </span>
-            <span className={`font-mono text-xs ${pnlClass(pos.upl)}`}>{pnlFmt(pos.upl)} €</span>
+            <span className={`font-mono text-xs ${pnlClass(pos.upl)}`}>
+              {pnlFmt(pos.upl)}
+              {divisa && <span className="ml-1 text-muted">{divisa}</span>}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex overflow-hidden rounded-md border border-industrial">

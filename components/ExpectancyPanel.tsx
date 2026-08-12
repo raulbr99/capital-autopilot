@@ -28,7 +28,19 @@ type Exp = {
   enough: boolean;
 };
 
-export default function ExpectancyPanel({ className = "" }: { className?: string }) {
+export default function ExpectancyPanel({
+  className = "",
+  divisa = "",
+}: {
+  className?: string;
+  /**
+   * Divisa de la cuenta. El componente llevaba un "€" escrito a fuego en la
+   * proyección —y la variable se llamaba `eur`—, así que una cuenta en libras o
+   * dólares habría mostrado sus importes rotulados como euros. Todo lo demás
+   * del panel ya toma la divisa de la cuenta; esta esquina se quedó atrás.
+   */
+  divisa?: string;
+}) {
   const [d, setD] = useState<Exp | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -80,11 +92,11 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
         <StatCard
           label="Por operación"
           value={`${pnlFmt(d.expectancy)}`}
-          unit="€"
+          unit={divisa || undefined}
           tone={positive ? "long" : d.expectancy < -0.005 ? "short" : undefined}
         />
         <StatCard label="Profit factor" value={pf(d.profitFactor)} tone={d.profitFactor >= 1 ? "long" : "short"} />
-        <StatCard label="Resultado neto" value={`${pnlFmt(d.netTotal)}`} unit="€" tone={d.netTotal >= 0 ? "long" : "short"} />
+        <StatCard label="Resultado neto" value={`${pnlFmt(d.netTotal)}`} unit={divisa || undefined} tone={d.netTotal >= 0 ? "long" : "short"} />
       </div>
 
       {/* mecánica: ganas X / pierdes Y → equilibrio */}
@@ -115,8 +127,8 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
           Proyección · a tu ritmo de {d.tradesPerWeek.toFixed(1)} operaciones/semana
         </p>
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial">
-          <Proj label="Por semana" eur={d.projWeek} pct={d.projWeekPct} />
-          <Proj label="Por mes" eur={d.projMonth} pct={d.projMonthPct} big />
+          <Proj label="Por semana" importe={d.projWeek} pct={d.projWeekPct} divisa={divisa} />
+          <Proj label="Por mes" importe={d.projMonth} pct={d.projMonthPct} divisa={divisa} big />
         </div>
       </div>
 
@@ -137,12 +149,25 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
   );
 }
 
-function Proj({ label, eur, pct, big }: { label: string; eur: number; pct: number; big?: boolean }) {
+function Proj({
+  label,
+  importe,
+  pct,
+  divisa,
+  big,
+}: {
+  label: string;
+  importe: number;
+  pct: number;
+  divisa?: string;
+  big?: boolean;
+}) {
   return (
     <div className="bg-soft p-4">
       <p className="tag">{label}</p>
-      <p className={`mt-1.5 font-mono ${big ? "text-2xl" : "text-xl"} font-medium tracking-tight ${pnlClass(eur)}`}>
-        {pnlFmt(eur)} <span className="text-xs font-normal text-muted">€</span>
+      <p className={`mt-1.5 font-mono ${big ? "text-2xl" : "text-xl"} font-medium tracking-tight ${pnlClass(importe)}`}>
+        {pnlFmt(importe)}
+        {divisa && <span className="ml-1 text-xs font-normal text-muted">{divisa}</span>}
       </p>
       <p className={`mt-0.5 font-mono text-[11px] ${pnlClass(pct)}`}>{pnlFmt(pct)}%</p>
     </div>

@@ -60,10 +60,12 @@ export default function PositionsTable({
   onClose,
   busy,
   cargando,
+  divisa,
 }: {
   positions: OpenPos[];
   onClose: (p: OpenPos) => void;
   cargando?: boolean;
+  divisa?: string;
   busy: boolean;
 }) {
   const [chartPos, setChartPos] = useState<OpenPos | null>(null);
@@ -283,7 +285,7 @@ export default function PositionsTable({
         </>
       )}
     </div>
-    {chartPos && <PositionChart pos={chartPos} onClose={() => setChartPos(null)} />}
+    {chartPos && <PositionChart pos={chartPos} onClose={() => setChartPos(null)} divisa={divisa} />}
     </>
   );
 }
