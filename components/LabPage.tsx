@@ -1,5 +1,7 @@
 "use client";
 
+import { AppFooter } from "./ui";
+
 import { useCallback, useEffect, useState } from "react";
 import type { Snapshot } from "./types";
 import AppHeader from "./AppHeader";
@@ -135,6 +137,7 @@ export default function LabPage() {
             <WalkForward watchlist={cfg?.watchlist ?? []} />
           </div>
         )}
+              <AppFooter />
       </main>
     </div>
   );

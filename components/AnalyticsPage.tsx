@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TradeRecord, DeskCategory } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -325,10 +325,7 @@ export default function AnalyticsPage() {
           </>
         )}
 
-        <footer className="mt-10 flex items-center justify-between border-t border-industrial py-6 text-[11px] text-muted">
-          <p>Capital Autopilot</p>
-          <p>Cuenta real · no es consejo financiero</p>
-        </footer>
+        <AppFooter />
       </main>
     </div>
   );

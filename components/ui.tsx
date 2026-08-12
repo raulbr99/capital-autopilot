@@ -497,3 +497,27 @@ export function deskMap(instruments: { epic: string; category?: string }[] | und
   for (const i of instruments ?? []) m.set(i.epic, i.category || "otros");
   return m;
 }
+
+/**
+ * Pie único de la aplicación.
+ *
+ * Estaba escrito a mano en el panel y en Analítica —con textos distintos, uno
+ * con "órdenes reales" y el otro sin— y NO EXISTÍA en las cuatro mesas, el
+ * Diario ni el Lab. O sea que el aviso de que esto opera una cuenta real
+ * faltaba precisamente en las pantallas donde se cierran posiciones y se lanza
+ * al Gestor, que es donde más falta hace. Mismo argumento que llevó a unificar
+ * la cabecera: si un aviso solo aparece en algunas pantallas, no es un aviso.
+ *
+ * En Analítica además no se apilaba en móvil, así que los dos textos se
+ * peleaban por el ancho a 375 px.
+ */
+export function AppFooter() {
+  return (
+    <footer className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-industrial py-6 text-[11px] text-muted sm:flex-row">
+      <p>Capital Autopilot</p>
+      <p className="text-center sm:text-right">
+        Cuenta real · órdenes reales · no es consejo financiero
+      </p>
+    </footer>
+  );
+}

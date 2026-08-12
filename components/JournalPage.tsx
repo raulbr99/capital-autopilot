@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { JournalEntry } from "./types";
 import AppHeader from "./AppHeader";
-import { Skeleton, usePoll, pl } from "./ui";
+import { Skeleton, usePoll, pl, AppFooter } from "./ui";
 import JournalEntryCard, { summarize } from "./JournalEntryCard";
 import LessonsPanel from "./LessonsPanel";
 
@@ -131,6 +131,7 @@ export default function JournalPage() {
             ))}
           </div>
         )}
+              <AppFooter />
       </main>
     </div>
   );
