@@ -855,7 +855,20 @@ async function manageOpenPositions(
     ) {
       try {
         const sl = roundTo(target, dec);
-        await updatePosition(p.dealId, { stopLevel: sl });
+        /**
+         * El PUT de Capital REEMPLAZA las órdenes asociadas a la posición: lo
+         * que no se reenvía, se borra. Como aquí solo iba `stopLevel`, el
+         * take-profit que el motor había puesto al abrir desaparecía en el
+         * primer ajuste de breakeven o trailing — en silencio, sin error y sin
+         * traza en el registro. Comprobado contra Capital: las 5 posiciones
+         * vivas tenían stop y `limitLevel: null`, y la columna TP de la tabla
+         * llevaba tiempo enseñando "—" en todas las filas.
+         * Reenviar el objetivo actual lo conserva.
+         */
+        await updatePosition(p.dealId, {
+          stopLevel: sl,
+          ...(p.limitLevel != null ? { limitLevel: p.limitLevel } : {}),
+        });
         logN("trade", `🔧 ${p.epic}: SL → ${sl} (${inAtr >= r.trailAtr ? "trailing" : "breakeven"} +${inAtr.toFixed(1)}×ATR)`, p.epic);
       } catch (e: any) {
         logN("info", `${p.epic}: no se pudo mover el SL (${(e.message || "").slice(0, 50)})`, p.epic);

@@ -2,11 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export const fmt = (n: number, d = 2) =>
-  (Number.isFinite(n) ? n : 0).toLocaleString("en-US", {
+export const fmt = (n: number, d = 2) => {
+  const v = Number.isFinite(n) ? n : 0;
+  // Cero negativo. toLocaleString escribe el signo ANTES de redondear, así que
+  // un flotante de −0,001 € salía como "−0.00": un importe que es cero pero
+  // se lee como pérdida. Pasaba en el P&L flotante de la cabecera de cuenta y
+  // en la fila de totales de las posiciones, los dos sitios donde se mira si
+  // hoy se está ganando o perdiendo. Si al redondear da 0, no lleva signo.
+  const redondeado = Number(v.toFixed(d));
+  return (redondeado === 0 ? 0 : v).toLocaleString("en-US", {
     minimumFractionDigits: d,
     maximumFractionDigits: d,
   });
+};
 
 export const pf = (n: number) =>
   n === Infinity ? "∞" : Number.isFinite(n) ? n.toFixed(2) : "—";
