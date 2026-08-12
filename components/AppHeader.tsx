@@ -42,7 +42,7 @@ export default function AppHeader({
   usePoll(
     () => {
       if (injected) return;
-      fetch("/api/bot/tick")
+      fetch("/api/bot/tick?slim=2")
         .then((r) => r.json())
         .then((d) => {
           if (d?.error) return; // el broker falló: no refrescamos lastOk

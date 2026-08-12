@@ -52,7 +52,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     // El universo manda: la clasificación por mesa se lee del config en vivo
-    fetch("/api/bot/tick")
+    fetch("/api/bot/tick?slim=1")
       .then((r) => r.json())
       .then((d) => {
         setInstruments(d?.state?.config?.instruments ?? []);

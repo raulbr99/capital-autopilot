@@ -42,7 +42,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const load = useCallback(async () => {
     try {
       const [s, j] = await Promise.all([
-        fetch("/api/bot/tick").then((r) => r.json()),
+        fetch("/api/bot/tick?slim=1").then((r) => r.json()),
         fetch("/api/bot/journal").then((r) => r.json()),
       ]);
       setSnap(s);
