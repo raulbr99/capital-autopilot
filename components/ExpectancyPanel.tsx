@@ -102,8 +102,8 @@ export default function ExpectancyPanel({
       {/* mecánica: ganas X / pierdes Y → equilibrio */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3.5 text-[12.5px]">
         <span className="text-dim">
-          Ganas <b className="font-mono text-long">{fmt(d.avgWin)}€</b> · pierdes{" "}
-          <b className="font-mono text-short">{fmt(d.avgLoss)}€</b>
+          Ganas <b className="font-mono text-long">{fmt(d.avgWin)}{divisa && ` ${divisa}`}</b> · pierdes{" "}
+          <b className="font-mono text-short">{fmt(d.avgLoss)}{divisa && ` ${divisa}`}</b>
           <span className="ml-1 text-muted">(R {d.payoff.toFixed(2)}:1)</span>
         </span>
         {d.breakevenWinRate != null && (

@@ -195,7 +195,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (!snap) return;
     const signo = dayPnlPct >= 0 ? "+" : "";
-    document.title = `${signo}${dayPnlPct.toFixed(2)}% · ${fmt(lastEquity)} € — Capital Autopilot`;
+    document.title = `${signo}${dayPnlPct.toFixed(2)}% · ${fmt(lastEquity)}${
+      acc?.currency ? ` ${acc.currency}` : ""
+    } — Capital Autopilot`;
   }, [snap, dayPnlPct, lastEquity]);
 
   const markers = trades
