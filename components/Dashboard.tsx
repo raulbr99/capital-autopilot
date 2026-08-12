@@ -367,7 +367,7 @@ export default function Dashboard() {
                 value={loading ? null : `${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
                 tone={Math.abs(dayPnlPct) < 0.005 ? undefined : dayPnlPct > 0 ? "long" : "short"}
               />
-              <MiniStat label="TRADES HOY" value={loading ? null : `${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
+              <MiniStat label="OPERACIONES HOY" value={loading ? null : `${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
               <MiniStat
                 label="POSICIONES"
                 value={loading ? null : `${positions.length}`}

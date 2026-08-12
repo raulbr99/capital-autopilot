@@ -112,7 +112,7 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
       {/* proyección a la frecuencia observada */}
       <div className="border-t border-industrial p-5">
         <p className="tag mb-3">
-          Proyección · a tu ritmo de {d.tradesPerWeek.toFixed(1)} trades/sem
+          Proyección · a tu ritmo de {d.tradesPerWeek.toFixed(1)} operaciones/semana
         </p>
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial">
           <Proj label="Por semana" eur={d.projWeek} pct={d.projWeekPct} />

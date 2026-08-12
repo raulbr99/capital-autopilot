@@ -118,7 +118,7 @@ export default function RiskPanel({
             value={r.riskPercent}
             step={0.25}
             busy={busy}
-            hint="% del capital que arriesgas en cada trade (lo que pierdes si salta el stop). Conservador: 1-2%."
+            hint="% del capital que arriesgas en cada operación (lo que pierdes si salta el stop). Conservador: 1-2%."
             onCommit={(v) => patch({ risk: { riskPercent: v } })}
           />
         ) : (
@@ -127,7 +127,7 @@ export default function RiskPanel({
             value={cfg.sizePerTrade}
             step={0.01}
             busy={busy}
-            hint="Unidades fijas por trade, sin escalar con el capital."
+            hint="Unidades fijas por operación, sin escalar con el capital."
             onCommit={(v) => patch({ sizePerTrade: v })}
           />
         )}
@@ -185,7 +185,7 @@ export default function RiskPanel({
               value={r.maxTradesPerDay}
               step={1}
               busy={busy}
-              hint="Tope de trades que abre por día."
+              hint="Tope de operaciones que abre por día."
               onCommit={(v) => patch({ risk: { maxTradesPerDay: v } })}
             />
             <NumField
@@ -194,7 +194,7 @@ export default function RiskPanel({
               value={r.cooldownMin}
               step={5}
               busy={busy}
-              hint="Minutos sin operar después de un trade perdedor."
+              hint="Minutos sin operar después de una operación perdedora."
               onCommit={(v) => patch({ risk: { cooldownMin: v } })}
             />
             <NumField

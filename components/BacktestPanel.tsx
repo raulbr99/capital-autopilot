@@ -103,7 +103,7 @@ export default function BacktestPanel() {
         {err && <p className="text-xs text-short">{err}</p>}
         {!res && !err && !loading && (
           <p className="text-xs text-muted">
-            Corre la estrategia actual sobre histórico de cada activo de la watchlist
+            Corre la estrategia actual sobre histórico de cada activo del universo
             <span className="text-dim"> antes de arriesgar</span>. En marcos por debajo de una hora la
             horquilla se come el resultado, así que un mal dato ahí dice más del marco que de la estrategia.
           </p>
@@ -172,7 +172,7 @@ export default function BacktestPanel() {
               </p>
             )}
             <p className="mb-3 text-[10px] leading-relaxed text-muted">
-              Cada trade arriesga el mismo % de un equity nocional de 1.000 € → el P&L es
+              Cada operación arriesga el mismo % de un equity nocional de 1.000 € → el P&L es
               comparable entre activos (BTC ya no se dispara). El <span className="text-dim">retorno %</span> es
               la métrica fiable; el P&L nocional es solo su traducción a €.
             </p>
