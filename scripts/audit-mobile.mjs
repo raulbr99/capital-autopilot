@@ -70,6 +70,36 @@ for (const dev of DEVICES) {
             }
           }
         }
+        /**
+         * Scroll horizontal INTERNO.
+         *
+         * El bucle de arriba descarta a propósito lo que desborda dentro de un
+         * contenedor con overflow, para no dar falsos positivos. El coste de esa
+         * decisión: durante 100 pasadas no vio que la tabla del historial medía
+         * 799 px dentro de una caja de 348 en un móvil — la página no se
+         * desplazaba, así que "todo correcto", mientras en pantalla solo cabían
+         * dos de las seis columnas y el P&L quedaba fuera.
+         *
+         * A veces es legítimo (un gráfico ancho que se arrastra), así que no
+         * cuenta como fallo: se informa aparte, con cuánto se esconde, para
+         * decidir caso por caso.
+         */
+        const internos = [];
+        for (const el of document.querySelectorAll("body *")) {
+          const st = getComputedStyle(el);
+          if (!/(auto|scroll)/.test(st.overflowX)) continue;
+          const oculto = el.scrollWidth - el.clientWidth;
+          if (oculto > 8 && el.clientWidth > 0) {
+            internos.push({
+              tag: el.tagName.toLowerCase(),
+              cls: (el.className || "").toString().slice(0, 46),
+              visible: el.clientWidth,
+              total: el.scrollWidth,
+              pct: Math.round((oculto / el.scrollWidth) * 100),
+            });
+          }
+        }
+
         // Objetivos táctiles pequeños (WCAG sugiere ~44 px)
         const small = [...document.querySelectorAll("button, a, select, input")]
           .map((el) => ({ el, r: el.getBoundingClientRect() }))
@@ -83,6 +113,7 @@ for (const dev of DEVICES) {
           scrollW: doc.scrollWidth,
           clientW: doc.clientWidth,
           offenders: offenders.slice(0, 6),
+          internos: internos.sort((a, b) => b.pct - a.pct).slice(0, 5),
           small: small.slice(0, 8),
           smallTotal: small.length,
         };
@@ -98,6 +129,12 @@ for (const dev of DEVICES) {
       if (report.offenders.length) {
         problemas++;
         for (const o of report.offenders) console.log(`      ↳ <${o.tag}> hasta ${o.right}px · ${o.cls}`);
+      }
+      if (report.internos.length) {
+        for (const i of report.internos)
+          console.log(
+            `      ↔ <${i.tag}> ${i.visible}px visibles de ${i.total} (${i.pct}% oculto) · ${i.cls}`
+          );
       }
       if (report.small.length) {
         for (const s of report.small.slice(0, 4)) console.log(`      · táctil ${s.size} "${s.text}"`);

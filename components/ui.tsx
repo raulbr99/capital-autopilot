@@ -283,7 +283,20 @@ export function ConnBadge({
       }
     >
       <span className={`h-2 w-2 rounded-full ${color} ${enabled && !stale ? "animate-pulseDot" : ""}`} />
-      <span className={`text-[11px] font-medium ${stale ? "text-short" : "text-dim"}`}>{label}</span>
+      {/*
+        En pantallas estrechas solo el punto. Con el equity ya en la cabecera
+        móvil, la navegación se quedaba en 60 px de 531 a 375 px —ni cabe la
+        pestaña activa—, y "live" es la etiqueta que menos aporta de las tres
+        cosas que compiten ahí: el color del punto ya lo dice, y el tooltip y el
+        aria-label siguen dando el texto completo. Cuando el estado es MALO
+        (broker caído o sin red) la etiqueta se mantiene: eso sí hay que leerlo.
+      */}
+      <span
+        className={`text-[11px] font-medium ${stale ? "text-short" : "hidden text-dim sm:inline"}`}
+      >
+        {label}
+      </span>
+      <span className="sr-only">{label}</span>
     </div>
   );
 }
