@@ -68,3 +68,39 @@ alter table ap_session enable row level security;
 alter table ap_trades enable row level security;
 alter table ap_equity enable row level security;
 alter table ap_logs   enable row level security;
+
+-- ---------------------------------------------------------------------------
+-- Diario del Gestor IA: una fila por ciclo de decisión (tesis + acciones).
+-- FALTABA en este fichero pese a llevar meses en uso: recrear la base desde
+-- aquí dejaba al bot sin diario y sin cola, y el Gestor fallaba en silencio.
+-- ---------------------------------------------------------------------------
+create table if not exists ap_journal (
+  id          bigserial primary key,
+  ts          timestamptz not null default now(),
+  thesis      text        not null default '',
+  confidence  double precision not null default 0.5,
+  actions     jsonb       not null default '[]'::jsonb,
+  snapshot    jsonb,
+  desk        text                     -- forex | crypto | stocks | commodities
+);
+create index if not exists ap_journal_ts_idx on ap_journal (ts desc);
+create index if not exists ap_journal_desk_idx on ap_journal (desk);
+alter table ap_journal enable row level security;
+
+-- ---------------------------------------------------------------------------
+-- Cola del Gestor en la nube: las routines de Claude insertan aquí su decisión
+-- y el motor la drena en el siguiente tick (status pending -> consumed).
+-- ---------------------------------------------------------------------------
+create table if not exists ap_pm_queue (
+  id          bigserial primary key,
+  created_at  timestamptz not null default now(),
+  consumed_at timestamptz,
+  status      text        not null default 'pending',   -- pending | consumed
+  thesis      text        not null default '',
+  confidence  double precision not null default 0.5,
+  actions     jsonb       not null default '[]'::jsonb,
+  desk        text
+);
+create index if not exists ap_pm_queue_pendientes_idx
+  on ap_pm_queue (created_at desc) where status = 'pending';
+alter table ap_pm_queue enable row level security;

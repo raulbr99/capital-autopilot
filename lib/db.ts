@@ -373,6 +373,30 @@ export async function appendEquity(pt: EquityPoint): Promise<void> {
 }
 
 /**
+ * Mantenimiento de las tablas que crecen sin techo. Se llama desde el cron,
+ * que es lo único con ritmo fijo. Devuelve cuántas filas se han borrado de cada
+ * una para que quede constancia en su respuesta.
+ */
+export async function pruneTablas(): Promise<Record<string, number>> {
+  const s = await supa();
+  if (!s) return {};
+  const out: Record<string, number> = {};
+  const borrar = async (tabla: string, columna: string, dias: number) => {
+    try {
+      const corte = new Date(Date.now() - dias * 86_400_000).toISOString();
+      const { data } = await s.from(tabla).delete().lt(columna, corte).select("id");
+      out[tabla] = Array.isArray(data) ? data.length : 0;
+    } catch {
+      out[tabla] = 0;
+    }
+  };
+  await borrar("ap_equity", "ts", 120);   // la curva más larga son 240 puntos
+  await borrar("ap_logs", "ts", 30);      // el registro muestra 50 líneas
+  await borrar("ap_pm_queue", "created_at", 30); // 3.045 filas ya consumidas
+  return out;
+}
+
+/**
  * Poda el histórico de equity. La curva más larga que se dibuja son 240 puntos
  * y el rango máximo del selector es "todo", así que guardar años de muestreo
  * fino no aporta nada y la base es de plan gratuito compartido.

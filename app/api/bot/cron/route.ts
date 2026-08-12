@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { runEngine, autopilotArmed } from "@/lib/engine";
-import { pruneEquity } from "@/lib/db";
+import { pruneTablas } from "@/lib/db";
 import { log } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ async function handle(req: Request) {
       `⏱ CRON tick — ${armed ? "ARMADO" : "DESARMADO"} · abiertas en este tick: ${result.opened}`
     );
     // Mantenimiento barato: el cron es el único que corre a ritmo fijo
-    const podadas = await pruneEquity();
+    const podadas = await pruneTablas();
 
     return NextResponse.json({
       ok: true,
