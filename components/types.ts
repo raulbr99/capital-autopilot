@@ -39,6 +39,8 @@ export type OpenPos = {
   stopLevel?: number | null;
   limitLevel?: number | null;
   currentPrice?: number | null;
+  /** Momento de apertura (ISO), para marcarlo en el gráfico. */
+  openedAt?: string;
 };
 
 export type Account = {

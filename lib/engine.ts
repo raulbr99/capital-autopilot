@@ -58,6 +58,8 @@ export type EpicEval = {
   spark: number[]; // ultimos cierres para mini-grafica
 };
 
+// OJO: este tipo vive también en components/types.ts (el cliente no importa
+// de lib/). Si se toca uno, hay que tocar el otro.
 export type OpenPos = {
   key: string;
   epic: string;
@@ -69,6 +71,8 @@ export type OpenPos = {
   stopLevel?: number | null;
   limitLevel?: number | null;
   currentPrice?: number | null;
+  /** Momento de apertura (ISO), para marcarlo en el gráfico. */
+  openedAt?: string;
 };
 
 export function autopilotArmed(): boolean {
@@ -722,6 +726,9 @@ function realToOpen(p: Position): OpenPos {
     stopLevel: p.stopLevel,
     limitLevel: p.limitLevel,
     currentPrice: p.currentPrice,
+    // Capital ya nos la da y se estaba descartando: sin ella, el gráfico de la
+    // posición no puede señalar en qué vela se entró.
+    openedAt: p.createdDate || undefined,
   };
 }
 

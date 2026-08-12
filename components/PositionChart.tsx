@@ -110,6 +110,23 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
     mkLine(pos.stopLevel, C.down, "SL");
     mkLine(pos.limitLevel, C.tp, "TP");
 
+    // Marca de ENTRADA en su vela: el gráfico enseñaba los niveles pero no
+    // CUÁNDO se entró, que es lo primero que se busca al abrirlo.
+    if (pos.openedAt) {
+      const t = Date.parse(pos.openedAt);
+      if (Number.isFinite(t)) {
+        series.setMarkers([
+          {
+            time: Math.floor(t / 1000) as any,
+            position: pos.direction === "BUY" ? "belowBar" : "aboveBar",
+            color: pos.direction === "BUY" ? C.up : C.down,
+            shape: pos.direction === "BUY" ? "arrowUp" : "arrowDown",
+            text: `Entrada ${pos.direction === "BUY" ? "LONG" : "SHORT"}`,
+          },
+        ]);
+      }
+    }
+
     chartRef.current = chart;
     seriesRef.current = series;
 
