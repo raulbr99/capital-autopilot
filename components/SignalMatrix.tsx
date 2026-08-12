@@ -155,6 +155,17 @@ function SignalCard({ e, bloqueada }: { e: EpicEval; bloqueada?: boolean }) {
             {e.hasPosition && (
               <span className="rounded bg-accent/10 px-1.5 py-0.5 font-mono text-[8px] text-accent">abierta</span>
             )}
+            {/* Junto al activo, no dentro del chip de señal: alargar el chip a
+                "▼ SHORT · bloqueada" apretaba la fila y cortaba el propio
+                nombre del activo. Aquí ya vive la insignia "abierta". */}
+            {bloqueada && (
+              <span
+                className="shrink-0 rounded bg-industrial px-1.5 py-0.5 font-mono text-[8px] text-muted"
+                title="Solo compras en este activo: el motor descarta los cortos"
+              >
+                bloqueada
+              </span>
+            )}
           </div>
           <p className="mt-0.5 font-mono text-[10px] tabular-nums text-muted">
             {price(e.price)}
@@ -178,7 +189,7 @@ function SignalCard({ e, bloqueada }: { e: EpicEval; bloqueada?: boolean }) {
             buy ? "bg-long/15 text-long" : sell ? "bg-short/15 text-short" : "bg-industrial text-muted"
           }`}
         >
-          {buy ? "▲ LONG" : sell ? "▼ SHORT" : bloqueada ? "▼ SHORT · bloqueada" : "● FLAT"}
+          {buy ? "▲ LONG" : sell || bloqueada ? "▼ SHORT" : "● FLAT"}
         </span>
       </div>
 
