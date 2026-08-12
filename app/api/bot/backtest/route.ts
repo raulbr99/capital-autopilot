@@ -41,6 +41,17 @@ export async function GET(req: Request) {
       configured: true,
       resolution,
       max,
+      // Con qué se calculó. La pestaña de Configuración puede cambiar estos
+      // valores en cualquier momento, así que un resultado sin ellos no se
+      // puede interpretar ni distinguir de uno viejo.
+      strategy: {
+        fast: cfg.strategy.fast,
+        slow: cfg.strategy.slow,
+        rsiPeriod: cfg.strategy.rsiPeriod,
+        minConfidence: cfg.strategy.minConfidence,
+        adxThreshold: cfg.strategy.adxThreshold,
+        useRegimeFilter: cfg.strategy.useRegimeFilter,
+      },
       results,
       aggregate: {
         ...agg,
