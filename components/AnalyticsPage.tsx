@@ -34,6 +34,14 @@ export default function AnalyticsPage() {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [instruments, setInstruments] = useState<{ epic: string; category?: DeskCategory }[]>([]);
   const [equity, setEquity] = useState<number | null>(null);
+  /**
+   * La divisa de la cuenta. Esta pantalla la ignoraba y enseñaba importes
+   * desnudos: "Ganas 4.33 de media y pierdes 3.56". El panel de expectativa
+   * escribe esa MISMA frase con € — así que la app decía el mismo dato con y
+   * sin unidad según dónde lo leyeras. Y un importe sin moneda en un panel de
+   * trading es ambiguo de verdad: podrían ser euros, puntos o múltiplos de R.
+   */
+  const [divisa, setDivisa] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [epic, setEpic] = useState<string>("");
   const [desk, setDesk] = useState<string>("");
@@ -57,6 +65,7 @@ export default function AnalyticsPage() {
       .then((d) => {
         setInstruments(d?.state?.config?.instruments ?? []);
         setEquity(typeof d?.account?.balance === "number" ? d.account.balance : null);
+        setDivisa(d?.account?.currency ?? "");
       })
       .catch(() => {});
   }, []);
@@ -222,7 +231,8 @@ export default function AnalyticsPage() {
               <Kpi
                 label="Resultado neto"
                 value={pnlFmt(a.netPnl)}
-                sub={equity ? `${pnlFmt((a.netPnl / equity) * 100)}% del capital` : "€"}
+                unidad={divisa}
+                sub={equity ? `${pnlFmt((a.netPnl / equity) * 100)}% del capital` : undefined}
                 tone={Math.abs(a.netPnl) < 0.005 ? undefined : a.netPnl > 0 ? "long" : "short"}
                 big
               />
@@ -246,6 +256,7 @@ export default function AnalyticsPage() {
               <Kpi
                 label="Caída máxima"
                 value={fmt(a.maxDrawdown)}
+                unidad={divisa}
                 sub={equity ? `${((a.maxDrawdown / equity) * 100).toFixed(1)}% del capital` : "peor racha acumulada"}
                 tone="short"
                 big
@@ -257,8 +268,8 @@ export default function AnalyticsPage() {
                   a.closed - a.wins - a.losses > 0 ? ` · ${a.closed - a.wins - a.losses} a cero` : ""
                 }`}
               />
-              <Kpi label="Por operación" value={fmt(a.expectancy)} sub="media de las cerradas" />
-              <Kpi label="Media ganancia" value={`+${fmt(a.avgWin)}`} sub={`−${fmt(a.avgLoss)} media pérdida`} />
+              <Kpi label="Por operación" value={fmt(a.expectancy)} unidad={divisa} sub="media de las cerradas" />
+              <Kpi label="Media ganancia" value={`+${fmt(a.avgWin)}`} unidad={divisa} sub={`−${fmt(a.avgLoss)} de media en las perdedoras`} />
               {/* Los signos eran decorativos: una racha se cuenta en operaciones, y
                   en este panel el + y el − significan dinero. "+2 / −5" se leía
                   como euros o como R. */}
@@ -275,8 +286,10 @@ export default function AnalyticsPage() {
                 <SectionHead label="Mecánica del sistema" />
                 <div className="space-y-3 p-5">
                   <p className="text-sm leading-relaxed text-dim">
-                    Ganas <span className="font-mono text-long">{fmt(a.avgWin)}</span> de media y pierdes{" "}
-                    <span className="font-mono text-short">{fmt(a.avgLoss)}</span>, así que cada acierto vale{" "}
+                    Ganas <span className="font-mono text-long">{fmt(a.avgWin)}{divisa && ` ${divisa}`}</span> de
+                    media y pierdes{" "}
+                    <span className="font-mono text-short">{fmt(a.avgLoss)}{divisa && ` ${divisa}`}</span>, así que
+                    cada acierto vale{" "}
                     <span className="font-mono text-white">{a.payoff.toFixed(2)}</span> fallos.
                   </p>
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-industrial pt-3">
@@ -443,19 +456,26 @@ function Kpi({
   sub,
   tone,
   big,
+  unidad,
 }: {
   label: string;
   value: string;
   sub?: string;
   tone?: "long" | "short" | "accent";
   big?: boolean;
+  /** Divisa de la cuenta. El panel principal ya etiqueta sus importes; aquí
+   *  las cifras de dinero salían desnudas y no se distinguían de un % o de R. */
+  unidad?: string;
 }) {
   const c =
     tone === "long" ? "text-long" : tone === "short" ? "text-short" : tone === "accent" ? "text-accent" : "text-white";
   return (
     <div className="bg-soft p-5">
       <p className="tag">{label}</p>
-      <p className={`mt-2 font-mono ${big ? "text-2xl" : "text-xl"} font-medium tracking-tight ${c}`}>{value}</p>
+      <p className={`mt-2 font-mono ${big ? "text-2xl" : "text-xl"} font-medium tracking-tight ${c}`}>
+        {value}
+        {unidad && <span className="ml-1 text-xs font-normal text-muted">{unidad}</span>}
+      </p>
       {sub && <p className="mt-0.5 text-[11px] text-muted">{sub}</p>}
     </div>
   );
