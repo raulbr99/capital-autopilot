@@ -379,8 +379,10 @@ function ByInstrument({ rows }: { rows: { epic: string; pnl: number; trades: num
         >
           {col.map((r) => (
             <div key={r.epic} className="flex items-center gap-3 px-4 py-2.5">
-              <div className="w-20 shrink-0">
-                <p className="font-display text-sm">{r.epic}</p>
+              {/* w-20 no daba para NATURALGAS ni OIL_CRUDE: el nombre se salía
+                  de su celda y llegaba a tocar la barra de al lado. */}
+              <div className="w-24 shrink-0">
+                <p className="truncate font-display text-sm" title={r.epic}>{r.epic}</p>
                 {/* "1t · 100%" sobre una sola operación no es un acierto del
                     100%, es una moneda que cayó una vez. Y la unidad "t" no la
                     define nadie. */}
