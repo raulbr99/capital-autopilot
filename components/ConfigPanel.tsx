@@ -223,23 +223,42 @@ export default function ConfigPanel({
         </div>
 
         <div className="border-t border-industrial pt-3">
-          <p className="tag mb-2">Notificaciones</p>
+          <p className="tag mb-2">Avisos</p>
           <div className="grid grid-cols-2 gap-2">
             <NotifyRow
-              label="TELEGRAM"
+              label="Telegram"
               env={notifyEnv.telegram}
               on={cfg.notify.telegram}
               busy={busy}
+              vars="TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID"
               onClick={() => patch({ notify: { telegram: !cfg.notify.telegram } })}
             />
             <NotifyRow
-              label="DISCORD"
+              label="Discord"
               env={notifyEnv.discord}
               on={cfg.notify.discord}
               busy={busy}
+              vars="DISCORD_WEBHOOK_URL"
               onClick={() => patch({ notify: { discord: !cfg.notify.discord } })}
             />
           </div>
+          {/* Un canal sin configurar es un callejón sin salida si no dice QUÉ
+              falta. Y sin avisos, una parada del bot puede pasar semanas
+              inadvertida — ya ocurrió: el Gestor estuvo un mes desconectado. */}
+          {(!notifyEnv.telegram || !notifyEnv.discord) && (
+            <p className="mt-2 text-[10px] leading-relaxed text-muted">
+              Sin ningún canal configurado, una parada del bot no avisa a nadie. Para activarlos,
+              define en Vercel{" "}
+              {!notifyEnv.telegram && (
+                <span className="font-mono text-dim">TELEGRAM_BOT_TOKEN</span>
+              )}
+              {!notifyEnv.telegram && " y "}
+              {!notifyEnv.telegram && <span className="font-mono text-dim">TELEGRAM_CHAT_ID</span>}
+              {!notifyEnv.telegram && !notifyEnv.discord && ", o bien "}
+              {!notifyEnv.discord && <span className="font-mono text-dim">DISCORD_WEBHOOK_URL</span>}
+              .
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -251,25 +270,29 @@ function NotifyRow({
   env,
   on,
   busy,
+  vars,
   onClick,
 }: {
   label: string;
   env: boolean;
   on: boolean;
   busy: boolean;
+  vars: string;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={busy || !env}
-      title={env ? "" : "Configura las variables de entorno"}
-      className={`flex items-center justify-between border px-3 py-2 font-mono text-[11px] disabled:opacity-40 ${
+      title={env ? "" : `Falta por definir: ${vars}`}
+      className={`flex min-h-[38px] items-center justify-between rounded-lg border px-3 py-2 text-[11px] disabled:opacity-40 ${
         on && env ? "border-accent text-accent" : "border-cement text-muted"
       }`}
     >
       {label}
-      <span>{!env ? "SIN_ENV" : on ? "ON" : "OFF"}</span>
+      <span className="font-mono text-[10px]">
+        {!env ? "sin configurar" : on ? "activo" : "apagado"}
+      </span>
     </button>
   );
 }
