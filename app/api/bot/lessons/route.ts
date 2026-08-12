@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTrades, loadConfig, getJournal } from "@/lib/db";
+import { recorta } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -14,6 +15,8 @@ export const fetchCache = "force-no-store";
 // analyze(). Antes esta ruta inflaba el acierto del Gestor con sus propios
 // breakevens, y es el resumen que los Gestores leen para juzgarse.
 const EPS_PNL = 0.005;
+/** Bajo esta muestra, un porcentaje no es una tasa. Igual que en la interfaz. */
+const MUESTRA_MIN = 5;
 const gano = (p?: number) => (p || 0) > EPS_PNL;
 const perdio = (p?: number) => (p || 0) < -EPS_PNL;
 
@@ -53,7 +56,7 @@ export async function GET(req: Request) {
         epic: t.epic,
         direction: t.direction,
         pnl: t.pnl,
-        reason: (t.reason || "").slice(0, 90),
+        reason: recorta(t.reason || "", 90),
       }));
 
     const netTotal = Math.round(trades.reduce((s, t) => s + (t.pnl || 0), 0) * 100) / 100;
@@ -93,7 +96,7 @@ export async function GET(req: Request) {
         epic: t.epic,
         direction: t.direction,
         pnl: t.pnl,
-        thesis: (t.reason || "").replace(/^IA:\s*/, "").slice(0, 120),
+        thesis: recorta((t.reason || "").replace(/^IA:\s*/, ""), 120),
       }));
 
     // Resultado de sus decisiones recientes en el diario (qué se ejecutó, qué vetó el comité)
@@ -111,12 +114,37 @@ export async function GET(req: Request) {
     }
 
     const peor = failedTheses[0];
+    /**
+     * Este texto es LO QUE LEE el Gestor; los objetos de arriba son para la
+     * interfaz. Y omitía justo lo que hace interpretable el resto:
+     *
+     *  · El umbral de equilibrio. El Gestor leía "41% de acierto" sin saber
+     *    que con su payoff necesita un 48% — o sea, sin poder deducir que está
+     *    por debajo del punto en que se empieza a ganar dinero. La cifra se
+     *    calculaba desde la pasada 65 y se quedaba sin usar.
+     *  · El tamaño de muestra. "Motor técnico: 4 cerrados, 0% acierto" invita a
+     *    concluir que el motor técnico es un desastre; con cuatro operaciones
+     *    eso no es una conclusión, es ruido.
+     *  · Los errores. El recuento incluye `error`, pero la frase solo hablaba
+     *    de abiertas, vetadas y omitidas: dos acciones fallidas no llegaban.
+     */
+    const juicio = (l: { trades: number; winRate: number; breakevenWinRate: number }) => {
+      if (l.trades < MUESTRA_MIN) return `muestra corta (${l.trades}), sin conclusión`;
+      if (!l.breakevenWinRate) return `${l.winRate}% acierto`;
+      const dif = l.winRate - l.breakevenWinRate;
+      return `${l.winRate}% acierto frente a un equilibrio de ${l.breakevenWinRate}% (${
+        dif >= 0 ? `+${dif.toFixed(0)}` : dif.toFixed(0)
+      } pts)`;
+    };
     const summary =
-      `Tus trades (Gestor IA): ${gestor.trades} cerrados, ${gestor.winRate}% acierto, net ${gestor.netPnl}. ` +
-      `Motor técnico: ${tecnico.trades} cerrados, ${tecnico.winRate}% acierto, net ${tecnico.netPnl}. ` +
+      `Tus trades (Gestor IA): ${gestor.trades} cerrados, ${juicio(gestor)}, net ${gestor.netPnl}. ` +
+      `Motor técnico: ${tecnico.trades} cerrados, ${juicio(tecnico)}, net ${tecnico.netPnl}. ` +
       (peor ? `Tu última tesis perdedora: ${peor.epic} ${peor.direction} (${peor.pnl}) "${peor.thesis}". ` : "") +
-      `Decisiones recientes: ${decisiones.opened || 0} abiertas, ${decisiones.vetoed || 0} vetadas por el comité, ${decisiones.skipped || 0} omitidas por límites. ` +
-      `Aprende: no repitas tesis que ya perdieron; si el comité te veta mucho, tus tesis necesitan más confluencia.`;
+      `Decisiones recientes: ${decisiones.opened || 0} abiertas, ${decisiones.vetoed || 0} vetadas por el comité, ` +
+      `${decisiones.skipped || 0} omitidas por límites` +
+      (decisiones.error ? `, ${decisiones.error} con error de ejecución` : "") +
+      `. ` +
+      `Aprende: no repitas tesis que ya perdieron; si tu acierto está por debajo del equilibrio, el problema no es el número de aciertos sino la relación entre lo que ganas y lo que pierdes.`;
 
     return NextResponse.json({
       desk: desk || "all",
