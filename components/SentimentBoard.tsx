@@ -217,10 +217,14 @@ export default function SentimentBoard({
           <div className="mb-1.5 flex items-center gap-3 font-mono text-[9px] uppercase tracking-wider text-muted">
             <span className="w-12 shrink-0">Activo</span>
             <span className="min-w-0 flex-1">Menciones · buzz</span>
-            <span className="w-14 shrink-0 text-right" title="Variación de menciones en 24 h (no es el precio)">
+            {/* Las siete columnas fijas suman 368 px + 32 de padding: por
+                encima de un móvil de 375. Δ y rank son las secundarias —el
+                precio, los resultados y la señal son las que se miran—, así
+                que se ocultan por debajo de sm en cabecera y filas a la vez. */}
+            <span className="hidden w-14 shrink-0 text-right sm:block" title="Variación de menciones en 24 h (no es el precio)">
               Δ menc.
             </span>
-            <span className="w-8 shrink-0 text-right" title="Puesto en el ranking de menciones">
+            <span className="hidden w-8 shrink-0 text-right sm:block" title="Puesto en el ranking de menciones">
               Rank
             </span>
             <span className="w-[72px] shrink-0 text-right">Precio</span>
@@ -242,10 +246,10 @@ export default function SentimentBoard({
                     {s.notListed ? "sin buzz" : `${s.mentions} menc.`}
                   </span>
                 </div>
-                <span className="w-14 shrink-0 text-right font-mono text-[11px]">
+                <span className="hidden w-14 shrink-0 text-right font-mono text-[11px] sm:block">
                   <Delta pct={s.pctChange24h} />
                 </span>
-                <span className="w-8 shrink-0 text-right font-mono text-[10px] text-muted">
+                <span className="hidden w-8 shrink-0 text-right font-mono text-[10px] text-muted sm:block">
                   {s.rank ? `#${s.rank}` : "—"}
                 </span>
                 <span className="w-[72px] shrink-0 text-right">
