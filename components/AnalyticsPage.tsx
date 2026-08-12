@@ -411,26 +411,116 @@ function ByInstrument({ rows }: { rows: { epic: string; pnl: number; trades: num
   );
 }
 
+/**
+ * P&L por sesión. Antes era una fila de barras sin una sola cifra: ni fechas,
+ * ni escala, ni nada que dijera si la barra roja más alta valía −2 € o −27 €.
+ * El único acceso al dato era el `title` nativo del navegador, que tarda un
+ * segundo en salir y no existe en pantalla táctil. Y la línea de cero se
+ * dibujaba DENTRO de cada columna, así que con la separación entre barras
+ * quedaba una fila de guiones sueltos con aspecto de render roto.
+ */
+const DIAS_VISIBLES = 60;
+
 function DailyBars({ data }: { data: { date: string; pnl: number }[] }) {
+  const [foco, setFoco] = useState<number | null>(null);
   if (!data.length) return <div className="dotgrid h-28 rounded-lg border border-industrial" />;
-  const max = Math.max(...data.map((d) => Math.abs(d.pnl)), 1);
+
+  const vista = data.slice(-DIAS_VISIBLES);
+  const ocultos = data.length - vista.length;
+  const max = Math.max(...vista.map((d) => Math.abs(d.pnl)), 1);
+  const mejor = vista.reduce((a, b) => (b.pnl > a.pnl ? b : a));
+  const peor = vista.reduce((a, b) => (b.pnl < a.pnl ? b : a));
+  // 'date' viene como AAAA-MM-DD en la zona de la cuenta; el mediodía evita que
+  // el desplazamiento horario retroceda la etiqueta un día.
+  const fecha = (s: string) =>
+    new Date(`${s}T12:00:00`).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+  const activa = foco != null ? vista[foco] : null;
+
   return (
-    <div className="flex h-32 items-stretch gap-1.5">
-      {data.slice(-40).map((d) => {
-        const h = (Math.abs(d.pnl) / max) * 56;
-        const up = d.pnl >= 0;
-        return (
-          <div key={d.date} title={`${d.date}: ${d.pnl.toFixed(2)}`} className="group flex flex-1 flex-col items-center justify-center">
-            <div className="flex h-[56px] w-full items-end justify-center">
-              {up && <div className="w-full max-w-[18px] rounded-t bg-long transition-opacity group-hover:opacity-80" style={{ height: h }} />}
-            </div>
-            <div className="h-px w-full bg-cement" />
-            <div className="flex h-[56px] w-full items-start justify-center">
-              {!up && <div className="w-full max-w-[18px] rounded-b bg-short transition-opacity group-hover:opacity-80" style={{ height: h }} />}
-            </div>
+    <div>
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[11px] text-muted">
+        <span>
+          Mejor <span className="font-mono text-long">+{fmt(mejor.pnl)}</span> · Peor{" "}
+          <span className="font-mono text-short">{fmt(peor.pnl)}</span>
+        </span>
+        <span>
+          {vista.length} {vista.length === 1 ? "sesión" : "sesiones"}
+          {/* Un recorte silencioso se lee como "esto es todo": si sobran días, se dice. */}
+          {ocultos > 0 && ` · ${ocultos} anteriores fuera del gráfico`}
+        </span>
+      </div>
+
+      <div className="relative h-[132px] pr-10">
+        {/* Escala: sin ella la barra más alta no tiene valor conocido */}
+        <span className="absolute right-0 top-0 font-mono text-[10px] leading-none text-muted">
+          +{fmt(max)}
+        </span>
+        <span className="absolute right-0 top-1/2 -translate-y-1/2 font-mono text-[10px] leading-none text-dim">
+          0
+        </span>
+        <span className="absolute bottom-0 right-0 font-mono text-[10px] leading-none text-muted">
+          −{fmt(max)}
+        </span>
+        {/* Línea de cero continua, fuera de las columnas */}
+        <div className="absolute left-0 right-10 top-1/2 h-px bg-cement" />
+
+        {activa && (
+          <div
+            className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-cement bg-ink px-2 py-1 font-mono text-[10px] shadow-lg"
+            style={{
+              left: `${Math.min(88, Math.max(12, ((foco! + 0.5) / vista.length) * 100))}%`,
+            }}
+          >
+            <span className="text-muted">{fecha(activa.date)}</span>{" "}
+            <span className={pnlClass(activa.pnl)}>
+              {activa.pnl >= 0 ? "+" : ""}
+              {fmt(activa.pnl)}
+            </span>
           </div>
-        );
-      })}
+        )}
+
+        <div className="flex h-full items-stretch gap-1">
+          {vista.map((d, i) => {
+            const alto = (Math.abs(d.pnl) / max) * 100;
+            const up = d.pnl >= 0;
+            const on = foco === i;
+            return (
+              <div
+                key={d.date}
+                title={`${fecha(d.date)}: ${d.pnl >= 0 ? "+" : ""}${fmt(d.pnl)}`}
+                onMouseEnter={() => setFoco(i)}
+                onMouseLeave={() => setFoco(null)}
+                onTouchStart={() => setFoco(i)}
+                className="flex min-w-0 flex-1 cursor-default flex-col"
+              >
+                <div className="flex h-1/2 w-full items-end justify-center">
+                  {up && (
+                    <div
+                      className={`w-full max-w-[18px] rounded-t bg-long ${on ? "" : "opacity-90"}`}
+                      // Las jornadas planas dejaban la columna vacía y se leían
+                      // como día sin datos; 2 px dicen "cerró en cero".
+                      style={{ height: `${Math.max(alto, d.pnl === 0 ? 0 : 2)}%`, minHeight: d.pnl === 0 ? 2 : 0 }}
+                    />
+                  )}
+                </div>
+                <div className="flex h-1/2 w-full items-start justify-center">
+                  {!up && (
+                    <div
+                      className={`w-full max-w-[18px] rounded-b bg-short ${on ? "" : "opacity-90"}`}
+                      style={{ height: `${Math.max(alto, 2)}%` }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-1.5 flex justify-between pr-10 font-mono text-[10px] text-muted">
+        <span>{fecha(vista[0].date)}</span>
+        <span>{fecha(vista[vista.length - 1].date)}</span>
+      </div>
     </div>
   );
 }
