@@ -180,32 +180,11 @@ export type JournalEntry = {
   desk?: DeskCategory | null;
 };
 
-export type Analytics = {
-  total: number;
-  closed: number;
-  open: number;
-  wins: number;
-  losses: number;
-  winRate: number;
-  netPnl: number;
-  grossWin: number;
-  grossLoss: number;
-  profitFactor: number;
-  avgWin: number;
-  avgLoss: number;
-  expectancy: number;
-  maxDrawdown: number;
-  bestStreak: number;
-  worstStreak: number;
-  byEpic: { epic: string; pnl: number; trades: number; winRate: number }[];
-  pnlCurve: { ts: number; cum: number }[];
-  dailyPnl: { date: string; pnl: number }[];
-  /** avgWin/avgLoss: cuántos euros ganas por cada euro que arriesgas. */
-  payoff: number;
-  /** % de aciertos necesario para no perder dinero con ese payoff. */
-  breakevenWinRate: number;
-  /** LONG vs SHORT: el desglose que destapó el agujero de los cortos. */
-  byDirection: { dir: "BUY" | "SELL"; trades: number; wins: number; winRate: number; pnl: number }[];
-  /** ¿hay muestra suficiente para que estos números signifiquen algo? */
-  enough: boolean;
-};
+/**
+ * El tipo vive junto a su única implementación, en lib/analytics.ts. Aquí había
+ * una segunda declaración que había que mantener a mano en paralelo: cuando la
+ * del cliente ganó payoff, breakevenWinRate, byDirection y enough, la del
+ * servidor se quedó sin ellos y el analista diario dejó de verlos.
+ */
+export type { Analytics } from "@/lib/analytics";
+

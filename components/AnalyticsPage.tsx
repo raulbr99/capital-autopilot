@@ -2,7 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TradeRecord, DeskCategory } from "./types";
-import { analyze } from "./analytics-util";
+/**
+ * UNA sola implementación de analyze(), la de lib/.
+ *
+ * Había un espejo en components/analytics-util.ts porque se dio por hecho que
+ * el cliente no puede importar de lib/. No es cierto aquí: lib/analytics.ts
+ * solo tiene un `import type`, que TypeScript borra al compilar, así que es una
+ * función pura sin nada de servidor dentro. La frontera de Next importa cuando
+ * un módulo arrastra código de servidor en tiempo de ejecución; este no.
+ *
+ * El coste de la copia fue real y medido: el win rate se calculaba de dos
+ * formas distintas (pasada 54), payoff/breakevenWinRate/byDirection existían
+ * solo en el cliente mientras el analista diario leía la versión del servidor
+ * sin ellos (pasada 93), y las rachas contaban los empates como pérdidas en
+ * ambas pero se corrigieron por separado (pasada 106). Tres divergencias en un
+ * único fichero duplicado.
+ */
+import { analyze } from "@/lib/analytics";
 import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
