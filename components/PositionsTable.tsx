@@ -246,6 +246,20 @@ export default function PositionsTable({
                       value={risk == null ? "—" : locked ? "asegurada" : `≈${fmt(risk)}`}
                       tone={locked ? "text-long" : "text-dim"}
                     />
+                    {/*
+                      La tarjeta móvil enseñaba el stop y NO el objetivo, aunque
+                      la tabla de escritorio tiene su columna "SL · TP". En un
+                      teléfono no había forma de ver si la posición tenía
+                      take-profit — y resulta que el motor lo estaba borrando en
+                      silencio en el primer ajuste del trailing (corregido en la
+                      pasada 75). Precisamente el campo cuya ausencia había que
+                      poder detectar era el único que faltaba aquí.
+                    */}
+                    <Cell
+                      label="TP"
+                      value={p.limitLevel == null ? "sin TP" : price(p.limitLevel)}
+                      tone={p.limitLevel == null ? "text-muted" : "text-dim"}
+                    />
                   </div>
                   <div className="mt-3 flex gap-2">
                     <button
