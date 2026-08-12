@@ -140,17 +140,18 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
     seriesRef.current = series;
 
     /**
-     * El ancho se fijaba al crear el gráfico —con `|| 760` de reserva— y solo
-     * se corregía al redimensionar la VENTANA, que en un modal no ocurre nunca.
-     * Si el contenedor todavía no estaba maquetado en ese instante, el lienzo
-     * se quedaba con una medida que ya no era la suya y nadie la revisaba.
-     * Medido en un iPhone de 390 px: lienzo de 266 dentro de un contenedor de
-     * 358, o sea un 26 % del modal desaprovechado y las etiquetas del eje
-     * cortadas.
+     * Reajuste de ancho por observador, además del evento de ventana.
      *
-     * Cuarta vez que aparece el mismo error en este proyecto (la curva de
-     * equity, el carril de decisiones y la navegación): medir una sola vez
-     * donde el contenido llega después. Un observador lo cierra.
+     * AVISO para quien lea esto: NO se añadió por un fallo comprobado. Creí
+     * medir un lienzo de 266 px dentro de un contenedor de 358 y di por hecho
+     * que sobraba un 26 %; al medir bien resultó que el contenedor son 332 y
+     * que los lienzos suman 266 (panel) + 66 (eje de precios) = 332 exactos.
+     * El gráfico ya ocupaba todo su sitio. Lo que comparé fue el lienzo del
+     * panel contra un envoltorio distinto.
+     *
+     * Se queda porque cubre un caso que el evento de ventana no cubre —que el
+     * contenedor cambie de ancho sin que cambie la ventana— y no cuesta nada,
+     * pero que conste que aquí no había nada roto.
      */
     const aplicarAncho = () => {
       const w = el?.clientWidth;
