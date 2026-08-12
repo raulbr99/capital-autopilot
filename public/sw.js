@@ -1,5 +1,5 @@
 /* Service worker mínimo: instalable + offline shell, sin tocar los datos en vivo. */
-const CACHE = "capital-autopilot-v3";
+const CACHE = "capital-autopilot-v4";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
@@ -40,21 +40,29 @@ self.addEventListener("fetch", (e) => {
     );
     return;
   }
-  // Navegaciones: network-first con fallback al caparazón cacheado.
-  // CLAVE: cada carga buena REFRESCA la copia. Antes solo se guardaba al
-  // instalar el SW, así que sin red se servía un caparazón congelado de días
-  // atrás — con avisos y arreglos que la versión offline nunca llegaba a ver.
+  // Navegaciones: network-first, cada carga buena refresca su copia.
+  //
+  // Antes TODAS las rutas se guardaban bajo la misma clave "/": visitar el
+  // Diario sobrescribía el caparazón de la portada, así que sin red el HTML
+  // servido era el de la última página que hubieras abierto, fuese cual fuese
+  // la que pedías. El router de Next lo acaba corrigiendo al hidratar, pero
+  // la primera pintura era de otra pantalla. Comprobado: con /journal visitado,
+  // la caché solo contenía la entrada "/".
+  //
+  // Ahora cada ruta se guarda con su propia petición y el respaldo va de más
+  // preciso a más general: la propia ruta primero y la portada como último
+  // recurso, para que una ruta nunca vista siga abriendo algo.
   if (req.mode === "navigate") {
     e.respondWith(
       fetch(req)
         .then((res) => {
           if (res && res.ok) {
             const copia = res.clone();
-            caches.open(CACHE).then((c) => c.put("/", copia)).catch(() => {});
+            caches.open(CACHE).then((c) => c.put(req, copia)).catch(() => {});
           }
           return res;
         })
-        .catch(() => caches.match("/"))
+        .catch(() => caches.match(req).then((hit) => hit || caches.match("/")))
     );
   }
 });
