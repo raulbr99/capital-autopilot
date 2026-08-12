@@ -185,6 +185,13 @@ export type BotState = {
   prevDeposit: number; // deposit (efectivo) del tick anterior (para atribuir P&L de cierres)
   aiReviewedAt: Record<string, number>; // epic -> ts última revisión IA (cooldown)
   lastTick: number;
+  /**
+   * Última vez que corrió el CRON (no una visita del navegador). lastTick se
+   * refresca con cada GET del panel, así que sirve para saber si la web está
+   * viva, pero NO si el motor lo está: el bot pudo estar un mes sin operar
+   * mientras el panel se veía perfecto. Este sello lo pone solo /api/bot/cron.
+   */
+  lastCronTick: number;
   cooldownUntil: number; // timestamp; no abrir hasta pasarlo
   stats: { signals: number; tradesOpened: number; tradesClosed: number };
 };
@@ -205,6 +212,7 @@ function init(): BotState {
     prevDeposit: 0,
     aiReviewedAt: {},
     lastTick: 0,
+    lastCronTick: 0,
     cooldownUntil: 0,
     stats: { signals: 0, tradesOpened: 0, tradesClosed: 0 },
   };

@@ -996,6 +996,7 @@ export function snapshotState(equity?: EquityPoint[]) {
     trades: b.trades.slice(0, 60),
     stats: b.stats,
     lastTick: b.lastTick,
+    lastCronTick: b.lastCronTick,
     notifyEnv: notifyConfigured(),
   };
 }

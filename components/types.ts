@@ -140,6 +140,8 @@ export type State = {
   trades: TradeRecord[];
   stats: { signals: number; tradesOpened: number; tradesClosed: number };
   lastTick: number;
+  /** Sello del último ciclo del cron (0 = nunca). Ver BotState en lib/store.ts. */
+  lastCronTick: number;
   notifyEnv: { telegram: boolean; discord: boolean };
 };
 

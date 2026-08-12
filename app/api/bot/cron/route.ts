@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { runEngine, autopilotArmed } from "@/lib/engine";
-import { pruneTablas } from "@/lib/db";
-import { log } from "@/lib/store";
+import { pruneTablas, saveRuntime } from "@/lib/db";
+import { bot, log } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 // Margen amplio: el motor consulta varios endpoints de Capital.com por tick.
@@ -32,6 +32,10 @@ async function handle(req: Request) {
   const armed = autopilotArmed();
   try {
     const result = await runEngine(armed);
+    // Sello de latido. Va DESPUÉS de runEngine porque este llama a loadRuntime()
+    // y sobreescribiría el valor en memoria con el de la fila anterior.
+    bot().lastCronTick = Date.now();
+    await saveRuntime();
     log(
       "info",
       `⏱ CRON tick — ${armed ? "ARMADO" : "DESARMADO"} · abiertas en este tick: ${result.opened}`

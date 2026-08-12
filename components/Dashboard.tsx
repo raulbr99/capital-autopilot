@@ -141,6 +141,24 @@ export default function Dashboard() {
     return Object.values(byDesk).some((n) => n > cfg.maxPerDesk);
   })();
 
+  /**
+   * Latido del motor. Distinto de "conectado": el navegador refresca los datos
+   * por su cuenta, así que la pantalla sigue viva aunque el cron lleve semanas
+   * sin correr — que es exactamente lo que pasó en julio y nadie vio. El cron
+   * real va cada ~58 min, así que 90 min es todavía normal y 3 h ya no lo es.
+   */
+  const latido = (() => {
+    const ts = snap?.state?.lastCronTick ?? 0;
+    if (!ts)
+      return { texto: "sin latido", tone: "text-muted", dot: "bg-muted", vivo: false, title: "El cron no ha registrado ningún ciclo todavía." };
+    const min = Math.max(0, Math.round((Date.now() - ts) / 60_000));
+    const texto = min < 1 ? "ahora mismo" : min < 60 ? `hace ${min} min` : `hace ${Math.round(min / 60)} h`;
+    const title = `Último ciclo del cron: ${new Date(ts).toLocaleString("es-ES")}`;
+    if (min <= 90) return { texto, tone: "text-long", dot: "bg-long", vivo: true, title };
+    if (min <= 180) return { texto, tone: "text-accent", dot: "bg-accent", vivo: false, title };
+    return { texto: `${texto} · parado`, tone: "text-short", dot: "bg-short", vivo: false, title };
+  })();
+
   // El resultado del día en el título: así se vigila desde una pestaña de fondo
   // o desde la lista de apps, sin volver a la pantalla.
   useEffect(() => {
@@ -278,11 +296,20 @@ export default function Dashboard() {
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2">
+              <span
+                className="flex items-center gap-1.5 rounded-lg border border-industrial px-3 py-2 text-xs font-medium text-dim"
+                title={latido.title}
+              >
+                Motor
+                <span
+                  className={`h-2 w-2 rounded-full ${latido.dot} ${latido.vivo ? "animate-pulseDot" : ""}`}
+                />
+                <span className={latido.tone}>{latido.texto}</span>
+              </span>
               <span className="flex items-center gap-1.5 rounded-lg border border-industrial px-3 py-2 text-xs font-medium text-dim">
-                Cron 24/7
-                <span className={`h-2 w-2 rounded-full ${snap?.armed ? "animate-pulseDot bg-long" : "bg-muted"}`} />
+                Órdenes
                 <span className={snap?.armed ? "text-long" : "text-muted"}>
-                  {snap?.armed ? "armado" : "off"}
+                  {snap?.armed ? "armadas" : "en seco"}
                 </span>
               </span>
             </div>
