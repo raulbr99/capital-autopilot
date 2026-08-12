@@ -71,7 +71,12 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
     <>
       {/* núcleo: 4 métricas */}
       <div className="grid grid-cols-2 gap-px border-b border-industrial bg-industrial md:grid-cols-4">
-        <StatCard label="Aciertos" value={`${d.winRate.toFixed(0)}%`} tone="accent" />
+        <StatCard
+          label="Aciertos"
+          value={`${d.winRate.toFixed(0)}%`}
+          unit={d.breakeven ? `+${d.breakeven} a cero` : undefined}
+          tone={beatsBreakeven ? "long" : "short"}
+        />
         <StatCard
           label="Por operación"
           value={`${pnlFmt(d.expectancy)}`}
@@ -96,7 +101,7 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
           </span>
         )}
         <span
-          className={`rounded px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
             beatsBreakeven ? "bg-long/15 text-long" : "bg-short/15 text-short"
           }`}
         >
