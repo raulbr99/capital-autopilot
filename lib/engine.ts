@@ -629,6 +629,33 @@ async function executePmDecision(
       const inst = cfg.instruments.find((i) => i.epic === act.epic);
       if (inst?.longOnly && act.direction === "SELL") { tagOutcome(act, "skipped", "mesa long-only (no shorts)"); continue; }
       if (inst?.paused) { tagOutcome(act, "skipped", "instrumento pausado (circuit breaker)"); continue; }
+      /**
+       * Filtro macro, también para el Gestor.
+       *
+       * Existía SOLO en la ruta técnica desde que se añadió: no abrir entre 45
+       * min antes y 15 después de un evento de alto impacto, porque el hueco de
+       * la noticia se salta el stop. Pero el Gestor es la ruta que decide la
+       * mayoría de las operaciones, así que en la práctica el guardarraíl casi
+       * nunca llegaba a aplicarse.
+       *
+       * OJO: esto EXTIENDE una regla que antes no le afectaba, no restituye
+       * nada — a diferencia del solo-largos o del take-profit, el filtro macro
+       * no está en la configuración. Queda registrado en el diario como
+       * "skipped" con su motivo, así que se ve cada vez que actúa y es fácil
+       * revertirlo si se prefiere que el Gestor decida solo sobre noticias.
+       * Fail-open igual que en la otra ruta: sin calendario, no bloquea.
+       */
+      try {
+        const macro = await relevantEvents(act.epic, { aheadMin: 45, behindMin: 15 });
+        if (macro.length) {
+          const ev = macro[0];
+          const cuando = ev.minutesUntil >= 0 ? `en ${ev.minutesUntil} min` : `hace ${-ev.minutesUntil} min`;
+          tagOutcome(act, "skipped", `evento macro ${cuando}: ${ev.currency} ${ev.title}`);
+          continue;
+        }
+      } catch {
+        /* fail-open */
+      }
       const e = p.evals.find((x) => x.epic === act.epic);
       if (!e || e.price <= 0) { tagOutcome(act, "skipped", "sin precio"); continue; }
       const { stopDist, tpDist } = distances(cfg, e.atr, e.price);
