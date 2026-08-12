@@ -58,22 +58,9 @@ export type EpicEval = {
   spark: number[]; // ultimos cierres para mini-grafica
 };
 
-// OJO: este tipo vive también en components/types.ts (el cliente no importa
-// de lib/). Si se toca uno, hay que tocar el otro.
-export type OpenPos = {
-  key: string;
-  epic: string;
-  direction: "BUY" | "SELL";
-  size: number;
-  entry: number;
-  upl: number;
-  dealId?: string;
-  stopLevel?: number | null;
-  limitLevel?: number | null;
-  currentPrice?: number | null;
-  /** Momento de apertura (ISO), para marcarlo en el gráfico. */
-  openedAt?: string;
-};
+import type { OpenPos } from "./model";
+export type { OpenPos };
+
 
 export function autopilotArmed(): boolean {
   return process.env.AUTOPILOT_ARMED === "true";

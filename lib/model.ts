@@ -113,3 +113,28 @@ export const RESOLUTIONS = [
   "WEEK",
 ] as const;
 export const DEFAULT_RESOLUTION = "HOUR_4";
+
+/**
+ * Posición abierta, tal y como la consumen el motor y la interfaz.
+ *
+ * Estaba declarada dos veces —en lib/engine.ts y en components/types.ts— con la
+ * nota "si se toca una, hay que tocar la otra". Di por hecho que era inevitable
+ * porque engine.ts importa Capital, Supabase y el motor entero, así que el
+ * navegador no puede importarlo. Pero eso solo impide importar EL MÓDULO: nada
+ * obligaba a que el tipo viviera dentro de él. Tercera vez en esta rotación que
+ * una duplicación "forzosa" resulta no serlo al comprobarla.
+ */
+export type OpenPos = {
+  key: string;
+  epic: string;
+  direction: "BUY" | "SELL";
+  size: number;
+  entry: number;
+  upl: number;
+  dealId?: string;
+  stopLevel?: number | null;
+  limitLevel?: number | null;
+  currentPrice?: number | null;
+  /** Momento de apertura (ISO), para marcarlo en el gráfico. */
+  openedAt?: string;
+};

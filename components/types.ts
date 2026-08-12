@@ -13,6 +13,7 @@ import type {
   Instrument,
   LogEntry,
   NotifyConfig,
+  OpenPos,
   RiskConfig,
   TradeRecord,
 } from "@/lib/model";
@@ -23,31 +24,14 @@ export type {
   Instrument,
   LogEntry,
   NotifyConfig,
+  OpenPos,
   RiskConfig,
   TradeRecord,
 };
 export { RESOLUTIONS, DEFAULT_RESOLUTION } from "@/lib/model";
 export type { StrategyConfig } from "@/lib/strategy";
 
-/**
- * Posición abierta tal y como la pinta el cliente. Su gemelo vive en
- * lib/engine.ts y ese SÍ es inevitable: engine.ts importa Capital, Supabase y
- * el motor entero, así que no puede cruzar al navegador. Anotado en ambos lados.
- */
-export type OpenPos = {
-  key: string;
-  epic: string;
-  direction: "BUY" | "SELL";
-  size: number;
-  entry: number;
-  upl: number;
-  dealId?: string;
-  stopLevel?: number | null;
-  limitLevel?: number | null;
-  currentPrice?: number | null;
-  /** Momento de apertura (ISO), para marcarlo en el gráfico. */
-  openedAt?: string;
-};
+
 
 export type Signal = {
   type: "BUY" | "SELL" | "FLAT";
