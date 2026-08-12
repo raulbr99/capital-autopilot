@@ -9,6 +9,14 @@ export const fetchCache = "force-no-store";
  * (W/L, P&L) + los más recientes con su tesis. Para que aprenda de su propio
  * track record. ?desk=forex|crypto|stocks|commodities filtra por mesa.
  */
+// Un cierre a CERO es un empate, no un acierto. Cuenta aparte, y el porcentaje
+// se mide sobre las que se decidieron — igual que en /api/bot/expectancy y en
+// analyze(). Antes esta ruta inflaba el acierto del Gestor con sus propios
+// breakevens, y es el resumen que los Gestores leen para juzgarse.
+const EPS_PNL = 0.005;
+const gano = (p?: number) => (p || 0) > EPS_PNL;
+const perdio = (p?: number) => (p || 0) < -EPS_PNL;
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const desk = (searchParams.get("desk") || "").toLowerCase();
@@ -20,11 +28,12 @@ export async function GET(req: Request) {
     );
     if (desk) trades = trades.filter((t) => epicDesk.get(t.epic) === desk);
 
-    const by = new Map<string, { epic: string; trades: number; wins: number; netPnl: number }>();
+    const by = new Map<string, { epic: string; trades: number; wins: number; losses: number; netPnl: number }>();
     for (const t of trades) {
-      const o = by.get(t.epic) || { epic: t.epic, trades: 0, wins: 0, netPnl: 0 };
+      const o = by.get(t.epic) || { epic: t.epic, trades: 0, wins: 0, losses: 0, netPnl: 0 };
       o.trades++;
-      if ((t.pnl || 0) >= 0) o.wins++;
+      if (gano(t.pnl)) o.wins++;
+      else if (perdio(t.pnl)) o.losses++;
       o.netPnl += t.pnl || 0;
       by.set(t.epic, o);
     }
@@ -32,7 +41,7 @@ export async function GET(req: Request) {
       .map((o) => ({
         epic: o.epic,
         trades: o.trades,
-        winRate: o.trades ? Math.round((o.wins / o.trades) * 100) : 0,
+        winRate: o.wins + o.losses ? Math.round((o.wins / (o.wins + o.losses)) * 100) : 0,
         netPnl: Math.round(o.netPnl * 100) / 100,
       }))
       .sort((a, b) => a.netPnl - b.netPnl);
@@ -54,9 +63,16 @@ export async function GET(req: Request) {
     // el resto son del motor técnico. Contrastar ambos = feedback de calidad de criterio.
     const isAI = (t: { reason?: string }) => (t.reason || "").startsWith("IA:");
     const stat = (arr: typeof trades) => {
-      const wins = arr.filter((t) => (t.pnl || 0) >= 0).length;
+      const wins = arr.filter((t) => gano(t.pnl)).length;
+      const losses = arr.filter((t) => perdio(t.pnl)).length;
       const net = Math.round(arr.reduce((s, t) => s + (t.pnl || 0), 0) * 100) / 100;
-      return { trades: arr.length, wins, winRate: arr.length ? Math.round((wins / arr.length) * 100) : 0, netPnl: net };
+      return {
+        trades: arr.length,
+        wins,
+        losses,
+        winRate: wins + losses ? Math.round((wins / (wins + losses)) * 100) : 0,
+        netPnl: net,
+      };
     };
     const aiTrades = trades.filter(isAI);
     const gestor = stat(aiTrades);

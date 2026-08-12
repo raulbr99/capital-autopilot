@@ -70,12 +70,13 @@ export function analyze(trades: TradeRecord[]): Analytics {
   }
 
   // por activo
-  const epicMap = new Map<string, { pnl: number; trades: number; wins: number }>();
+  const epicMap = new Map<string, { pnl: number; trades: number; wins: number; losses: number }>();
   for (const t of closed) {
-    const e = epicMap.get(t.epic) || { pnl: 0, trades: 0, wins: 0 };
+    const e = epicMap.get(t.epic) || { pnl: 0, trades: 0, wins: 0, losses: 0 };
     e.pnl += t.pnl || 0;
     e.trades++;
     if (esGanadora(t.pnl)) e.wins++;
+    else if (esPerdedora(t.pnl)) e.losses++;
     epicMap.set(t.epic, e);
   }
   const byEpic = [...epicMap.entries()]
@@ -83,7 +84,7 @@ export function analyze(trades: TradeRecord[]): Analytics {
       epic,
       pnl: v.pnl,
       trades: v.trades,
-      winRate: v.trades ? (v.wins / v.trades) * 100 : 0, // por activo se mantiene sobre el total
+      winRate: v.wins + v.losses ? (v.wins / (v.wins + v.losses)) * 100 : 0,
     }))
     .sort((a, b) => b.pnl - a.pnl);
 
