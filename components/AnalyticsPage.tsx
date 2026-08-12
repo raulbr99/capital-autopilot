@@ -19,7 +19,7 @@ import type { TradeRecord, DeskCategory } from "./types";
  * único fichero duplicado.
  */
 import { analyze } from "@/lib/analytics";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion, pdec } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -448,7 +448,7 @@ export default function AnalyticsPage() {
                 label={`Historial · ${closedTrades.length}`}
                 right={
                   <button
-                    onClick={() => exportarCsv(closedTrades, desk || epic || "todo")}
+                    onClick={() => exportarCsv(closedTrades, desk || epic || "todo", divisa)}
                     className="min-h-[32px] rounded-md border border-cement px-3 py-1.5 text-[11px] font-medium text-dim transition-colors hover:border-accent hover:text-accent"
                     title="Descargar las operaciones filtradas en CSV"
                   >
@@ -670,7 +670,20 @@ function DailyBars({ data }: { data: { date: string; pnl: number }[] }) {
  * la API: para Hacienda, para analizarlos fuera o simplemente para conservarlos
  * había que pelearse con curl. Exporta lo que se está viendo, filtros incluidos.
  */
-function exportarCsv(trades: TradeRecord[], etiqueta: string) {
+/**
+ * Descarga el histórico filtrado. Verificado descargándolo de verdad, y salieron
+ * tres cosas que la revisión de código no habría dado:
+ *
+ *  · La columna se llamaba "pnl_eur", con la divisa clavada — justo lo que se
+ *    quitó de toda la interfaz en las pasadas 118 y 119. Ahora la toma de la
+ *    cuenta.
+ *  · Los precios salían en crudo: "4371.620000000001", "64.68799999999999".
+ *    Son dobles sin redondear; en la hoja de cálculo aparecen tal cual.
+ *  · Las fechas iban en UTC (toISOString), mientras el panel muestra todo en la
+ *    zona de la cuenta. Exportabas y las horas no cuadraban con la pantalla:
+ *    dos horas de diferencia en verano.
+ */
+function exportarCsv(trades: TradeRecord[], etiqueta: string, divisa: string) {
   const cab = [
     "apertura",
     "cierre",
@@ -679,7 +692,7 @@ function exportarCsv(trades: TradeRecord[], etiqueta: string) {
     "tamano",
     "entrada",
     "salida",
-    "pnl_eur",
+    `pnl${divisa ? `_${divisa.toLowerCase()}` : ""}`,
     "duracion_min",
     "origen",
     "motivo",
@@ -688,19 +701,25 @@ function exportarCsv(trades: TradeRecord[], etiqueta: string) {
     const t = String(v ?? "");
     return /[",;\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
-  const iso = (ms?: number) => (ms ? new Date(ms).toISOString().slice(0, 19).replace("T", " ") : "");
+  // Zona de la cuenta, no UTC: el panel enseña Europe/Madrid en todas partes.
+  // 'sv-SE' formatea como AAAA-MM-DD HH:MM:SS, que es lo que ordena bien.
+  const iso = (ms?: number) =>
+    ms ? new Date(ms).toLocaleString("sv-SE", { timeZone: "Europe/Madrid" }) : "";
+  /** Precio con los decimales del activo; sin esto salen dobles en crudo. */
+  const num = (v: number | undefined, d: number) =>
+    v == null || !Number.isFinite(v) ? "" : Number(v.toFixed(d));
   const filas = trades.map((t) =>
     [
       iso(t.ts),
       iso(t.closedTs),
       t.epic,
       t.direction === "BUY" ? "LARGO" : "CORTO",
-      t.size,
-      t.entry,
+      num(t.size, 4),
+      num(t.entry, pdec(t.entry)),
       // Mismo criterio que la tabla: una salida no fiable se exporta vacía en
       // vez de propagar el precio inventado a una hoja de cálculo.
-      salidaFiable(t) ? t.exit : "",
-      t.pnl ?? "",
+      salidaFiable(t) ? num(t.exit, pdec(t.entry)) : "",
+      num(t.pnl, 2),
       t.closedTs && t.ts ? Math.round((t.closedTs - t.ts) / 60000) : "",
       (t.reason || "").startsWith("IA:") ? "gestor_ia" : "motor_tecnico",
       (t.reason || "").replace(/^IA:\s*/, ""),
