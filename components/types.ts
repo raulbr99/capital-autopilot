@@ -13,6 +13,7 @@ import type {
   Instrument,
   LogEntry,
   NotifyConfig,
+  EpicEval,
   OpenPos,
   RiskConfig,
   TradeRecord,
@@ -24,31 +25,19 @@ export type {
   Instrument,
   LogEntry,
   NotifyConfig,
+  EpicEval,
   OpenPos,
   RiskConfig,
   TradeRecord,
 };
 export { RESOLUTIONS, DEFAULT_RESOLUTION } from "@/lib/model";
-export type { StrategyConfig } from "@/lib/strategy";
+export type { Signal, StrategyConfig } from "@/lib/strategy";
 
 
 
-export type Signal = {
-  type: "BUY" | "SELL" | "FLAT";
-  confidence: number;
-  reason: string;
-  indicators: { smaFast: number; smaSlow: number; rsi: number; adx: number };
-};
 
-export type EpicEval = {
-  epic: string;
-  resolution: string;
-  signal: Signal;
-  hasPosition: boolean;
-  price: number;
-  atr: number;
-  spark: number[];
-};
+
+
 
 
 

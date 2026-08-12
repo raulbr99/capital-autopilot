@@ -48,15 +48,9 @@ import { reviewSignal, type AiVerdict } from "./ai";
 import { askPortfolioManager, type PmContext } from "./pm";
 import { getEconomicEvents, currenciesFor } from "./calendar";
 
-export type EpicEval = {
-  epic: string;
-  resolution: string;
-  signal: Signal;
-  hasPosition: boolean;
-  price: number;
-  atr: number;
-  spark: number[]; // ultimos cierres para mini-grafica
-};
+import type { EpicEval } from "./model";
+export type { EpicEval };
+
 
 import type { OpenPos } from "./model";
 export type { OpenPos };
@@ -129,6 +123,22 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       if (signal.type !== "FLAT") b.stats.signals++;
     } catch (err: any) {
       logN("error", `Error evaluando ${epic} (${res}): ${err.message}`, epic);
+      /**
+       * Dejar constancia en la lista en vez de omitirlo. Antes el activo se
+       * caía de `evals` y desaparecía de la rejilla: 19 tarjetas donde había
+       * 20, con el recuento bajando solo. La interfaz lo pinta ahora como "sin
+       * datos" para que se distinga de un FLAT, que sí es una respuesta.
+       */
+      evals.push({
+        epic,
+        resolution: res,
+        signal: { type: "FLAT", confidence: 0, reason: "", indicators: { smaFast: 0, smaSlow: 0, rsi: 0, adx: 0 } },
+        hasPosition: false,
+        price: 0,
+        atr: 0,
+        spark: [],
+        sinDatos: String(err?.message || "error").slice(0, 60),
+      });
     }
   }
 

@@ -34,7 +34,7 @@ export default function SignalMatrix({
    * Orden: señal activa (por confianza) → con posición abierta → resto.
    */
   const sorted = useMemo(() => {
-    const rank = (e: EpicEval) => (e.signal.type !== "FLAT" ? 0 : e.hasPosition ? 1 : 2);
+    const rank = (e: EpicEval) => (e.sinDatos ? 3 : e.signal.type !== "FLAT" ? 0 : e.hasPosition ? 1 : 2);
     return [...evals]
       .filter((e) =>
         filter === "senal" ? e.signal.type !== "FLAT" : filter === "posicion" ? e.hasPosition : true
@@ -115,6 +115,28 @@ export default function SignalMatrix({
 }
 
 function SignalCard({ e, bloqueada }: { e: EpicEval; bloqueada?: boolean }) {
+  /**
+   * Un activo que Capital no pudo devolver no es un FLAT: es una respuesta que
+   * no llegó. Pintarlo igual que los demás afirmaría que no hay señal, que es
+   * justo lo que no se sabe.
+   */
+  if (e.sinDatos) {
+    return (
+      <div className="border-b border-r border-industrial bg-soft/60 p-4">
+        <div className="flex items-center gap-1.5">
+          <span className="font-display text-base text-muted">{e.epic}</span>
+          <span className="rounded bg-industrial px-1 py-0.5 font-mono text-[8px] text-muted">{e.resolution}</span>
+        </div>
+        <p className="mt-2 text-[11px] leading-snug text-muted">
+          Sin datos en este ciclo — el broker no respondió. Se reintenta en el siguiente.
+        </p>
+        <p className="mt-1 font-mono text-[10px] text-muted/70" title={e.sinDatos}>
+          {e.sinDatos}
+        </p>
+      </div>
+    );
+  }
+
   const s = e.signal;
   const buy = s.type === "BUY";
   /**

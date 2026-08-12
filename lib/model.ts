@@ -16,7 +16,8 @@
  * dos partes sin arrastrar servidor al navegador.
  */
 
-import type { StrategyConfig } from "./strategy";
+import type { Signal, StrategyConfig } from "./strategy";
+export type { Signal };
 
 export type RiskConfig = {
   sizingMode: "fixed" | "percent" | "margin"; // unidades fijas | % de equity arriesgado | % de equity como margen
@@ -137,4 +138,31 @@ export type OpenPos = {
   currentPrice?: number | null;
   /** Momento de apertura (ISO), para marcarlo en el gráfico. */
   openedAt?: string;
+};
+
+/**
+ * Evaluación de un activo en un ciclo del motor.
+ *
+ * Estaba declarada dos veces (lib/engine.ts y components/types.ts), igual que
+ * las otras diez. Se unifica aquí ahora que hay que añadirle un campo: sin esto
+ * habría que acordarse de tocar los dos ficheros, que es exactamente el fallo
+ * que se ha repetido toda la rotación.
+ */
+export type EpicEval = {
+  epic: string;
+  resolution: string;
+  signal: Signal;
+  hasPosition: boolean;
+  price: number;
+  atr: number;
+  /** Últimos cierres para la mini-gráfica. */
+  spark: number[];
+  /**
+   * El activo no se pudo evaluar en este ciclo (Capital devolvió error, p. ej.
+   * un 429). Antes estos activos se caían de la lista sin más: el motor
+   * capturaba la excepción y seguía, así que la rejilla enseñaba 19 tarjetas en
+   * vez de 20 y el recuento bajaba solo. Un hueco silencioso se lee como "aquí
+   * no hay nada que mirar", cuando lo cierto es "no lo sabemos".
+   */
+  sinDatos?: string;
 };
