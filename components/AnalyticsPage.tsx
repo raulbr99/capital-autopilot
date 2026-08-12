@@ -150,10 +150,23 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <>
+            {/*
+              Vocabulario unificado con el panel principal. Las mismas tres
+              métricas se llamaban distinto en cada pantalla —"Win rate" aquí y
+              "Aciertos" allí, "Expectancy" aquí y "Por operación" allí, "PnL
+              neto" aquí y "Resultado neto" allí— y cuatro de las ocho etiquetas
+              estaban en inglés en una aplicación que ya tradujo su jerga
+              (FOLD → Ventana, DEGRADACIÓN IS→OOS → Retención) y barrió el
+              snake_case. Que el mismo número cambie de nombre al cambiar de
+              pantalla obliga a reconocerlo dos veces.
+              "Profit factor" se queda: es idéntico en las dos y no tiene
+              traducción asentada entre operadores.
+              "Caída máxima" es el término que ya usa el backtest.
+            */}
             {/* KPIs */}
             <section className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
               <Kpi
-                label="PnL neto"
+                label="Resultado neto"
                 value={pnlFmt(a.netPnl)}
                 sub={equity ? `${pnlFmt((a.netPnl / equity) * 100)}% del capital` : "€"}
                 tone={Math.abs(a.netPnl) < 0.005 ? undefined : a.netPnl > 0 ? "long" : "short"}
@@ -162,7 +175,7 @@ export default function AnalyticsPage() {
               {/* El color lo decide el umbral, no el capricho: verde solo si
                   el acierto basta para ser rentable con ese payoff. */}
               <Kpi
-                label="Win rate"
+                label="Aciertos"
                 value={`${a.winRate.toFixed(0)}%`}
                 sub={`equilibrio en ${a.breakevenWinRate.toFixed(0)}% · sin contar las de a cero`}
                 tone={a.winRate >= a.breakevenWinRate ? "long" : "short"}
@@ -177,7 +190,7 @@ export default function AnalyticsPage() {
               />
               {/* Un drawdown en euros no dice nada sin saber sobre qué capital */}
               <Kpi
-                label="Max drawdown"
+                label="Caída máxima"
                 value={fmt(a.maxDrawdown)}
                 sub={equity ? `${((a.maxDrawdown / equity) * 100).toFixed(1)}% del capital` : "peor racha acumulada"}
                 tone="short"
@@ -190,7 +203,7 @@ export default function AnalyticsPage() {
                   a.closed - a.wins - a.losses > 0 ? ` · ${a.closed - a.wins - a.losses} a cero` : ""
                 }`}
               />
-              <Kpi label="Expectancy" value={fmt(a.expectancy)} sub="por operación" />
+              <Kpi label="Por operación" value={fmt(a.expectancy)} sub="media de las cerradas" />
               <Kpi label="Media ganancia" value={`+${fmt(a.avgWin)}`} sub={`−${fmt(a.avgLoss)} media pérdida`} />
               <Kpi label="Racha" value={`${a.bestStreak >= 0 ? "+" : ""}${a.bestStreak} / ${a.worstStreak}`} sub="mejor / peor" />
             </section>
