@@ -936,8 +936,19 @@ async function reconcileClosedTrades(
   const prev = b.prevDeposit > 0 ? b.prevDeposit : deposit;
   const per = Math.round(((deposit - prev) / reallyClosed.length) * 100) / 100;
   for (const t of reallyClosed) {
-    const exit = priceByEpic.get(t.epic) ?? t.entry;
-    await updateTrade(t.id, { status: "closed", exit, pnl: per, closedTs: Date.now() });
+    // `?? t.entry` fabricaba un precio de salida: si el activo no traía cotización
+    // en este tick (mercado cerrado, epic fuera del universo, fallo puntual de
+    // Capital), la operación quedaba guardada como "entró y salió al mismo
+    // precio" — y el historial enseñaba MU a 1.147,1 → 1.147,1 con −27 €. Es
+    // preferible no tener el dato a inventárselo: `exit` se queda sin poner y
+    // la tabla lo muestra como no registrado.
+    const exit = priceByEpic.get(t.epic);
+    await updateTrade(t.id, {
+      status: "closed",
+      ...(exit != null ? { exit } : {}),
+      pnl: per,
+      closedTs: Date.now(),
+    });
     b.stats.tradesClosed++;
     logN(
       "trade",

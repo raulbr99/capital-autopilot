@@ -467,7 +467,9 @@ function exportarCsv(trades: TradeRecord[], etiqueta: string) {
       t.direction === "BUY" ? "LARGO" : "CORTO",
       t.size,
       t.entry,
-      t.exit ?? "",
+      // Mismo criterio que la tabla: una salida no fiable se exporta vacía en
+      // vez de propagar el precio inventado a una hoja de cálculo.
+      salidaFiable(t) ? t.exit : "",
       t.pnl ?? "",
       t.closedTs && t.ts ? Math.round((t.closedTs - t.ts) / 60000) : "",
       (t.reason || "").startsWith("IA:") ? "gestor_ia" : "motor_tecnico",
@@ -493,6 +495,19 @@ function duracion(t: TradeRecord) {
   if (min < 60) return `${min} min`;
   const h = Math.round(min / 6) / 10;
   return h < 48 ? `${h} h` : `${Math.round(h / 24)} d`;
+}
+
+/**
+ * ¿Es creíble el precio de salida guardado? Salir al mismo precio exacto al que
+ * entraste y aun así mover ±27 € es imposible, así que esas filas son el rastro
+ * del `?? t.entry` que tenía el motor: cuando el activo no traía cotización en
+ * el tick del cierre, rellenaba el hueco con el precio de ENTRADA. Ya no lo
+ * hace, pero 5 de las 33 operaciones cerradas se guardaron así y no se puede
+ * reconstruir el precio real a posteriori. Mejor decir que no está.
+ */
+function salidaFiable(t: TradeRecord): boolean {
+  if (t.exit == null) return false;
+  return !(t.exit === t.entry && Math.abs(t.pnl || 0) > 0.01);
 }
 
 function TradeTable({ trades }: { trades: TradeRecord[] }) {
@@ -546,7 +561,16 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
                 </td>
                 <td className="px-4 py-2.5 tabular-nums text-dim">
                   {price(t.entry)}
-                  {t.exit != null ? ` → ${price(t.exit)}` : ""}
+                  {salidaFiable(t) ? (
+                    ` → ${price(t.exit!)}`
+                  ) : (
+                    <span
+                      className="text-muted"
+                      title="El precio de cierre no se capturó en su momento. El P&L sí es real: sale del efectivo de la cuenta, no de estos dos precios."
+                    >
+                      {" → sin registrar"}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-muted">{duracion(t)}</td>
                 <td className={`px-4 py-2.5 text-right tabular-nums ${pnlClass(t.pnl || 0)}`}>
