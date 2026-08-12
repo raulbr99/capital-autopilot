@@ -367,7 +367,10 @@ export default function Dashboard() {
                 value={loading ? null : `${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
                 tone={Math.abs(dayPnlPct) < 0.005 ? undefined : dayPnlPct > 0 ? "long" : "short"}
               />
-              <MiniStat label="OPERACIONES HOY" value={loading ? null : `${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
+              {/* "TRADES HOY" cabía; "OPERACIONES HOY" no —se truncaba en "OPERACIONES H…"—.
+                  La app ya usa "op/ops" como forma compacta en celdas densas
+                  (backtest, lecciones, por instrumento): misma regla aquí. */}
+              <MiniStat label="OPS. HOY" value={loading ? null : `${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
               <MiniStat
                 label="POSICIONES"
                 value={loading ? null : `${positions.length}`}
