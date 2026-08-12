@@ -14,7 +14,18 @@ import AppHeader from "./AppHeader";
 import Link from "next/link";
 
 const TICK_MS = 6000;
-const TRADES_MS = 12000;
+/**
+ * El histórico (registro + curva de equity) NO cambia al ritmo de los precios:
+ * appendEquity deduplica por debajo de 120 s y el registro solo crece cuando
+ * corre el motor (~58 min). Aun así el panel se traía el payload COMPLETO cada
+ * 6 s. Medido con un minuto de panel abierto: 11 llamadas a /api/bot/tick y
+ * 370 kB, más 105 kB de /api/bot/trades — 476 kB por minuto de estar mirando.
+ * Ahora el sondeo rápido pide ?slim=1 (sin registro, curva ni operaciones) y
+ * uno lento trae esas tres cosas. Los modos ligeros existen desde la pasada 60
+ * y el panel era el único que no los usaba.
+ */
+const HISTORIAL_MS = 60000;
+const TRADES_MS = 60000;
 
 export default function Dashboard() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
@@ -29,7 +40,9 @@ export default function Dashboard() {
 
   const tick = useCallback(async (active: boolean) => {
     try {
-      const res = await fetch("/api/bot/tick", { method: active ? "POST" : "GET" });
+      const res = await fetch(`/api/bot/tick${active ? "" : "?slim=1"}`, {
+        method: active ? "POST" : "GET",
+      });
       const data: Snapshot = await res.json();
       // Solo cuenta como lectura buena si el broker respondió de verdad; si no,
       // se conservan los datos previos pero marcados como no frescos.
@@ -39,6 +52,23 @@ export default function Dashboard() {
       }
     } catch {
       /* la red falló: lastOk se queda atrás y la cabecera lo delata */
+    }
+  }, []);
+
+  /** Registro y curva: se piden aparte y despacio. */
+  const [historial, setHistorial] = useState<{ logs: Snapshot["state"]["logs"]; equity: Snapshot["state"]["equity"] }>({
+    logs: [],
+    equity: [],
+  });
+  const loadHistorial = useCallback(async () => {
+    try {
+      const r = await fetch("/api/bot/tick");
+      const d: Snapshot = await r.json();
+      if (!(d as any).error && d.state) {
+        setHistorial({ logs: d.state.logs ?? [], equity: d.state.equity ?? [] });
+      }
+    } catch {
+      /* */
     }
   }, []);
 
@@ -61,6 +91,7 @@ export default function Dashboard() {
   // Capital de verdad, así que sondear con el móvil guardado es gasto puro.
   usePoll(() => tick(false), TICK_MS, [tick]);
   usePoll(loadTrades, TRADES_MS, [loadTrades]);
+  usePoll(loadHistorial, HISTORIAL_MS, [loadHistorial]);
 
   // alertas: flash + beep cuando cambian aperturas/cierres
   useEffect(() => {
@@ -115,7 +146,7 @@ export default function Dashboard() {
   const positions = snap?.openPositions ?? [];
   const evals = snap?.evals ?? [];
   const floatPnl = positions.reduce((s, p) => s + (p.upl || 0), 0);
-  const equity = snap?.state.equity ?? [];
+  const equity = historial.equity;
   const lastEquity = equity.length ? equity[equity.length - 1].equity : 0;
   const configured = snap?.configured ?? true;
   const enabled = cfg?.enabled ?? false;
@@ -401,7 +432,7 @@ export default function Dashboard() {
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
           <div className="min-w-0 space-y-4">
             <PositionsTable positions={positions} onClose={closePos} busy={busy} />
-            <LogFeed logs={snap?.state.logs ?? []} />
+            <LogFeed logs={historial.logs} />
           </div>
 
           <div className="min-w-0 space-y-4">
