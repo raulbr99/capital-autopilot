@@ -8,8 +8,12 @@ import { SectionHead } from "./ui";
  * se recuerda: sin esto, el panel puede llevar meses abierto a internet y nada
  * en pantalla lo indica.
  */
+/** Definir la variable no protege nada hasta el redespliegue: los dos pasos van juntos. */
+const COMANDOS = `vercel env add DASHBOARD_PASSWORD production\nvercel deploy --prod`;
+
 export default function SecurityCard() {
   const [estado, setEstado] = useState<{ protegido: boolean; sesion: boolean } | null>(null);
+  const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth")
@@ -52,12 +56,43 @@ export default function SecurityCard() {
             </p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-dim">
               Cualquiera con la URL puede <span className="text-white">cerrar posiciones</span>, parar el
-              motor o cambiar el riesgo. La puerta está montada pero desactivada: se enciende definiendo
-              la variable y volviendo a desplegar.
+              motor o cambiar el riesgo. La puerta está montada pero desactivada: se enciende
+              definiendo la variable y volviendo a desplegar.
             </p>
-            <pre className="mt-3 overflow-x-auto rounded-lg border border-industrial bg-base px-3 py-2 font-mono text-[11px] text-dim">
-              vercel env add DASHBOARD_PASSWORD production
-            </pre>
+            {/*
+              El bloque enseñaba solo el primer paso de dos: definir la variable
+              no protege nada hasta que se vuelve a desplegar, y eso iba suelto
+              en la prosa. Un comando que se queda a medias es peor que ninguno,
+              porque deja creer que ya está hecho. Ahora van los dos, en orden y
+              copiables de una vez — nadie transcribe a mano una variable de
+              entorno desde una pantalla.
+            */}
+            <div className="mt-3 overflow-hidden rounded-lg border border-industrial bg-base">
+              <div className="flex items-center justify-between border-b border-industrial px-3 py-1.5">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted">
+                  Los dos pasos
+                </span>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(COMANDOS);
+                      setCopiado(true);
+                      setTimeout(() => setCopiado(false), 1800);
+                    } catch {
+                      /* sin permiso de portapapeles: el texto sigue seleccionable */
+                    }
+                  }}
+                  className={`rounded px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                    copiado ? "text-long" : "text-muted hover:text-accent"
+                  }`}
+                >
+                  {copiado ? "copiado ✓" : "copiar"}
+                </button>
+              </div>
+              <pre className="overflow-x-auto px-3 py-2 font-mono text-[11px] leading-relaxed text-dim">
+                {COMANDOS}
+              </pre>
+            </div>
           </>
         )}
       </div>
