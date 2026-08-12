@@ -46,6 +46,15 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
   const cur = pos.currentPrice ?? pos.entry;
   const curFavor = cur === pos.entry ? 0 : pos.direction === "BUY" ? cur - pos.entry : pos.entry - cur;
   const curTone = curFavor > 0 ? "text-long" : curFavor < 0 ? "text-short" : "text-dim";
+  /**
+   * Cuánto recorrido queda hasta el stop. Es la cifra que dice si la posición
+   * está holgada o al borde, y la tabla de posiciones ya la enseña; aquí, con
+   * el nivel delante en el gráfico, faltaba justamente el "a cuánto está".
+   */
+  const distStop =
+    pos.stopLevel == null || !cur
+      ? undefined
+      : `${((Math.abs(cur - pos.stopLevel) / cur) * 100).toFixed(2)}% de recorrido`;
 
   // crear el chart una vez (pos es estable durante la vida del modal)
   useEffect(() => {
@@ -262,19 +271,50 @@ export default function PositionChart({ pos, onClose }: { pos: OpenPos; onClose:
         <div className="grid grid-cols-2 gap-px border-t border-industrial bg-industrial sm:grid-cols-4">
           <Detail label="ENTRADA" value={fmt(pos.entry, dec)} />
           <Detail label="ACTUAL" value={fmt(cur, dec)} tone={curTone} />
-          <Detail label="STOP LOSS" value={pos.stopLevel == null ? "—" : fmt(pos.stopLevel, dec)} tone={pos.stopLevel == null ? "text-muted" : "text-short"} />
-          <Detail label="TAKE PROFIT" value={pos.limitLevel == null ? "trailing" : fmt(pos.limitLevel, dec)} tone={pos.limitLevel == null ? "text-muted" : "text-accent"} />
+          <Detail
+            label="STOP LOSS"
+            value={pos.stopLevel == null ? "—" : fmt(pos.stopLevel, dec)}
+            sub={distStop}
+            tone={pos.stopLevel == null ? "text-muted" : "text-short"}
+          />
+          {/*
+            Decía "trailing" cuando no había objetivo. Eso no es un dato, es una
+            explicación inventada: que el broker no tenga orden de objetivo solo
+            significa eso, y si el trailing está activo o no depende de la
+            configuración de riesgo, que esta ventana ni siquiera recibe. Peor
+            aún, la excusa tapó durante semanas un fallo real — el PUT de Capital
+            borraba el take-profit en el primer ajuste del stop— porque la
+            pantalla daba su ausencia por normal. La celda de al lado, con el
+            mismo caso, ya ponía "—".
+          */}
+          <Detail
+            label="TAKE PROFIT"
+            value={pos.limitLevel == null ? "—" : fmt(pos.limitLevel, dec)}
+            sub={pos.limitLevel == null ? "sin orden de objetivo" : undefined}
+            tone={pos.limitLevel == null ? "text-muted" : "text-accent"}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function Detail({ label, value, tone = "text-white" }: { label: string; value: string; tone?: string }) {
+function Detail({
+  label,
+  value,
+  sub,
+  tone = "text-white",
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: string;
+}) {
   return (
     <div className="bg-soft px-4 py-3">
       <p className="tag">{label}</p>
       <p className={`mt-1 font-mono text-sm ${tone}`}>{value}</p>
+      {sub && <p className="mt-0.5 font-mono text-[10px] text-muted">{sub}</p>}
     </div>
   );
 }
