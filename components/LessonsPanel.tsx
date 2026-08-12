@@ -3,7 +3,21 @@
 import { useEffect, useState } from "react";
 import { SectionHead, fmt, pnlClass, pnlFmt } from "./ui";
 
-type Lado = { trades: number; wins: number; winRate: number; netPnl: number };
+type Lado = {
+  trades: number;
+  wins: number;
+  winRate: number;
+  netPnl: number;
+  payoff: number;
+  breakevenWinRate: number;
+};
+
+/**
+ * Por debajo de esto un porcentaje no es una estadística, es una anécdota: con
+ * 1 operación cerrada en pérdida sale "0%", que se lee como un dato duro y no
+ * lo es. Mismo criterio que el walk-forward.
+ */
+const MUESTRA_MIN = 5;
 type Data = {
   closed: number;
   netTotal: number;
@@ -46,31 +60,54 @@ export default function LessonsPanel({ desk }: { desk?: string }) {
             {[
               { k: "Gestor IA", v: d.gestor },
               { k: "Motor técnico", v: d.tecnico },
-            ].map(({ k, v }) => (
-              <div key={k}>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[12.5px] text-dim">{k}</span>
-                  <span className="font-mono text-[11px] tabular-nums text-muted">
-                    {v.trades} ops · {v.winRate}%
-                  </span>
+            ].map(({ k, v }) => {
+              const bastante = v.trades >= MUESTRA_MIN;
+              const supera = bastante && v.breakevenWinRate > 0 && v.winRate >= v.breakevenWinRate;
+              return (
+                <div key={k}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-[12.5px] text-dim">{k}</span>
+                    <span className="font-mono text-[11px] tabular-nums text-muted">
+                      {v.trades} ops
+                      {bastante && (
+                        <>
+                          {" · "}
+                          <span className={supera ? "text-long" : "text-short"}>{v.winRate}%</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  {/* La barra mide UNA cosa: el acierto. La marca es el umbral a
+                      partir del cual ese acierto gana dinero con su payoff. */}
+                  {bastante ? (
+                    <div className="relative mt-1 h-1.5 w-full overflow-hidden rounded-full bg-industrial">
+                      <div
+                        className={`h-full ${supera ? "bg-long" : "bg-short"}`}
+                        style={{ width: `${Math.min(100, v.winRate)}%` }}
+                      />
+                      {v.breakevenWinRate > 0 && (
+                        <span
+                          className="absolute top-0 h-full w-px bg-white/70"
+                          style={{ left: `${Math.min(100, v.breakevenWinRate)}%` }}
+                          title={`Equilibrio en ${v.breakevenWinRate}% (payoff ${v.payoff})`}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-[10px] text-muted">muestra corta · sin acierto fiable</p>
+                  )}
+                  <p className={`mt-0.5 font-mono text-[12px] tabular-nums ${pnlClass(v.netPnl)}`}>
+                    {pnlFmt(v.netPnl)}
+                  </p>
                 </div>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-industrial">
-                  <div
-                    className={v.netPnl >= 0 ? "h-full bg-long" : "h-full bg-short"}
-                    style={{ width: `${Math.min(100, v.winRate)}%` }}
-                  />
-                </div>
-                <p className={`mt-0.5 font-mono text-[12px] tabular-nums ${pnlClass(v.netPnl)}`}>
-                  {pnlFmt(v.netPnl)}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          {!comparables && (
-            <p className="mt-2 text-[10px] leading-snug text-muted">
-              Con tan pocas operaciones de un lado, la comparación aún no dice nada.
-            </p>
-          )}
+          <p className="mt-2 text-[10px] leading-snug text-muted">
+            {comparables
+              ? "La marca blanca es el acierto mínimo para no perder con su payoff."
+              : "Con tan pocas operaciones de un lado, la comparación aún no dice nada."}
+          </p>
         </div>
 
         {/* Lo que le sangra: es lo que el prompt le pide no repetir */}
@@ -83,8 +120,11 @@ export default function LessonsPanel({ desk }: { desk?: string }) {
               {peores.map((x) => (
                 <div key={x.epic} className="flex items-baseline justify-between gap-2">
                   <span className="font-mono text-[12px] text-white">{x.epic}</span>
+                  {/* "1t · 0%" era ruido con aire de dato: sobre una operación
+                      el acierto no existe, y la unidad ("t") no la define nadie. */}
                   <span className="font-mono text-[10px] tabular-nums text-muted">
-                    {x.trades}t · {x.winRate}%
+                    {x.trades} {x.trades === 1 ? "op" : "ops"}
+                    {x.trades >= MUESTRA_MIN ? ` · ${x.winRate}%` : ""}
                   </span>
                   <span className="font-mono text-[12px] tabular-nums text-short">{fmt(x.netPnl)}</span>
                 </div>
@@ -107,8 +147,11 @@ export default function LessonsPanel({ desk }: { desk?: string }) {
                 <li key={i}>
                   <div className="flex items-baseline gap-1.5">
                     <span className="font-mono text-[11px] text-white">{t.epic}</span>
-                    <span className={`font-mono text-[10px] ${t.direction === "BUY" ? "text-long" : "text-short"}`}>
-                      {t.direction === "BUY" ? "▲" : "▼"}
+                    {/* La dirección iba en verde/rojo y chocaba con el importe
+                        que tiene al lado: un ▲ verde sobre un −27 € en una lista
+                        de fallos. En esta app el color es dinero, nada más. */}
+                    <span className="font-mono text-[10px] text-muted">
+                      {t.direction === "BUY" ? "▲ compra" : "▼ venta"}
                     </span>
                     <span className="font-mono text-[11px] tabular-nums text-short">{fmt(t.pnl)}</span>
                   </div>

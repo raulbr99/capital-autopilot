@@ -63,15 +63,23 @@ export async function GET(req: Request) {
     // el resto son del motor técnico. Contrastar ambos = feedback de calidad de criterio.
     const isAI = (t: { reason?: string }) => (t.reason || "").startsWith("IA:");
     const stat = (arr: typeof trades) => {
-      const wins = arr.filter((t) => gano(t.pnl)).length;
-      const losses = arr.filter((t) => perdio(t.pnl)).length;
+      const g = arr.filter((t) => gano(t.pnl));
+      const p = arr.filter((t) => perdio(t.pnl));
       const net = Math.round(arr.reduce((s, t) => s + (t.pnl || 0), 0) * 100) / 100;
+      // payoff = euros ganados por cada euro perdido; con él, el % de acierto
+      // mínimo para no perder dinero. Un 41% es excelente con payoff 2 y ruina
+      // con payoff 0,5: el acierto suelto no significa nada sin su umbral.
+      const avgWin = g.length ? g.reduce((s, t) => s + (t.pnl || 0), 0) / g.length : 0;
+      const avgLoss = p.length ? Math.abs(p.reduce((s, t) => s + (t.pnl || 0), 0)) / p.length : 0;
+      const payoff = avgLoss > 0 ? avgWin / avgLoss : 0;
       return {
         trades: arr.length,
-        wins,
-        losses,
-        winRate: wins + losses ? Math.round((wins / (wins + losses)) * 100) : 0,
+        wins: g.length,
+        losses: p.length,
+        winRate: g.length + p.length ? Math.round((g.length / (g.length + p.length)) * 100) : 0,
         netPnl: net,
+        payoff: Math.round(payoff * 100) / 100,
+        breakevenWinRate: payoff > 0 ? Math.round(100 / (1 + payoff)) : 0,
       };
     };
     const aiTrades = trades.filter(isAI);
