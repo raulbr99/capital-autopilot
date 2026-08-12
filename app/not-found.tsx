@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import { DeskGlyph } from "@/components/ui";
 
@@ -30,7 +30,13 @@ const RESTO = [
  * la API — sería arriesgarse a fallar dentro del propio manejador del fallo.)
  */
 export default function NotFound() {
-  const ruta = usePathname();
+  /**
+   * usePathname() aquí devuelve "/_not-found", la ruta interna de Next para
+   * esta pantalla: enseñaba al usuario una dirección que jamás escribió, que es
+   * peor que no enseñar ninguna. La que falló solo la sabe el navegador.
+   */
+  const [ruta, setRuta] = useState<string | null>(null);
+  useEffect(() => setRuta(window.location.pathname), []);
 
   return (
     <div className="min-h-screen">
