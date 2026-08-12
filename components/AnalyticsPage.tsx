@@ -83,6 +83,10 @@ export default function AnalyticsPage() {
 
   const a = useMemo(() => analyze(filtered), [filtered]);
 
+  /** ¿Hay histórico REAL, al margen de los filtros activos? */
+  const cerradasTotales = useMemo(() => trades.filter((t) => t.status === "closed").length, [trades]);
+  const hayHistorico = cerradasTotales > 0;
+
   /** Operaciones cerradas por mesa, para que el filtro diga qué hay detrás. */
   const cerradasPorMesa = useMemo(() => {
     const m: Record<string, number> = {};
@@ -158,12 +162,45 @@ export default function AnalyticsPage() {
             <Skeleton className="h-64 rounded-xl" />
           </div>
         ) : a.closed === 0 ? (
+          /*
+            Había un solo estado vacío para dos situaciones muy distintas. Con
+            33 operaciones en el histórico, elegir la mesa Forex y el activo
+            AAPL —que es de Stocks— dejaba cero resultados y la página
+            respondía "Sin operaciones cerradas todavía · Cuando el bot abra y
+            cierre operaciones…": o sea, afirmaba que el bot nunca ha operado.
+            Es falso y además deja al usuario sin la única acción que arregla lo
+            que le pasa, que es quitar el filtro.
+          */
           <div className="mt-6 rounded-xl border border-industrial bg-soft p-16 text-center">
-            <p className="text-base font-medium text-dim">Sin operaciones cerradas todavía</p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
-              Cuando el bot abra y cierre operaciones, aquí verás win rate, profit factor, drawdown,
-              desglose por activo y el historial completo.
-            </p>
+            {hayHistorico ? (
+              <>
+                <p className="text-base font-medium text-dim">Ninguna operación cumple el filtro</p>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
+                  Hay {cerradasTotales} {pl(cerradasTotales, "operación cerrada", "operaciones cerradas")} en
+                  el histórico, pero ninguna
+                  {desk && <> en la mesa <span className="text-dim">{DESK_FILTERS.find((f) => f.key === desk)?.label}</span></>}
+                  {desk && epic && " y"}
+                  {epic && <> en <span className="text-dim">{epic}</span></>}.
+                </p>
+                <button
+                  onClick={() => {
+                    setDesk("");
+                    setEpic("");
+                  }}
+                  className="mt-4 rounded-lg border border-cement px-3.5 py-2 text-[13px] font-medium text-dim transition-colors hover:border-accent hover:text-accent"
+                >
+                  Quitar filtros
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-base font-medium text-dim">Sin operaciones cerradas todavía</p>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
+                  Cuando el bot abra y cierre operaciones, aquí verás aciertos, profit factor, caída
+                  máxima, desglose por activo y el historial completo.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <>
