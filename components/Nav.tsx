@@ -18,6 +18,18 @@ const GROUPS: { href: string; label: string }[][] = [
   ],
 ];
 
+/**
+ * Cuánto margen dejar a la izquierda de la pestaña activa al encuadrarla.
+ *
+ * Centrarla es lo deseable, pero si es MÁS ANCHA que la barra visible el
+ * cálculo daba negativo y desplazaba de más: en un iPhone SE, "Commodities"
+ * (99 px) dentro de una barra de 89 se leía cortada por los DOS lados. Con el
+ * margen a cero queda pegada al principio y solo se pierde la cola, que es
+ * legible ("Commoditie…") en vez de ambigua.
+ */
+const hueco = (n: HTMLElement, el: HTMLElement) =>
+  Math.max(0, (n.clientWidth - el.offsetWidth) / 2);
+
 export default function Nav({ active }: { active: string }) {
   const caja = useRef<HTMLElement | null>(null);
   const actual = useRef<HTMLSpanElement | null>(null);
@@ -47,7 +59,7 @@ export default function Nav({ active }: { active: string }) {
     const n = caja.current;
     const el = actual.current;
     if (n && el) {
-      n.scrollLeft = Math.max(0, el.offsetLeft - (n.clientWidth - el.offsetWidth) / 2);
+      n.scrollLeft = Math.max(0, el.offsetLeft - hueco(n, el));
     }
     medir();
   }, [active, medir]);
@@ -67,7 +79,7 @@ export default function Nav({ active }: { active: string }) {
     if (!n) return;
     const recolocar = () => {
       const el = actual.current;
-      if (el) n.scrollLeft = Math.max(0, el.offsetLeft - (n.clientWidth - el.offsetWidth) / 2);
+      if (el) n.scrollLeft = Math.max(0, el.offsetLeft - hueco(n, el));
       medir();
     };
     const obs = new ResizeObserver(recolocar);
