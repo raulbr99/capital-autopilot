@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -586,8 +586,10 @@ function Ticker({ evals }: { evals: Snapshot["evals"] }) {
     <div className="group overflow-hidden border-b border-industrial bg-base" aria-hidden>
       <div className="flex w-max animate-ticker whitespace-nowrap py-2 group-hover:[animation-play-state:paused]">
         {row.map((e, i) => {
-          const sp = e.spark || [];
-          const chg = sp.length >= 2 && sp[0] ? ((e.price - sp[0]) / sp[0]) * 100 : null;
+          // Misma ventana (~24 h) para todos los símbolos: una cinta existe
+          // para comparar de un vistazo, y antes cada uno medía su propio plazo.
+          const v = variacion(e.spark, e.price, e.resolution);
+          const chg = v ? v.pct : null;
           const tone = chg == null ? "text-muted" : chg > 0.02 ? "text-long" : chg < -0.02 ? "text-short" : "text-muted";
           return (
             <span key={i} className="mx-5 inline-flex items-baseline gap-2 font-mono text-[11px] tabular-nums">

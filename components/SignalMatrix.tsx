@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { EpicEval } from "./types";
-import { SectionHead, Sparkline, price } from "./ui";
+import { SectionHead, Sparkline, price, variacion } from "./ui";
 
 type Filter = "todas" | "senal" | "posicion";
 
@@ -92,7 +92,10 @@ function SignalCard({ e }: { e: EpicEval }) {
   const conf = Math.round((s.confidence ?? 0) * 100);
   // Cambio sobre la ventana del sparkline (coherente con la línea: mismo origen)
   const sp = e.spark || [];
-  const chg = sp.length >= 2 && sp[0] ? ((e.price - sp[0]) / sp[0]) * 100 : null;
+  // Ventana comparable entre activos (~24 h), no "las últimas 30 velas de este
+  // marco": en DAY eso eran 30 días y en HOUR_4 cinco.
+  const v = variacion(sp, e.price, e.resolution);
+  const chg = v ? v.pct : null;
   const chgTone = chg == null ? "" : chg > 0.02 ? "text-long" : chg < -0.02 ? "text-short" : "text-muted";
 
   return (
@@ -118,7 +121,14 @@ function SignalCard({ e }: { e: EpicEval }) {
           <p className="mt-0.5 font-mono text-[10px] tabular-nums text-muted">
             {price(e.price)}
             {chg != null && (
-              <span className={`ml-1.5 ${chgTone}`}>
+              <span
+                className={`ml-1.5 ${chgTone}`}
+                title={
+                  v?.dia
+                    ? "Variación en las últimas 24 h"
+                    : "Variación en las últimas 30 velas: en este marco no llegan a 24 h"
+                }
+              >
                 {chg > 0.02 ? "▲" : chg < -0.02 ? "▼" : "•"} {chg > 0 ? "+" : ""}
                 {chg.toFixed(2)}%
               </span>

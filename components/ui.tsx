@@ -521,3 +521,42 @@ export function AppFooter() {
     </footer>
   );
 }
+
+/** Velas que cubren ~24 h en cada resolución. WEEK no cabe en un día. */
+const VELAS_POR_DIA: Record<string, number> = {
+  MINUTE: 1440,
+  MINUTE_5: 288,
+  MINUTE_15: 96,
+  MINUTE_30: 48,
+  HOUR: 24,
+  HOUR_4: 6,
+  DAY: 1,
+};
+
+/**
+ * Variación de precio comparable entre activos.
+ *
+ * La cinta y las tarjetas de señal calculaban el cambio contra `spark[0]`, o
+ * sea contra la PRIMERA de las últimas 30 velas — a la resolución de cada
+ * activo. Con NZDUSD en DAY eso son 30 días y con EURUSD en HOUR_4 son 5, así
+ * que la cinta ponía "+1.79%" y "−0.10%" uno al lado del otro como si midieran
+ * lo mismo. Una cinta de cotizaciones existe precisamente para comparar de un
+ * vistazo; con ventanas distintas por símbolo, compararlos engaña.
+ *
+ * Ahora se mide sobre las velas que cubren ~24 h. Si no hay suficientes (un
+ * marco corto no llega a un día con 30 velas), devuelve la ventana entera y lo
+ * dice en `dia: false` para que quien lo pinte pueda avisar en vez de mentir.
+ */
+export function variacion(
+  spark: number[] | undefined,
+  precio: number,
+  resolucion: string
+): { pct: number; dia: boolean } | null {
+  const sp = spark || [];
+  if (sp.length < 2 || !precio) return null;
+  const n = VELAS_POR_DIA[resolucion];
+  const dia = n != null && sp.length > n;
+  const base = dia ? sp[sp.length - 1 - n] : sp[0];
+  if (!base) return null;
+  return { pct: ((precio - base) / base) * 100, dia };
+}
