@@ -121,30 +121,41 @@ export default function JournalEntryCard({
             const notRun =
               !!a.outcome && a.outcome !== "opened" && a.outcome !== "closed" && a.outcome !== "held";
             return (
-              <div key={i} className={`flex flex-wrap items-start gap-1.5 text-[12px] ${notRun ? "opacity-60" : ""}`}>
-                <span
-                  className={`mt-px shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold ${
-                    ACT[a.action]?.cls || ACT.HOLD.cls
-                  }`}
-                >
-                  {ACT[a.action]?.label || a.action}
-                </span>
-                {a.epic && (
-                  <span className="shrink-0 font-mono text-white">
-                    {a.epic}
-                    {a.direction ? ` ${a.direction === "BUY" ? "▲" : "▼"}` : ""}
+              /*
+                La razón era un elemento más del mismo flex-wrap, así que su
+                sitio dependía de lo larga que fuese: corta se quedaba pegada al
+                activo ("ESPERA BTCUSD Cruce SMA bajista…", sin separación entre
+                el símbolo y la prosa) y larga saltaba a su propia línea. El
+                mismo dato con dos formatos dentro de la misma tarjeta, decidido
+                por el número de caracteres. Ahora la fila de etiquetas es
+                siempre una línea y la explicación siempre va debajo.
+              */
+              <div key={i} className={notRun ? "opacity-60" : ""}>
+                <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
+                  <span
+                    className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold ${
+                      ACT[a.action]?.cls || ACT.HOLD.cls
+                    }`}
+                  >
+                    {ACT[a.action]?.label || a.action}
                   </span>
-                )}
-                {oc && (
-                  <span className={`mt-px shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold ${oc.cls}`}>
-                    {oc.label}
-                  </span>
-                )}
-                {!compact && (
-                  <span className="min-w-0 text-muted [overflow-wrap:anywhere]">
+                  {a.epic && (
+                    <span className="shrink-0 font-mono text-white">
+                      {a.epic}
+                      {a.direction ? ` ${a.direction === "BUY" ? "▲" : "▼"}` : ""}
+                    </span>
+                  )}
+                  {oc && (
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold ${oc.cls}`}>
+                      {oc.label}
+                    </span>
+                  )}
+                </div>
+                {!compact && a.reason && (
+                  <p className="mt-0.5 text-[12px] leading-snug text-muted [overflow-wrap:anywhere]">
                     {a.reason}
                     {notRun && a.outcomeNote ? <span className="text-short/80"> · {a.outcomeNote}</span> : null}
-                  </span>
+                  </p>
                 )}
               </div>
             );
