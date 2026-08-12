@@ -91,7 +91,11 @@ export function analyze(trades: TradeRecord[]): Analytics {
   // PnL diario
   const dayMap = new Map<string, number>();
   for (const t of closed) {
-    const d = new Date(t.closedTs || t.ts).toISOString().slice(0, 10);
+    // Día natural del usuario, no UTC: si no, lo cerrado entre medianoche y
+    // las 02:00 de Madrid caía en la barra del día anterior.
+    const d = new Date(t.closedTs || t.ts).toLocaleDateString("en-CA", {
+      timeZone: "Europe/Madrid",
+    });
     dayMap.set(d, (dayMap.get(d) || 0) + (t.pnl || 0));
   }
   const dailyPnl = [...dayMap.entries()]

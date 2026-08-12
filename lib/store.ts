@@ -236,6 +236,17 @@ export function pushEquity(equity: number) {
   if (b.equity.length > 500) b.equity.shift();
 }
 
+/**
+ * Zona horaria del dueño de la cuenta. El "día" del bot debe coincidir con SU
+ * día natural, no con el UTC: con toISOString() la jornada empezaba a las 02:00
+ * de Madrid, así que entre medianoche y las dos el panel enseñaba el P&L de
+ * ayer bajo el rótulo "HOY" y el cupo de operaciones diarias se reiniciaba a
+ * deshora. Configurable por si la cuenta cambia de país.
+ */
+export const TZ = process.env.ACCOUNT_TZ || "Europe/Madrid";
+
+/** Fecha AAAA-MM-DD en la zona de la cuenta. */
 export function todayKey(ts = Date.now()): string {
-  return new Date(ts).toISOString().slice(0, 10);
+  // 'en-CA' formatea como AAAA-MM-DD, que es lo que queremos para comparar
+  return new Date(ts).toLocaleDateString("en-CA", { timeZone: TZ });
 }
