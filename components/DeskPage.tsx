@@ -10,6 +10,12 @@ import SentimentBoard from "./SentimentBoard";
 import CotPanel from "./CotPanel";
 import JournalEntryCard from "./JournalEntryCard";
 
+/**
+ * Cuánto se espera antes de dejar de afirmar que el Gestor está pensando. Sus
+ * ciclos tardan ~1 min; pasados tres, lo honesto es decir que no se sabe.
+ */
+const ESPERA_MAX_SEG = 180;
+
 const DESKS: Record<DeskCategory, { label: string; blurb: string }> = {
   forex: { label: "Forex", blurb: "Divisas · 24/5" },
   crypto: { label: "Crypto", blurb: "Cripto · 24/7" },
@@ -186,11 +192,49 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             >
               {firing ? "Lanzando…" : "▶ Ejecutar Gestor ahora"}
             </button>
+            {/*
+              El contador no tenía final: si la routine del Gestor no llega a
+              escribir en el diario —falló, caducó el token, la cola se atascó—
+              esto seguía diciendo "Pensando…" con el número subiendo para
+              siempre. Un estado de espera que nunca se rinde no informa: afirma
+              que algo sigue en marcha sin saberlo.
+              Y el enlace a la sesión se ocultaba precisamente MIENTRAS esperas,
+              que es cuando sirve para ir a ver qué está pasando.
+            */}
             {firedAt != null && (
-              <p className="flex items-center gap-1.5 text-right text-xs text-accent">
-                <span className="h-1.5 w-1.5 animate-pulseDot rounded-full bg-accent" />
-                Pensando… {esperaSeg}s
-              </p>
+              <div className="text-right">
+                {esperaSeg <= ESPERA_MAX_SEG ? (
+                  <p className="flex items-center justify-end gap-1.5 text-xs text-accent">
+                    <span className="h-1.5 w-1.5 animate-pulseDot rounded-full bg-accent" />
+                    Pensando… {esperaSeg}s
+                  </p>
+                ) : (
+                  <p className="text-xs text-short">
+                    Sin respuesta tras {Math.round(esperaSeg / 60)} min — puede haber fallado.
+                  </p>
+                )}
+                {fireMsg?.url && (
+                  <a
+                    href={fireMsg.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-muted underline hover:text-accent"
+                  >
+                    ver sesión del Gestor
+                  </a>
+                )}
+                {esperaSeg > ESPERA_MAX_SEG && (
+                  <button
+                    onClick={() => {
+                      setFiredAt(null);
+                      setFireMsg(null);
+                    }}
+                    className="ml-2 text-[11px] text-muted underline hover:text-dim"
+                  >
+                    descartar
+                  </button>
+                )}
+              </div>
             )}
             {fireMsg && firedAt == null && (
               <p className={`text-right text-xs ${fireMsg.ok ? "text-long" : "text-short"}`}>
