@@ -157,8 +157,16 @@ function SignalCard({ e }: { e: EpicEval }) {
       <p className={`mt-2 text-[11px] leading-snug ${active ? "text-dim" : "text-muted"}`}>{s.reason}</p>
 
       <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-industrial pt-3 font-mono text-[10px] tabular-nums sm:grid-cols-4 sm:gap-2">
-        <Ind label="SMA-F" v={s.indicators.smaFast} />
-        <Ind label="SMA-S" v={s.indicators.smaSlow} />
+        {/*
+          Las medias son precios y deben escribirse como tal. Con dos decimales
+          fijos, USDCHF enseñaba "SMA-F 0.81 · SMA-S 0.81" y EURUSD "1.15 · 1.15":
+          justo el cruce que la tarjeta afirma en su texto quedaba invisible, y
+          encima contradecía al precio de la misma tarjeta, que sí sale con sus
+          cinco decimales porque usa price(). El ayudante ya estaba importado
+          en este fichero para la cotización; solo faltaba usarlo aquí.
+        */}
+        <Ind label="SMA-F" v={s.indicators.smaFast} fmtV={price} />
+        <Ind label="SMA-S" v={s.indicators.smaSlow} fmtV={price} />
         <Ind label="RSI" v={s.indicators.rsi} d={0} />
         <div>
           <p className="text-muted">ADX</p>
@@ -172,11 +180,23 @@ function SignalCard({ e }: { e: EpicEval }) {
   );
 }
 
-function Ind({ label, v, d = 2 }: { label: string; v: number; d?: number }) {
+function Ind({
+  label,
+  v,
+  d = 2,
+  fmtV,
+}: {
+  label: string;
+  v: number;
+  d?: number;
+  fmtV?: (n: number) => string;
+}) {
   return (
     <div>
       <p className="text-muted">{label}</p>
-      <p className="text-dim">{Number.isFinite(v) ? v.toFixed(d) : "—"}</p>
+      <p className="text-dim">
+        {Number.isFinite(v) ? (fmtV ? fmtV(v) : v.toFixed(d)) : "—"}
+      </p>
     </div>
   );
 }
