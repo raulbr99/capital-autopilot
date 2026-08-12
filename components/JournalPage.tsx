@@ -56,6 +56,19 @@ export default function JournalPage() {
 
   const traded = shown.filter((e) => summarize(e.actions).kind === "traded").length;
 
+  /**
+   * Entradas por mesa. Los filtros de señales y los del registro en vivo llevan
+   * su recuento desde hace pasadas; estos no, así que había que pulsarlos uno a
+   * uno para descubrir cuáles tienen algo. Y el reparto dice bastante: con el
+   * histórico actual, Stocks acumula muchas menos decisiones que las demás
+   * porque su mesa solo abre en sesión de Nueva York.
+   */
+  const porMesa = useMemo(() => {
+    const m: Record<string, number> = { all: entries.length };
+    for (const e of entries) if (e.desk) m[e.desk] = (m[e.desk] || 0) + 1;
+    return m;
+  }, [entries]);
+
   return (
     <div className="min-h-screen">
       <AppHeader active="/journal" />
@@ -78,6 +91,13 @@ export default function JournalPage() {
               }`}
             >
               {f.label}
+              {porMesa[f.key] != null && (
+                <span
+                  className={`ml-1.5 tabular-nums ${desk === f.key ? "opacity-70" : "text-muted"}`}
+                >
+                  {porMesa[f.key]}
+                </span>
+              )}
             </button>
           ))}
           {shown.length > 0 && (

@@ -82,6 +82,18 @@ export default function AnalyticsPage() {
   );
 
   const a = useMemo(() => analyze(filtered), [filtered]);
+
+  /** Operaciones cerradas por mesa, para que el filtro diga qué hay detrás. */
+  const cerradasPorMesa = useMemo(() => {
+    const m: Record<string, number> = {};
+    const cerradas = trades.filter((t) => t.status === "closed");
+    m[""] = cerradas.length;
+    for (const t of cerradas) {
+      const d = deskOf(t.epic);
+      if (d) m[d] = (m[d] || 0) + 1;
+    }
+    return m;
+  }, [trades, deskOf]);
   const closedTrades = filtered
     .filter((t) => t.status === "closed")
     .sort((x, y) => (y.closedTs || y.ts) - (x.closedTs || x.ts));
@@ -111,6 +123,11 @@ export default function AnalyticsPage() {
                   }`}
                 >
                   {f.label}
+                  {cerradasPorMesa[f.key] != null && (
+                    <span className={`ml-1.5 tabular-nums ${desk === f.key ? "opacity-70" : "text-muted"}`}>
+                      {cerradasPorMesa[f.key]}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
