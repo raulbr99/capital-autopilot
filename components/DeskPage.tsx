@@ -206,11 +206,24 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             value={riskAtStop > 0 ? `≈${fmt(riskAtStop)}` : "—"}
             sub={riskAtStop > 0 ? `${currency} si saltan todos` : "sin posiciones"}
           />
+          {/*
+            Sin posiciones no hay P&L. Las otras dos cifras de esta misma tira
+            ya ponen "—" y "sin posiciones"; esta escribía "0.00 EUR", que
+            afirma que la mesa está plana cuando lo que ocurre es que no tiene
+            nada abierto. Corregido en la tira del panel y no aquí: la misma
+            copia a medias de siempre.
+          */}
           <Kpi
             label="P&L flotante"
-            value={pnlFmt(deskPnl)}
-            sub={currency}
-            tone={Math.abs(deskPnl) < 0.005 ? undefined : deskPnl > 0 ? "long" : "short"}
+            value={positions.length ? pnlFmt(deskPnl) : "—"}
+            sub={positions.length ? currency : "sin posiciones"}
+            tone={
+              !positions.length || Math.abs(deskPnl) < 0.005
+                ? undefined
+                : deskPnl > 0
+                  ? "long"
+                  : "short"
+            }
           />
         </div>
 

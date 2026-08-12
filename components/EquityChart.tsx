@@ -63,8 +63,10 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
           <span className="text-muted">
             {deltaPct != null ? `(${pnlFmt(deltaPct)}%) ` : ""}
             {/* "en el periodo" no decía QUÉ periodo, y el eje de abajo solo da
-                horas cuando el rango es corto: había que adivinarlo. */}
-            en {periodo}
+                horas cuando el rango es corto: había que adivinarlo.
+                whitespace-nowrap porque en móvil "13 h" se partía en dos
+                líneas, dejando la unidad huérfana debajo del número. */}
+            <span className="whitespace-nowrap">en {periodo}</span>
           </span>
         </span>
         <div className="flex overflow-hidden rounded-md border border-industrial">
