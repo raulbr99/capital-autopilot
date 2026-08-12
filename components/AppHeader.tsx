@@ -66,7 +66,17 @@ export default function AppHeader({
   const v: Partial<Live> = injected ?? live ?? {};
 
   return (
-    <header className="sticky top-0 z-30 flex h-[64px] items-center justify-between gap-3 border-b border-industrial bg-ink/85 px-5 backdrop-blur md:px-8">
+    /*
+      La barra sigue siendo de borde a borde —el filete inferior y el fondo
+      deben cruzar la pantalla entera—, pero SU CONTENIDO se centra con el
+      mismo ancho máximo que las páginas. Antes el logo iba clavado a 32 px del
+      borde izquierdo mientras el contenido arrancaba mucho más adentro: medido,
+      228 px de desfase a 1920 y 548 a 2560. En un panel de escritorio, que es
+      donde se mira esto, la cabecera quedaba flotando despegada de aquello que
+      encabeza.
+    */
+    <header className="sticky top-0 z-30 border-b border-industrial bg-ink/85 backdrop-blur">
+      <div className="mx-auto flex h-[64px] max-w-[1400px] items-center justify-between gap-3 px-5 md:px-8">
       <div className="flex min-w-0 items-center gap-4">
         <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Ir al panel">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-onaccent">
@@ -102,6 +112,7 @@ export default function AppHeader({
         )}
         <ThemeToggle />
         <Clock className="hidden font-mono text-sm text-white lg:block" />
+      </div>
       </div>
     </header>
   );
