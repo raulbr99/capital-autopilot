@@ -218,7 +218,18 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   } else if (effectiveAllow) {
     for (const e of evals) {
       if (e.signal.type === "FLAT" || openEpics.has(e.epic)) continue;
-      if (cfg.instruments.find((i) => i.epic === e.epic)?.paused) continue; // circuit breaker
+      const inst = cfg.instruments.find((i) => i.epic === e.epic);
+      if (inst?.paused) continue; // circuit breaker
+      /**
+       * Solo largos. Este guardarraíl existía ÚNICAMENTE en la ruta del Gestor
+       * (más abajo, en drainPmQueue), así que el motor técnico podía abrir un
+       * corto en un activo marcado longOnly — justo lo que la configuración
+       * prohíbe y lo que el Lab anuncia con su insignia LONG. Cripto está en
+       * solo-largos precisamente porque shortear en tendencia alcista se llevó
+       * la cuenta por delante.
+       * Comprobado en vivo: BTCUSD tenía señal SELL al 100 % de confianza.
+       */
+      if (inst?.longOnly && e.signal.type === "SELL") continue;
       if (deskOpenCount(cfg, openEpics, deskOf(cfg, e.epic)) >= cfg.maxPerDesk) continue; // mesa llena — las demás siguen
       if (tradesToday + opened >= cfg.risk.maxTradesPerDay) break;
 

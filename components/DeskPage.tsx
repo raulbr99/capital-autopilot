@@ -298,7 +298,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
 
         <div className={`grid gap-5 ${journal.length > 0 ? "lg:grid-cols-[1fr_340px]" : "grid-cols-1"}`}>
           <div className="min-w-0 space-y-5">
-            <SignalMatrix evals={evals} cargando={cargando} />
+            <SignalMatrix evals={evals} cargando={cargando} instruments={instruments} />
             <PositionsTable positions={positions} onClose={closePos} busy={busy} cargando={cargando} divisa={currency} />
             {journal.length === 0 && (
               <div className="dotgrid rounded-xl border border-industrial bg-soft px-5 py-7 text-center">

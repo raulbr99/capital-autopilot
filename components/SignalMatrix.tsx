@@ -6,7 +6,17 @@ import { SectionHead, Skeleton, Sparkline, price, variacion } from "./ui";
 
 type Filter = "todas" | "senal" | "posicion";
 
-export default function SignalMatrix({ evals, cargando }: { evals: EpicEval[]; cargando?: boolean }) {
+export default function SignalMatrix({
+  evals,
+  cargando,
+  instruments = [],
+}: {
+  evals: EpicEval[];
+  cargando?: boolean;
+  /** Para saber qué activos son de solo-compra: sus SELL no se ejecutan. */
+  instruments?: { epic: string; longOnly?: boolean }[];
+}) {
+  const soloLargos = new Set(instruments.filter((i) => i.longOnly).map((i) => i.epic));
   const [filter, setFilter] = useState<Filter>("todas");
 
   const counts = useMemo(
@@ -97,17 +107,25 @@ export default function SignalMatrix({ evals, cargando }: { evals: EpicEval[]; c
           </div>
         )}
         {sorted.map((e) => (
-          <SignalCard key={e.epic} e={e} />
+          <SignalCard key={e.epic} e={e} bloqueada={soloLargos.has(e.epic) && e.signal.type === "SELL"} />
         ))}
       </div>
     </div>
   );
 }
 
-function SignalCard({ e }: { e: EpicEval }) {
+function SignalCard({ e, bloqueada }: { e: EpicEval; bloqueada?: boolean }) {
   const s = e.signal;
   const buy = s.type === "BUY";
-  const sell = s.type === "SELL";
+  /**
+   * Un SELL en un activo de solo-compra NO es accionable: el motor lo descarta.
+   * La tarjeta lo presentaba como cualquier otra señal —filo rojo, barra de
+   * confianza al 100 %, primera de la rejilla por el triaje— y comprobado en
+   * vivo: BTCUSD, que es solo-largos, encabezaba la mesa de cripto con un
+   * "▼ SHORT" al 100 % que nunca se iba a abrir. Anunciar una oportunidad que
+   * el propio sistema tiene prohibido tomar es peor que no anunciar nada.
+   */
+  const sell = s.type === "SELL" && !bloqueada;
   const active = buy || sell;
   const conf = Math.round((s.confidence ?? 0) * 100);
   // Cambio sobre la ventana del sparkline (coherente con la línea: mismo origen)
@@ -160,7 +178,7 @@ function SignalCard({ e }: { e: EpicEval }) {
             buy ? "bg-long/15 text-long" : sell ? "bg-short/15 text-short" : "bg-industrial text-muted"
           }`}
         >
-          {buy ? "▲ LONG" : sell ? "▼ SHORT" : "● FLAT"}
+          {buy ? "▲ LONG" : sell ? "▼ SHORT" : bloqueada ? "▼ SHORT · bloqueada" : "● FLAT"}
         </span>
       </div>
 
