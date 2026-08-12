@@ -673,6 +673,30 @@ async function executePmDecision(
         size = await sizeForRisk(p.equity, stopDist, act.epic, riskPct);
       }
       if (!Number.isFinite(stopDist) || stopDist <= 0 || size <= 0) { tagOutcome(act, "skipped", "tamaño/stop inválido"); continue; }
+      /**
+       * ¿Está el mercado operativo? ANTES de convocar al comité.
+       *
+       * Esta comprobación vivía solo dentro de executeOpen, o sea DESPUÉS de la
+       * votación. En el registro se veía la secuencia entera en el mismo
+       * segundo: "Comité aprueba OIL_CRUDE (3/3 a favor)" e inmediatamente
+       * "OIL_CRUDE: mercado CLOSED — no se abre ahora". Tres llamadas de pago a
+       * OpenRouter, cada ciclo, para deliberar sobre una operación que no se
+       * podía colocar — y con las ocho acciones fuera del horario de Nueva York
+       * eso se repite muchas veces al día.
+       *
+       * getMarketDetails cachea 5 min, así que adelantarla no añade tráfico a
+       * Capital: reutiliza la respuesta que executeOpen iba a pedir igualmente.
+       * Fail-open como allí: si la consulta falla, no bloquea.
+       */
+      try {
+        const md = await getMarketDetails(act.epic);
+        if (md.marketStatus && md.marketStatus !== "TRADEABLE") {
+          tagOutcome(act, "skipped", `mercado ${md.marketStatus}`);
+          continue;
+        }
+      } catch {
+        /* fail-open */
+      }
       // ---- comité IA: varios modelos votan antes de abrir ----
       if ((cfg as any).committee) {
         const verdict = await committeeVote(

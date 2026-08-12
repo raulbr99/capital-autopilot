@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LogEntry } from "./types";
 import { SectionHead } from "./ui";
 
@@ -47,6 +47,14 @@ function collapse(logs: LogEntry[]) {
 
 export default function LogFeed({ logs }: { logs: LogEntry[] }) {
   const [filter, setFilter] = useState<Filter>("todo");
+  const [hayMas, setHayMas] = useState(false);
+  const caja = useRef<HTMLDivElement | null>(null);
+  const medir = useCallback(() => {
+    const el = caja.current;
+    if (el) setHayMas(el.scrollHeight - el.clientHeight - el.scrollTop > 4);
+  }, []);
+
+  useEffect(medir, [logs.length, filter, medir]);
 
   const counts = useMemo(
     () => ({
@@ -88,7 +96,19 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
           </div>
         }
       />
-      <div className="max-h-[460px] overflow-y-auto">
+      {/*
+        El registro tiene tope de 460 px y hace scroll, pero nada lo indicaba:
+        la última entrada quedaba seccionada a media línea y en macOS la barra
+        no aparece hasta que la usas. Es el mismo arreglo que llevó el carril de
+        decisiones de las mesas en la pasada 71 — y otra vez el patrón: puesto
+        en un sitio y no en el de al lado.
+      */}
+      <div className="relative">
+      <div
+        ref={caja}
+        onScroll={medir}
+        className="max-h-[460px] overflow-y-auto"
+      >
         {rows.length === 0 ? (
           <div className="px-5 py-14 text-center">
             <p className="text-sm font-medium text-dim">
@@ -137,6 +157,10 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
             );
           })
         )}
+      </div>
+      {hayMas && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-soft to-transparent" />
+      )}
       </div>
     </div>
   );
