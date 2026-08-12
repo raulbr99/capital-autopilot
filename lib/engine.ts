@@ -528,7 +528,7 @@ async function applyCircuitBreaker(cfg: ReturnType<typeof bot>["config"]): Promi
       inst.paused = true;
       changed = true;
       const msg = `⛔ ${inst.epic}: CIRCUIT BREAKER — auto-pausado (últimos ${win.length} cerrados: ${net.toFixed(2)}). Reactivación manual en Lab.`;
-      logN("trade", msg, inst.epic);
+      logN("veto", msg, inst.epic);
       await recordJournal({
         thesis: msg,
         confidence: 1,
@@ -667,7 +667,7 @@ async function executePmDecision(
         if (!verdict.approved) {
           const no = verdict.votes.find((v) => !v.approve);
           tagOutcome(act, "vetoed", `comité ${verdict.summary}${no ? `: ${no.reason}` : ""}`);
-          logN("trade", `🚫 Comité RECHAZA ${act.direction} ${act.epic} (${verdict.summary})${no ? `: ${no.reason}` : ""}`, act.epic);
+          logN("veto", `🚫 Comité RECHAZA ${act.direction} ${act.epic} (${verdict.summary})${no ? `: ${no.reason}` : ""}`, act.epic);
           continue;
         }
         logN("info", `✅ Comité aprueba ${act.epic} (${verdict.summary})`, act.epic);

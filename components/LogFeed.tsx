@@ -12,13 +12,18 @@ const LEVEL: Record<
   error: { label: "ERROR", dot: "bg-short", text: "text-short", chip: "bg-short/10 text-short", bg: "" },
   trade: { label: "TRADE", dot: "bg-accent", text: "text-white", chip: "bg-accent/15 text-accent", bg: "bg-accent/[0.05]" },
   signal: { label: "SEÑAL", dot: "bg-long", text: "text-dim", chip: "bg-long/15 text-long", bg: "" },
+  // Lo que el bot decidió NO hacer. Iba marcado como TRADE, que es justo lo
+  // contrario de lo que ocurrió: la entrada existe porque la operación se
+  // bloqueó. Ni es un error —el sistema funcionó— ni merece el color del
+  // dinero, así que va en ámbar y con su propia etiqueta.
+  veto: { label: "VETO", dot: "bg-accent", text: "text-dim", chip: "bg-accent/10 text-accent", bg: "" },
   info: { label: "INFO", dot: "bg-muted", text: "text-dim", chip: "bg-industrial text-muted", bg: "" },
 };
 
 type Filter = "todo" | "operativa" | "problemas";
 const MATCH: Record<Filter, (l: LogEntry) => boolean> = {
   todo: () => true,
-  operativa: (l) => l.level === "trade" || l.level === "signal",
+  operativa: (l) => l.level === "trade" || l.level === "signal" || l.level === "veto",
   problemas: (l) => l.level === "error" || l.level === "kill",
 };
 

@@ -55,7 +55,7 @@ export type Account = {
 export type LogEntry = {
   id: string;
   ts: number;
-  level: "info" | "signal" | "trade" | "error" | "kill";
+  level: "info" | "signal" | "trade" | "veto" | "error" | "kill";
   epic?: string;
   message: string;
 };
