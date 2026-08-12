@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import type { EpicEval } from "./types";
-import { SectionHead, Sparkline, price, variacion } from "./ui";
+import { SectionHead, Skeleton, Sparkline, price, variacion } from "./ui";
 
 type Filter = "todas" | "senal" | "posicion";
 
-export default function SignalMatrix({ evals }: { evals: EpicEval[] }) {
+export default function SignalMatrix({ evals, cargando }: { evals: EpicEval[]; cargando?: boolean }) {
   const [filter, setFilter] = useState<Filter>("todas");
 
   const counts = useMemo(
@@ -64,7 +64,27 @@ export default function SignalMatrix({ evals }: { evals: EpicEval[] }) {
           número impar de activos, el hueco de la última fila dejaba ver el
           fondo separador y parecía una tarjeta rota. */}
       <div className="grid grid-cols-1 bg-soft sm:grid-cols-2 xl:grid-cols-3">
-        {sorted.length === 0 && (
+        {/*
+          Mientras no han llegado los datos, esta rejilla afirmaba "Sin activos
+          en seguimiento · Añade instrumentos desde el Lab": una instrucción
+          para arreglar un problema que no existe, sobre un universo de 20
+          activos, durante los ~5,5 s que tarda el primer sondeo. Es el mismo
+          "frame frío" que se corrigió en el panel y en Analítica y que a las
+          mesas no llegó.
+        */}
+        {cargando && (
+          <>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="border-b border-r border-industrial bg-soft p-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-2 h-3 w-32" />
+                <Skeleton className="mt-3 h-9 w-full" />
+                <Skeleton className="mt-3 h-3 w-full" />
+              </div>
+            ))}
+          </>
+        )}
+        {!cargando && sorted.length === 0 && (
           <div className="col-span-full border-b border-industrial bg-soft px-5 py-9 text-center">
             <p className="text-sm font-medium text-dim">
               {evals.length === 0 ? "Sin activos en seguimiento" : "Ningún activo cumple el filtro"}

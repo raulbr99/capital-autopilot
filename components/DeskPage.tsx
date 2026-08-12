@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton } from "./ui";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -17,13 +17,19 @@ const DESKS: Record<DeskCategory, { label: string; blurb: string }> = {
   commodities: { label: "Commodities", blurb: "Materias primas · 23/5" },
 };
 
-function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "long" | "short" }) {
+function Kpi({ label, value, sub, tone }: { label: string; value: string | null; sub?: string; tone?: "long" | "short" }) {
   const c = tone === "long" ? "text-long" : tone === "short" ? "text-short" : "text-white";
   return (
     <div className="min-w-0 flex-1 px-4 py-2.5">
       <p className="tag whitespace-nowrap">{label}</p>
-      <p className={`mt-0.5 font-mono text-lg font-medium tabular-nums ${c}`}>{value}</p>
-      {sub && <p className="mt-0.5 truncate font-mono text-[10px] text-muted">{sub}</p>}
+      {/* value=null mientras carga: un "0/4" o un "sin posiciones" antes de
+          tener datos no es un hueco, es una afirmación falsa. */}
+      {value == null ? (
+        <Skeleton className="mt-1 h-5 w-16" />
+      ) : (
+        <p className={`mt-0.5 font-mono text-lg font-medium tabular-nums ${c}`}>{value}</p>
+      )}
+      {value != null && sub && <p className="mt-0.5 truncate font-mono text-[10px] text-muted">{sub}</p>}
     </div>
   );
 }
@@ -90,6 +96,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
 
   useEffect(medirScroll, [journal.length, medirScroll]);
 
+  const cargando = snap === null;
   const instruments = snap?.state.config.instruments ?? [];
   const epicCat = useMemo(() => deskMap(instruments), [instruments]);
 
@@ -192,18 +199,18 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
         <div className="mb-5 grid grid-cols-2 divide-x divide-industrial overflow-hidden rounded-xl border border-industrial bg-soft sm:grid-cols-4 sm:divide-y-0 [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(-n+2)]:border-industrial sm:[&>*]:border-b-0">
           <Kpi
             label="Posiciones"
-            value={`${positions.length}/${maxPerDesk}`}
+            value={cargando ? null : `${positions.length}/${maxPerDesk}`}
             sub={positions.length >= maxPerDesk ? "mesa llena" : `${maxPerDesk - positions.length} libres`}
             tone={positions.length > maxPerDesk ? "short" : undefined}
           />
           <Kpi
             label="Exposición"
-            value={exposure > 0 ? fmt(exposure, 0) : "—"}
+            value={cargando ? null : exposure > 0 ? fmt(exposure, 0) : "—"}
             sub={exposure > 0 ? currency : `${evals.length} ${evals.length === 1 ? "activo" : "activos"} · ${signals} con señal`}
           />
           <Kpi
             label="Riesgo a stop"
-            value={riskAtStop > 0 ? `≈${fmt(riskAtStop)}` : "—"}
+            value={cargando ? null : riskAtStop > 0 ? `≈${fmt(riskAtStop)}` : "—"}
             sub={riskAtStop > 0 ? `${currency} si saltan todos` : "sin posiciones"}
           />
           {/*
@@ -215,7 +222,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
           */}
           <Kpi
             label="P&L flotante"
-            value={positions.length ? pnlFmt(deskPnl) : "—"}
+            value={cargando ? null : positions.length ? pnlFmt(deskPnl) : "—"}
             sub={positions.length ? currency : "sin posiciones"}
             tone={
               !positions.length || Math.abs(deskPnl) < 0.005
@@ -234,8 +241,8 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
 
         <div className={`grid gap-5 ${journal.length > 0 ? "lg:grid-cols-[1fr_340px]" : "grid-cols-1"}`}>
           <div className="min-w-0 space-y-5">
-            <SignalMatrix evals={evals} />
-            <PositionsTable positions={positions} onClose={closePos} busy={busy} />
+            <SignalMatrix evals={evals} cargando={cargando} />
+            <PositionsTable positions={positions} onClose={closePos} busy={busy} cargando={cargando} />
             {journal.length === 0 && (
               <div className="dotgrid rounded-xl border border-industrial bg-soft px-5 py-7 text-center">
                 <p className="text-sm font-medium text-dim">El gestor IA de {meta.label} decide cada hora</p>

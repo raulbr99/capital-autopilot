@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { OpenPos } from "./types";
-import { SectionHead, fmt, price, pnlClass, pnlFmt, positionRisk } from "./ui";
+import { SectionHead, fmt, price, pnlClass, pnlFmt, positionRisk, Skeleton } from "./ui";
 import dynamic from "next/dynamic";
 
 // El modal del gráfico arrastra lightweight-charts (~56 kB). Como solo se abre
@@ -59,9 +59,11 @@ export default function PositionsTable({
   positions,
   onClose,
   busy,
+  cargando,
 }: {
   positions: OpenPos[];
   onClose: (p: OpenPos) => void;
+  cargando?: boolean;
   busy: boolean;
 }) {
   const [chartPos, setChartPos] = useState<OpenPos | null>(null);
@@ -106,7 +108,13 @@ export default function PositionsTable({
     <>
     <div className="rounded-xl border border-industrial bg-soft">
       <SectionHead label={`Posiciones abiertas · ${positions.length}`} right={positions.length > 0 ? LiveTag : undefined} />
-      {positions.length === 0 ? (
+      {cargando ? (
+        <div className="space-y-2 p-4">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+      ) : positions.length === 0 ? (
         <div className="dotgrid px-5 py-9 text-center">
           <p className="text-sm font-medium text-dim">Sin posiciones abiertas</p>
           <p className="mt-1 text-xs text-muted">Cuando el bot abra una posición aparecerá aquí con su SL, riesgo y P&L.</p>
