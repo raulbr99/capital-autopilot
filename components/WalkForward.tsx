@@ -124,13 +124,21 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
+            {/*
+              Sin universo cargado el bucle daba cero vueltas: pulsar "Validar"
+              en los primeros segundos —antes de que llegue la configuración—
+              no hacía absolutamente nada y no lo decía. Un botón que no hace
+              nada tiene que verse como tal.
+            */}
             <button
               onClick={loading ? detener : run}
-              className={`px-3 py-1 font-display text-[11px] ${
+              disabled={!loading && watchlist.length === 0}
+              title={!loading && watchlist.length === 0 ? "Cargando el universo de activos…" : undefined}
+              className={`px-3 py-1 font-display text-[11px] disabled:cursor-not-allowed disabled:opacity-40 ${
                 loading ? "border border-short text-short" : "bg-accent text-onaccent"
               }`}
             >
-              {loading ? "Detener" : "▶ Validar"}
+              {loading ? "Detener" : `▶ Validar${watchlist.length ? ` ${watchlist.length}` : ""}`}
             </button>
           </div>
         }
