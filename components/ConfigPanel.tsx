@@ -189,7 +189,7 @@ export default function ConfigPanel({
               placeholder="EPIC ej. NZDUSD"
               className="min-h-[36px] w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-accent focus:outline-none"
             />
-            <button onClick={add} disabled={busy} aria-label="Añadir instrumento" className="rounded-lg bg-accent px-3 font-display text-xs text-onaccent disabled:opacity-40">
+            <button onClick={add} disabled={busy} aria-label="Añadir instrumento" className="min-h-[36px] min-w-[40px] rounded-lg bg-accent px-3 font-display text-xs text-onaccent disabled:opacity-40">
               +
             </button>
           </div>
