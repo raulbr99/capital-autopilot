@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
 import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap } from "./ui";
 import AppHeader from "./AppHeader";
@@ -32,6 +32,14 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const meta = DESKS[category];
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
+  // ¿Queda contenido por debajo del recorte del carril de decisiones? Se mide
+  // también cuando el sondeo trae entradas nuevas, no solo al montar.
+  const [hayMas, setHayMas] = useState(false);
+  const cajaDecisiones = useRef<HTMLDivElement | null>(null);
+  const medirScroll = useCallback(() => {
+    const el = cajaDecisiones.current;
+    if (el) setHayMas(el.scrollHeight - el.clientHeight - el.scrollTop > 4);
+  }, []);
   const [busy, setBusy] = useState(false);
   const [firing, setFiring] = useState(false);
   const [fireMsg, setFireMsg] = useState<{ ok: boolean; text: string; url?: string } | null>(null);
@@ -79,6 +87,8 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
     });
     setFiredAt(null);
   }, [decisionNueva]);
+
+  useEffect(medirScroll, [journal.length, medirScroll]);
 
   const instruments = snap?.state.config.instruments ?? [];
   const epicCat = useMemo(() => deskMap(instruments), [instruments]);
@@ -228,12 +238,30 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             <div className="overflow-hidden rounded-xl border border-industrial bg-soft">
               <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
                 <h2 className="tag">Gestor {meta.label} · decisiones</h2>
-                <span className="h-1.5 w-1.5 rounded-full bg-accent/70" />
+                {/* Cuántas hay: el punto decorativo no decía nada y esta lista
+                    está recortada, así que el total importa. */}
+                <span className="font-mono text-[11px] tabular-nums text-muted">{journal.length}</span>
               </div>
-              <div className="max-h-[600px] space-y-2 overflow-y-auto p-3">
-                {journal.map((e) => (
-                  <JournalEntryCard key={e.id} entry={e} compact />
-                ))}
+              {/*
+                La lista tiene tope de altura y hace scroll, pero nada lo decía:
+                la última tarjeta quedaba cortada a media frase y en macOS la
+                barra no aparece hasta que la usas, así que se leía como un
+                fallo de maquetación. El degradado avisa de que sigue habiendo
+                contenido y desaparece al llegar al final.
+              */}
+              <div className="relative">
+                <div
+                  ref={cajaDecisiones}
+                  onScroll={medirScroll}
+                  className="max-h-[600px] space-y-2 overflow-y-auto p-3"
+                >
+                  {journal.map((e) => (
+                    <JournalEntryCard key={e.id} entry={e} compact />
+                  ))}
+                </div>
+                {hayMas && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-soft to-transparent" />
+                )}
               </div>
             </div>
           )}
