@@ -17,6 +17,15 @@ export default function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
+      const d0 = r.ok ? await r.clone().json().catch(() => ({})) : null;
+      if (d0?.sinPassword) {
+        // No hay DASHBOARD_PASSWORD definida: la puerta no existe todavía. Sin
+        // esto, el formulario aceptaba cualquier cosa y te dejaba pasar sin
+        // explicar por qué — parecía que la contraseña había sido correcta.
+        setErr("No hay contraseña configurada: el panel está abierto. Entrando…");
+        setTimeout(() => (window.location.href = "/"), 1200);
+        return;
+      }
       if (r.ok) {
         const volver = new URLSearchParams(window.location.search).get("volver");
         window.location.href = volver && volver.startsWith("/") ? volver : "/";

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { COOKIE } from "@/middleware";
+import { COOKIE, tokenDe } from "@/middleware";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const pass = process.env.DASHBOARD_PASSWORD;
   const cookie = req.headers.get("cookie") || "";
-  const tieneSesion = !!pass && cookie.includes(`${COOKIE}=${pass}`);
+  const tieneSesion = !!pass && cookie.includes(`${COOKIE}=${await tokenDe(pass)}`);
   return NextResponse.json({ protegido: !!pass, sesion: tieneSesion });
 }
 
@@ -24,7 +24,8 @@ export async function POST(req: Request) {
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(COOKIE, pass, {
+  // La cookie es un derivado, nunca la contraseña (ver tokenDe en middleware.ts)
+  res.cookies.set(COOKIE, await tokenDe(pass), {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
