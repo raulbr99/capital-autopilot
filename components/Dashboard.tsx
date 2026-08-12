@@ -437,14 +437,51 @@ export default function Dashboard() {
 
           <div className="min-w-0 space-y-4">
             {cfg && <RiskPanel cfg={cfg} busy={busy} patch={patch} equity={lastEquity} currency={acc?.currency} />}
+            {/*
+              Esta tarjeta era un enlace al Lab y nada más, ocupando un hueco
+              principal del panel para repetir algo que ya está en la barra de
+              navegación y en la paleta de comandos. Ahora dice CON QUÉ está
+              operando el bot ahora mismo — los parámetros que deciden cada
+              entrada y el tamaño de cada posición— y sigue llevando al Lab,
+              que es donde se cambian. Un panel de operativa debería poder
+              responder "¿qué reglas está aplicando?" sin cambiar de pantalla.
+            */}
             <Link
               href="/lab"
-              className="block rounded-xl border border-industrial bg-soft p-5 transition-colors hover:border-cement"
+              className="group block rounded-xl border border-industrial bg-soft p-5 transition-colors hover:border-cement"
             >
-              <p className="tag">Herramientas</p>
-              <p className="mt-1.5 font-display text-base font-semibold text-white">Lab — estrategia y ajustes</p>
-              <p className="mt-1 text-xs text-muted">Configuración del bot, backtest y validación walk-forward.</p>
-              <p className="mt-2 text-xs font-medium text-accent">Abrir →</p>
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="tag">Estrategia en vigor</p>
+                <p className="text-xs font-medium text-accent transition-opacity group-hover:opacity-80">
+                  Ajustar →
+                </p>
+              </div>
+              {cfg ? (
+                <>
+                  <p className="mt-2 font-mono text-[13px] leading-relaxed text-dim">
+                    SMA <span className="text-white">{cfg.strategy.fast}/{cfg.strategy.slow}</span> · RSI{" "}
+                    <span className="text-white">{cfg.strategy.rsiPeriod}</span> · conf ≥
+                    <span className="text-white">{cfg.strategy.minConfidence}</span>
+                    {cfg.strategy.useRegimeFilter && (
+                      <>
+                        {" "}
+                        · ADX ≥<span className="text-white">{cfg.strategy.adxThreshold}</span>
+                      </>
+                    )}
+                  </p>
+                  <p className="mt-1.5 font-mono text-[11px] text-muted">
+                    {cfg.instruments.length} instrumentos · {cfg.risk.riskPercent}% por operación ·{" "}
+                    {cfg.risk.useAtrStops
+                      ? `stop ${cfg.risk.atrStopMult}×ATR / objetivo ${cfg.risk.atrTpMult}×ATR`
+                      : `stop ${cfg.stopDistance} / objetivo ${cfg.profitDistance} pts`}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Skeleton className="mt-2 h-4 w-56" />
+                  <Skeleton className="mt-2 h-3 w-64" />
+                </>
+              )}
             </Link>
           </div>
         </section>
