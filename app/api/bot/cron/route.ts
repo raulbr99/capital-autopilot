@@ -40,9 +40,8 @@ async function handle(req: Request) {
       armed,
       opened: result.opened,
       openPositions: result.openPositions.length,
-      equity: result.account
-        ? result.account.balance + (result.account.pnl || 0)
-        : null,
+      // balance de Capital YA incluye el flotante: sumarlo sería doble conteo
+      equity: result.account ? result.account.balance : null,
       ts: Date.now(),
     });
   } catch (err: any) {

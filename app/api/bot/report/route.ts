@@ -30,7 +30,10 @@ export async function GET() {
         balance: account.balance,
         available: account.available,
         pnl: account.pnl,
-        equity: account.balance + (account.pnl || 0),
+        // OJO: Capital ya define balance = deposit + profitLoss, así que el
+        // flotante YA está dentro. Sumarlo otra vez era doble conteo (se
+        // corrigió en el motor en junio y esta ruta se quedó atrás).
+        equity: account.balance,
         currency: account.currency,
       },
       floatingPnl: floatPnl,
