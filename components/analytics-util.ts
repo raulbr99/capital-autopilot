@@ -1,13 +1,22 @@
 import type { Analytics, TradeRecord } from "./types";
 
+// Una operación cerrada EXACTAMENTE a cero no es un acierto: es un empate.
+// Contarla como ganadora inflaba el win rate (8 de 33 en el histórico actual:
+// 52% aparente frente al 36% real) y contradecía al panel de expectativa, que
+// ya lo hacía bien. El win rate se mide sobre las que SÍ se decidieron.
+const EPS_PNL = 0.005;
+const esGanadora = (p: number | undefined) => (p || 0) > EPS_PNL;
+const esPerdedora = (p: number | undefined) => (p || 0) < -EPS_PNL;
+
+
 /** Cálculo de métricas en cliente (espejo de lib/analytics.ts) para filtrar en vivo. */
 export function analyze(trades: TradeRecord[]): Analytics {
   const closed = trades
     .filter((t) => t.status === "closed" && typeof t.pnl === "number")
     .sort((a, b) => (a.closedTs || a.ts) - (b.closedTs || b.ts));
 
-  const wins = closed.filter((t) => (t.pnl || 0) >= 0);
-  const losses = closed.filter((t) => (t.pnl || 0) < 0);
+  const wins = closed.filter((t) => esGanadora(t.pnl));
+  const losses = closed.filter((t) => esPerdedora(t.pnl));
   const grossWin = wins.reduce((s, t) => s + (t.pnl || 0), 0);
   const grossLoss = Math.abs(losses.reduce((s, t) => s + (t.pnl || 0), 0));
   const netPnl = grossWin - grossLoss;
@@ -26,7 +35,7 @@ export function analyze(trades: TradeRecord[]): Analytics {
   let best = 0;
   let worst = 0;
   for (const t of closed) {
-    const win = (t.pnl || 0) >= 0;
+    const win = esGanadora(t.pnl);
     if (win) cur = cur > 0 ? cur + 1 : 1;
     else cur = cur < 0 ? cur - 1 : -1;
     best = Math.max(best, cur);
@@ -38,7 +47,7 @@ export function analyze(trades: TradeRecord[]): Analytics {
     const e = epicMap.get(t.epic) || { pnl: 0, trades: 0, wins: 0 };
     e.pnl += t.pnl || 0;
     e.trades++;
-    if ((t.pnl || 0) >= 0) e.wins++;
+    if (esGanadora(t.pnl)) e.wins++;
     epicMap.set(t.epic, e);
   }
   const byEpic = [...epicMap.entries()]
@@ -46,7 +55,7 @@ export function analyze(trades: TradeRecord[]): Analytics {
       epic,
       pnl: v.pnl,
       trades: v.trades,
-      winRate: v.trades ? (v.wins / v.trades) * 100 : 0,
+      winRate: v.trades ? (v.wins / v.trades) * 100 : 0, // por activo se mantiene sobre el total
     }))
     .sort((a, b) => b.pnl - a.pnl);
 
@@ -69,7 +78,7 @@ export function analyze(trades: TradeRecord[]): Analytics {
   const byDirection = (["BUY", "SELL"] as const)
     .map((dir) => {
       const set = closed.filter((t) => t.direction === dir);
-      const w = set.filter((t) => (t.pnl || 0) >= 0).length;
+      const w = set.filter((t) => esGanadora(t.pnl)).length;
       return {
         dir,
         trades: set.length,
@@ -90,7 +99,7 @@ export function analyze(trades: TradeRecord[]): Analytics {
     open: trades.filter((t) => t.status === "open").length,
     wins: wins.length,
     losses: losses.length,
-    winRate: closed.length ? (wins.length / closed.length) * 100 : 0,
+    winRate: wins.length + losses.length ? (wins.length / (wins.length + losses.length)) * 100 : 0,
     netPnl,
     grossWin,
     grossLoss,

@@ -164,7 +164,7 @@ export default function AnalyticsPage() {
               <Kpi
                 label="Win rate"
                 value={`${a.winRate.toFixed(0)}%`}
-                sub={`equilibrio en ${a.breakevenWinRate.toFixed(0)}%`}
+                sub={`equilibrio en ${a.breakevenWinRate.toFixed(0)}% · sin contar las de a cero`}
                 tone={a.winRate >= a.breakevenWinRate ? "long" : "short"}
                 big
               />
@@ -183,7 +183,13 @@ export default function AnalyticsPage() {
                 tone="short"
                 big
               />
-              <Kpi label="Operaciones" value={String(a.closed)} sub={`${a.wins}G / ${a.losses}P`} />
+              <Kpi
+                label="Operaciones"
+                value={String(a.closed)}
+                sub={`${a.wins} ganadas · ${a.losses} perdidas${
+                  a.closed - a.wins - a.losses > 0 ? ` · ${a.closed - a.wins - a.losses} a cero` : ""
+                }`}
+              />
               <Kpi label="Expectancy" value={fmt(a.expectancy)} sub="por operación" />
               <Kpi label="Media ganancia" value={`+${fmt(a.avgWin)}`} sub={`−${fmt(a.avgLoss)} media pérdida`} />
               <Kpi label="Racha" value={`${a.bestStreak >= 0 ? "+" : ""}${a.bestStreak} / ${a.worstStreak}`} sub="mejor / peor" />
