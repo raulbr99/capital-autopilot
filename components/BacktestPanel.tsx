@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { SectionHead, Skeleton, fmt, pf, Sparkline, pl } from "./ui";
 
+/** Equity nocional del backtest (lib/sim.ts). Con él, la caída se expresa en %. */
+const BASE_EQUITY = 1000;
+/** Igual que en Analítica y el Diario: bajo esta muestra el % no es una tasa. */
+const MUESTRA_MIN = 5;
+
 type BTResult = {
   epic: string;
   bars: number;
@@ -189,8 +194,17 @@ export default function BacktestPanel() {
                   {r.trades === 0 ? (
                     <p className="font-mono text-[10px] text-muted">sin operaciones en el periodo</p>
                   ) : (
+                    /* "1 ops · 100% · PF —": tres problemas en una línea de
+                       diez píxeles. El plural sin concordar; un acierto del
+                       100 % que en realidad es una moneda que cayó una vez; y
+                       un profit factor que sobre una sola operación no existe
+                       (de ahí el guion). Mismo umbral de muestra que el resto
+                       de la app. */
                     <p className="whitespace-nowrap font-mono text-[10px] tabular-nums text-muted">
-                      {r.trades} ops · {r.winRate.toFixed(0)}% · PF {pf(r.profitFactor)}
+                      {r.trades} {pl(r.trades, "op", "ops")}
+                      {r.trades >= MUESTRA_MIN
+                        ? ` · ${r.winRate.toFixed(0)}% · PF ${pf(r.profitFactor)}`
+                        : " · muestra corta"}
                     </p>
                   )}
                 </div>
@@ -210,8 +224,18 @@ export default function BacktestPanel() {
                         {r.returnPct >= 0 ? "+" : ""}
                         {r.returnPct.toFixed(1)}%
                       </span>
-                      <p className="font-mono text-[10px] tabular-nums text-muted">
-                        peor racha {fmt(r.maxDrawdown)}
+                      {/* Era "peor racha 98.66". Una racha es una serie de
+                          pérdidas seguidas; esto es la CAÍDA MÁXIMA desde el
+                          pico (lib/sim.ts la calcula como peak − equity), o sea
+                          otra cosa. Y el número iba sin unidad: son euros sobre
+                          el equity nocional de 1.000 €, así que en porcentaje
+                          se lee solo y además se compara con el retorno que
+                          tiene justo encima. */}
+                      <p
+                        className="font-mono text-[10px] tabular-nums text-muted"
+                        title={`Caída máxima desde el pico: ${fmt(r.maxDrawdown)} € sobre el equity nocional de ${BASE_EQUITY} €`}
+                      >
+                        caída máx. {((r.maxDrawdown / BASE_EQUITY) * 100).toFixed(1)}%
                       </p>
                     </>
                   )}
