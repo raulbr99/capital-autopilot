@@ -270,7 +270,7 @@ export default function Dashboard() {
           currency: acc?.currency ?? "",
           configured,
           enabled,
-          staleMs: lastOk == null ? null : Date.now() - lastOk,
+          lastOk,
           offline: !online,
         }}
         right={

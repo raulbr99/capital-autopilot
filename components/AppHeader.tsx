@@ -12,7 +12,8 @@ type Live = {
   currency: string;
   configured: boolean;
   enabled: boolean;
-  staleMs?: number | null;
+  /** Momento de la última lectura buena; el badge calcula la antigüedad. */
+  lastOk?: number | null;
   offline?: boolean;
 };
 
@@ -119,7 +120,7 @@ export default function AppHeader({
           <ConnBadge
             configured={!!v.configured}
             enabled={!!v.enabled}
-            staleMs={injected ? injected.staleMs : lastOk == null ? null : Date.now() - lastOk}
+            lastOk={injected ? injected.lastOk : lastOk}
             offline={injected ? !!injected.offline : !online}
           />
         )}

@@ -249,16 +249,38 @@ export function Sparkline({
 export function ConnBadge({
   configured,
   enabled,
-  staleMs,
+  lastOk,
   offline,
 }: {
   configured: boolean;
   enabled: boolean;
-  staleMs?: number | null;
+  /** Momento de la última lectura BUENA. Ver el reloj propio de abajo. */
+  lastOk?: number | null;
   offline?: boolean;
 }) {
+  /**
+   * Reloj propio.
+   *
+   * Antes recibía `staleMs` ya calculado por quien lo pinta, con un
+   * `Date.now() - lastOk` evaluado DURANTE EL RENDER. Y ahí está el fallo: si el
+   * broker deja de responder, no hay cambio de estado, luego no hay render,
+   * luego ese valor nunca se recalcula. El indicador solo podía detectar que los
+   * datos estaban viejos... cuando llegaban datos nuevos.
+   *
+   * Comprobado bloqueando /api/bot/tick con 502: tras 75 s la cabecera seguía
+   * diciendo "live" y el equity se mostraba como si fuera de hace un segundo.
+   * Justo el caso para el que existe este indicador.
+   *
+   * Con su propio intervalo, la antigüedad avanza aunque no llegue nada.
+   */
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAhora(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, []);
+  const staleMs = lastOk == null ? null : ahora - lastOk;
   const stale = offline || (staleMs != null && staleMs > 60_000);
-  const mins = stale ? Math.floor(staleMs! / 60_000) : 0;
+  const mins = stale && staleMs != null ? Math.floor(staleMs / 60_000) : 0;
   const color = stale ? "bg-short" : !configured ? "bg-short" : enabled ? "bg-long" : "bg-accent";
   const label = offline
     ? "sin conexión"
@@ -291,12 +313,17 @@ export function ConnBadge({
         aria-label siguen dando el texto completo. Cuando el estado es MALO
         (broker caído o sin red) la etiqueta se mantiene: eso sí hay que leerlo.
       */}
+      {/* Un solo elemento: antes había uno visible y otro sr-only, así que en
+          escritorio el lector de pantalla leía la etiqueta dos veces —y el
+          innerText la mostraba duplicada ("live | live"). sr-only + not-sr-only
+          hace lo mismo con un único nodo. */}
       <span
-        className={`text-[11px] font-medium ${stale ? "text-short" : "hidden text-dim sm:inline"}`}
+        className={`text-[11px] font-medium ${
+          stale ? "text-short" : "text-dim sr-only sm:not-sr-only"
+        }`}
       >
         {label}
       </span>
-      <span className="sr-only">{label}</span>
     </div>
   );
 }
