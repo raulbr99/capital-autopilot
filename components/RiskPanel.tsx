@@ -49,10 +49,25 @@ export default function RiskPanel({
           sub={rr ? (rr >= 1 ? "ganas más de lo que arriesgas" : "arriesgas más de lo que ganas") : ""}
           tone={rr ? (rr >= 1 ? "long" : "short") : undefined}
         />
+        {/*
+          Esta cifra sale de la CONFIGURACIÓN (objetivo ÷ stop), no del histórico.
+          En la misma pantalla, el panel de expectativa enseña su propio umbral
+          calculado con las operaciones reales — hoy 40 % aquí y 45 % allí— y
+          nada decía cuál era cuál: parecían el mismo dato con dos valores.
+          Son plan y realidad, y difieren porque casi ninguna salida ocurre
+          exactamente en el stop o en el objetivo, menos aún con el trailing
+          moviendo el stop. El subtítulo lo dice ahora explícitamente.
+        */}
         <Consequence
           label="Acierto mínimo"
           value={equilibrio ? `${equilibrio.toFixed(0)}%` : "—"}
-          sub={equilibrio ? "para no perder dinero" : ""}
+          sub={
+            equilibrio
+              ? r.activeManage
+                ? "en teoría · el trailing mueve el stop"
+                : "en teoría · si cada salida fuera en el stop o el objetivo"
+              : ""
+          }
         />
       </div>
 
