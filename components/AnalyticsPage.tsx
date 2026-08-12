@@ -205,7 +205,14 @@ export default function AnalyticsPage() {
               />
               <Kpi label="Por operación" value={fmt(a.expectancy)} sub="media de las cerradas" />
               <Kpi label="Media ganancia" value={`+${fmt(a.avgWin)}`} sub={`−${fmt(a.avgLoss)} media pérdida`} />
-              <Kpi label="Racha" value={`${a.bestStreak >= 0 ? "+" : ""}${a.bestStreak} / ${a.worstStreak}`} sub="mejor / peor" />
+              {/* Los signos eran decorativos: una racha se cuenta en operaciones, y
+                  en este panel el + y el − significan dinero. "+2 / −5" se leía
+                  como euros o como R. */}
+              <Kpi
+                label="Racha"
+                value={`${a.bestStreak} / ${Math.abs(a.worstStreak)}`}
+                sub="ganadoras / perdedoras seguidas"
+              />
             </section>
 
             {/* Mecánica: un win rate suelto no dice nada sin su punto de equilibrio */}

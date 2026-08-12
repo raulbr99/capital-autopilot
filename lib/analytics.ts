@@ -70,9 +70,14 @@ export function analyze(trades: TradeRecord[]): Analytics {
   let best = 0;
   let worst = 0;
   for (const t of closed) {
-    const win = esGanadora(t.pnl);
-    if (win) cur = cur > 0 ? cur + 1 : 1;
-    else cur = cur < 0 ? cur - 1 : -1;
+    // Un cierre a CERO no es ni ganadora ni perdedora: corta la racha en vez
+    // de alargar la de pérdidas. El `else` la contaba como fallo, así que con
+    // 8 empates en 33 operaciones la "peor racha" salía inflada — el mismo
+    // criterio que ya se corrigió en el win rate y en el desglose por
+    // dirección, y que aquí se quedó sin aplicar.
+    if (esGanadora(t.pnl)) cur = cur > 0 ? cur + 1 : 1;
+    else if (esPerdedora(t.pnl)) cur = cur < 0 ? cur - 1 : -1;
+    else cur = 0;
     best = Math.max(best, cur);
     worst = Math.min(worst, cur);
   }
