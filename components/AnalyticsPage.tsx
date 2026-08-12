@@ -250,27 +250,59 @@ export default function AnalyticsPage() {
                     <p className="text-sm text-muted">Sin operaciones cerradas.</p>
                   ) : (
                     <div className="space-y-3">
-                      {a.byDirection.map((d) => (
-                        <div key={d.dir}>
-                          <div className="flex items-baseline justify-between">
-                            <span className={`text-sm font-medium ${d.dir === "BUY" ? "text-long" : "text-short"}`}>
-                              {d.dir === "BUY" ? "▲ Largos" : "▼ Cortos"}
-                            </span>
-                            <span className="font-mono text-[11px] tabular-nums text-muted">
-                              {d.trades} ops · {d.winRate.toFixed(0)}% acierto
-                            </span>
+                      {/*
+                        La barra medía el acierto pero se pintaba según la
+                        DIRECCIÓN: largos en verde, cortos en rojo, pasara lo
+                        que pasara. Como aquí el verde y el rojo son dinero, la
+                        tarjeta parecía decir "los largos van bien y los cortos
+                        mal" por el color, no por el dato — y habría seguido
+                        diciéndolo con los papeles cambiados. La dirección ya la
+                        da el nombre y su flecha.
+                        Ahora el color sale de comparar cada acierto con SU
+                        umbral de equilibrio, que además es la lectura que este
+                        desglose necesita: con 45,1% de umbral, los largos
+                        (46,2%) lo superan y los cortos (25%) no llegan ni de
+                        lejos. Sin la marca, ese cruce era invisible.
+                      */}
+                      {a.byDirection.map((d) => {
+                        const supera = a.breakevenWinRate > 0 && d.winRate >= a.breakevenWinRate;
+                        return (
+                          <div key={d.dir}>
+                            <div className="flex items-baseline justify-between gap-2">
+                              <span className="text-sm font-medium text-dim">
+                                {d.dir === "BUY" ? "▲ Largos" : "▼ Cortos"}
+                              </span>
+                              <span className="font-mono text-[11px] tabular-nums text-muted">
+                                {d.trades} {pl(d.trades, "op", "ops")} ·{" "}
+                                <span className={supera ? "text-long" : "text-short"}>
+                                  {d.winRate.toFixed(0)}%
+                                </span>{" "}
+                                acierto
+                              </span>
+                            </div>
+                            <div className="relative mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-industrial">
+                              <div
+                                className={`h-full ${supera ? "bg-long" : "bg-short"}`}
+                                style={{ width: `${Math.min(100, d.winRate)}%` }}
+                              />
+                              {a.breakevenWinRate > 0 && (
+                                <span
+                                  className="absolute top-0 h-full w-px bg-white/70"
+                                  style={{ left: `${Math.min(100, a.breakevenWinRate)}%` }}
+                                  title={`Equilibrio en ${a.breakevenWinRate.toFixed(0)}%`}
+                                />
+                              )}
+                            </div>
+                            <p className={`mt-1 font-mono text-sm tabular-nums ${pnlClass(d.pnl)}`}>
+                              {pnlFmt(d.pnl)}
+                            </p>
                           </div>
-                          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-industrial">
-                            <div
-                              className={`h-full ${d.dir === "BUY" ? "bg-long" : "bg-short"}`}
-                              style={{ width: `${Math.min(100, d.winRate)}%` }}
-                            />
-                          </div>
-                          <p className={`mt-1 font-mono text-sm tabular-nums ${pnlClass(d.pnl)}`}>
-                            {pnlFmt(d.pnl)}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
+                      <p className="border-t border-industrial pt-2.5 text-[10px] leading-snug text-muted">
+                        La marca blanca es el acierto mínimo para no perder dinero con el payoff
+                        actual ({a.breakevenWinRate.toFixed(0)}%).
+                      </p>
                     </div>
                   )}
                 </div>
