@@ -1,7 +1,7 @@
 "use client";
 
 import type { BotConfig } from "./types";
-import { SectionHead, NumField, fmt } from "./ui";
+import { SectionHead, NumField, fmt, pl } from "./ui";
 
 export default function RiskPanel({
   cfg,
@@ -61,7 +61,7 @@ export default function RiskPanel({
         <div className="space-y-1.5 border-b border-industrial px-4 py-3">
           {peorDia != null && (
             <p className="text-[11px] leading-relaxed text-muted">
-              Con {r.maxTradesPerDay} operaciones al día y {cfg.maxPerDesk} por mesa, el peor día abriendo
+              Con {r.maxTradesPerDay} {pl(r.maxTradesPerDay, "operación", "operaciones")} al día y {cfg.maxPerDesk} por mesa, el peor día abriendo
               el cupo completo arriesga <span className="font-mono text-dim">≈{fmt(peorDia)} {currency ?? ""}</span> en
               posiciones nuevas.
             </p>

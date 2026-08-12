@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { JournalEntry } from "./types";
 import AppHeader from "./AppHeader";
-import { Skeleton, usePoll } from "./ui";
+import { Skeleton, usePoll, pl } from "./ui";
 import JournalEntryCard, { summarize } from "./JournalEntryCard";
 import LessonsPanel from "./LessonsPanel";
 
@@ -82,7 +82,7 @@ export default function JournalPage() {
           ))}
           {shown.length > 0 && (
             <span className="ml-auto font-mono text-[11px] text-muted">
-              {shown.length} entradas · {traded} con operación
+              {shown.length} {pl(shown.length, "entrada", "entradas")} · {traded} con operación
             </span>
           )}
         </div>

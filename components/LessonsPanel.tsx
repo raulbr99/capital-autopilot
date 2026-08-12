@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SectionHead, fmt, pnlClass, pnlFmt } from "./ui";
+import { SectionHead, fmt, pnlClass, pnlFmt, pl } from "./ui";
 
 type Lado = {
   trades: number;
@@ -166,7 +166,7 @@ export default function LessonsPanel({ desk }: { desk?: string }) {
       </div>
 
       <p className="border-t border-industrial px-5 py-2.5 text-[11px] leading-relaxed text-muted">
-        Resumen de {d.closed} operaciones cerradas · neto{" "}
+        Resumen de {d.closed} {pl(d.closed, "operación cerrada", "operaciones cerradas")} · neto{" "}
         <span className={pnlClass(d.netTotal)}>{pnlFmt(d.netTotal)}</span>. Es exactamente lo que reciben
         los Gestores antes de decidir
         {d.decisiones?.vetoed ? ` · el comité ha vetado ${d.decisiones.vetoed} de sus propuestas` : ""}.

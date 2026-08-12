@@ -163,7 +163,7 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
                             {corta && (
                               <span
                                 className="whitespace-nowrap rounded border border-cement px-2 py-0.5 text-[9px] text-muted"
-                                title={`Solo ${r.oosAggregate.trades} operaciones fuera de muestra: por debajo de ${MIN_OOS} el veredicto es ruido`}
+                                title={`Solo ${r.oosAggregate.trades} ${r.oosAggregate.trades === 1 ? "operación" : "operaciones"} fuera de muestra: por debajo de ${MIN_OOS} el veredicto es ruido`}
                               >
                                 sin muestra · {r.oosAggregate.trades}
                               </span>

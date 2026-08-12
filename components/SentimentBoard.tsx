@@ -58,8 +58,8 @@ function EarningsCell({ e }: { e?: Earn }) {
       }`}
       title={
         soon
-          ? `Resultados en ${d} días: el motor no abre posiciones nuevas en este activo`
-          : `Próximos resultados en ${d} días${e.epsEstimate != null ? ` · BPA estimado ${e.epsEstimate.toFixed(2)}` : ""}`
+          ? `Resultados en ${d} ${d === 1 ? "día" : "días"}: el motor no abre posiciones nuevas en este activo`
+          : `Próximos resultados en ${d} ${d === 1 ? "día" : "días"}${e.epsEstimate != null ? ` · BPA estimado ${e.epsEstimate.toFixed(2)}` : ""}`
       }
     >
       {soon ? "⚠ " : ""}

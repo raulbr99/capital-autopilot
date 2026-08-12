@@ -536,7 +536,12 @@ function DesksOverview({
               </div>
               <div className="text-right">
                 <p className="tag">P&amp;L</p>
-                <p className={`mt-0.5 font-mono text-lg font-medium tabular-nums ${pnlClass(pnl)}`}>{pnlFmt(pnl)}</p>
+                {/* Sin posiciones no hay P&L: un "0.00" afirma que la mesa está
+                    plana, cuando lo que pasa es que no tiene nada abierto. El
+                    resto del panel ya usa "—" para lo que no existe. */}
+                <p className={`mt-0.5 font-mono text-lg font-medium tabular-nums ${pos.length ? pnlClass(pnl) : "text-muted"}`}>
+                  {pos.length ? pnlFmt(pnl) : "—"}
+                </p>
               </div>
             </div>
             {/* altura fija: si la línea aparece y desaparece, las tarjetas bailan */}
@@ -545,10 +550,14 @@ function DesksOverview({
                 <>
                   {longs > 0 && <span className="text-long">{longs}▲ </span>}
                   {shorts > 0 && <span className="text-short">{shorts}▼ </span>}
-                  señales · {ev.length} activos
+                  {/* Decía "1▲ señales" en las mesas con una sola. */}
+                  {longs + shorts === 1 ? "señal" : "señales"} · {ev.length}{" "}
+                  {ev.length === 1 ? "activo" : "activos"}
                 </>
               ) : (
-                <>{ev.length} activos · sin señal</>
+                <>
+                  {ev.length} {ev.length === 1 ? "activo" : "activos"} · sin señal
+                </>
               )}
             </p>
           </Link>

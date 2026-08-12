@@ -19,6 +19,15 @@ export const fmt = (n: number, d = 2) => {
 export const pf = (n: number) =>
   n === Infinity ? "∞" : Number.isFinite(n) ? n.toFixed(2) : "—";
 
+/**
+ * Concordancia de número. La app tenía el plural clavado en el texto en una
+ * docena de sitios, así que en cuanto un contador valía 1 salían cosas como
+ * "1 señales", "1 entradas" o "Resultados en 1 días". Cada una es minúscula;
+ * juntas son la diferencia entre un producto cuidado y uno hecho a medias.
+ */
+export const pl = (n: number, singular: string, plural: string) =>
+  n === 1 ? singular : plural;
+
 // P&L: el cero es NEUTRO (ni verde ni "+"), solo color con signo real.
 const EPS = 0.005;
 export const pnlClass = (v: number) =>

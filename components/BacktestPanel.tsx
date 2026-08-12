@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SectionHead, Skeleton, fmt, pf, Sparkline } from "./ui";
+import { SectionHead, Skeleton, fmt, pf, Sparkline, pl } from "./ui";
 
 type BTResult = {
   epic: string;
@@ -161,7 +161,7 @@ export default function BacktestPanel() {
                 <span aria-hidden>💸</span>
                 <span>
                   Incluye <span className="font-mono text-white">{fmt(agg.spreadCost)} €</span> de
-                  horquilla ({agg.trades} operaciones × spread real del activo). Un backtest sin este
+                  horquilla ({agg.trades} {pl(agg.trades, "operación", "operaciones")} × spread real del activo). Un backtest sin este
                   coste siempre sale a favor, y más cuanto más corto sea el marco temporal.
                 </span>
               </p>

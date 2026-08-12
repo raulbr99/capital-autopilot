@@ -199,7 +199,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
           <Kpi
             label="Exposición"
             value={exposure > 0 ? fmt(exposure, 0) : "—"}
-            sub={exposure > 0 ? currency : `${evals.length} activos · ${signals} con señal`}
+            sub={exposure > 0 ? currency : `${evals.length} ${evals.length === 1 ? "activo" : "activos"} · ${signals} con señal`}
           />
           <Kpi
             label="Riesgo a stop"

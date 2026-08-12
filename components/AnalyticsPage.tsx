@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TradeRecord, DeskCategory } from "./types";
 import { analyze } from "./analytics-util";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
           <div>
             <h1 className="font-display text-2xl font-semibold tracking-tight text-white">Analítica</h1>
             <p className="mt-1 text-sm text-dim">
-              Rendimiento de {a.closed} operaciones cerradas{epic && ` · ${epic}`}
+              Rendimiento de {a.closed} {pl(a.closed, "operación cerrada", "operaciones cerradas")}{epic && ` · ${epic}`}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
                   </div>
                   {!a.enough && (
                     <p className="border-t border-industrial pt-3 text-xs leading-relaxed text-muted">
-                      Con {a.closed} operaciones cerradas estos números son orientativos: hacen falta
+                      Con {a.closed} {pl(a.closed, "operación cerrada", "operaciones cerradas")} estos números son orientativos: hacen falta
                       unas 30 para que dejen de ser ruido estadístico.
                     </p>
                   )}

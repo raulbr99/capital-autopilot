@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SectionHead, StatCard, fmt, pf, pnlClass, pnlFmt } from "./ui";
+import { SectionHead, StatCard, fmt, pf, pnlClass, pnlFmt, pl } from "./ui";
 
 type Exp = {
   closed: number;
@@ -48,7 +48,7 @@ export default function ExpectancyPanel({ className = "" }: { className?: string
     <div className={`overflow-hidden rounded-xl border border-industrial bg-soft ${className}`}>
       <SectionHead
         label="Expectativa real"
-        right={d ? <span className="font-mono text-[11px] text-muted">{d.closed} cerrados</span> : undefined}
+        right={d ? <span className="font-mono text-[11px] text-muted">{d.closed} {pl(d.closed, "cerrada", "cerradas")}</span> : undefined}
       />
       {children}
     </div>
