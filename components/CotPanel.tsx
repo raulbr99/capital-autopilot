@@ -94,10 +94,21 @@ export default function CotPanel({
               >
                 <div className="h-full bg-long/40" style={{ width: `${c.pctLong}%` }} />
                 <div className="h-full bg-short/40" style={{ width: `${100 - c.pctLong}%` }} />
-                {/* La cifra: a ojo no se distingue un 72 % de un 88 %, y esa
-                    diferencia es la que separa "sesgo" de "masificado". */}
-                <span className="absolute inset-y-0 left-2 flex items-center font-mono text-[10px] tabular-nums text-dim">
-                  {c.pctLong.toFixed(0)}% long
+                {/*
+                  La cifra: a ojo no se distingue un 72 % de un 88 %, y esa
+                  diferencia es la que separa "sesgo" de "masificado".
+                  Va anclada al inicio de la barra, no al final del relleno, así
+                  que cuando el porcentaje es bajo (Dólar NZ al 11 %) el texto
+                  es más ancho que su propio segmento y quedaba partido entre
+                  el verde y el rojo — se leía como si el número perteneciera a
+                  los dos lados. Un fondo propio lo separa de la barra sin
+                  robarle sitio, que en móvil no sobra: darle columna propia
+                  dejaba la barra en 74 px.
+                */}
+                <span className="absolute inset-y-0 left-1 flex items-center">
+                  <span className="rounded bg-ink/75 px-1.5 py-0.5 font-mono text-[10px] leading-none tabular-nums text-dim">
+                    {c.pctLong.toFixed(0)}% long
+                  </span>
                 </span>
                 {/* Marca del 50 %: sin referencia, la barra no dice de qué lado cae */}
                 <span className="absolute inset-y-0 left-1/2 w-px bg-muted/40" aria-hidden />
