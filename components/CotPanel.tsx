@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton } from "./ui";
 
 type Cot = {
   symbol: string;
@@ -82,6 +83,20 @@ export default function CotPanel({
         </span>
       </div>
       <div className="space-y-2.5 p-4">
+        {/*
+          Sin datos, la tarjeta quedaba como una banda vacía con solo el pie
+          explicativo debajo — se lee como "no hay posicionamiento que enseñar",
+          no como "aún no ha llegado". El COT viene de la CFTC y tarda; seis
+          huecos con la forma de las seis divisas dicen la verdad mientras tanto.
+        */}
+        {loading && !(rows ?? []).length &&
+          [0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={`hueco-${i}`} className="flex items-center gap-3">
+              <Skeleton className="h-4 w-20 shrink-0 sm:w-24" />
+              <Skeleton className="h-5 min-w-0 flex-1" />
+              <Skeleton className="h-3 w-24 shrink-0 sm:w-40" />
+            </div>
+          ))}
         {(rows ?? []).map((c) => {
           const long = c.bias === "long";
           const short = c.bias === "short";
