@@ -4,6 +4,8 @@
  * Fail-open: si no hay key o nadie responde, aprueba (no bloquea el bot).
  */
 
+import { recorta } from "./store";
+
 const DEFAULT_MODELS = "openai/gpt-4.1-nano,google/gemini-2.5-flash-lite,deepseek/deepseek-chat";
 
 export type Vote = { model: string; approve: boolean; reason: string };
@@ -71,7 +73,7 @@ async function askModel(key: string, model: string, prompt: string): Promise<Vot
     const m = txt.match(/\{[\s\S]*\}/);
     if (!m) return null;
     const j = JSON.parse(m[0]);
-    return { model, approve: !!j.approve, reason: String(j.reason || "").slice(0, 140) };
+    return { model, approve: !!j.approve, reason: recorta(String(j.reason || ""), 140) };
   } catch {
     return null;
   }

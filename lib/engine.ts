@@ -25,7 +25,7 @@ import {
 import { committeeVote } from "./committee";
 import { relevantEvents } from "./calendar";
 import { evaluate, atr, type Signal } from "./strategy";
-import { bot, log, pushEquity, todayKey, TradeRecord, DEFAULT_RESOLUTION, type Instrument, type EquityPoint } from "./store";
+import { bot, log, pushEquity, recorta, todayKey, TradeRecord, DEFAULT_RESOLUTION, type Instrument, type EquityPoint } from "./store";
 import {
   loadConfig,
   loadRuntime,
@@ -600,7 +600,7 @@ async function executePmDecision(
   const cfg = b.config;
 
   const tag = decision.desk ? `[${decision.desk}] ` : "";
-  logN("info", `🧠 ${tag}Gestor (${(decision.confidence * 100).toFixed(0)}%): ${(decision.thesis || "").slice(0, 140)}`);
+  logN("info", `🧠 ${tag}Gestor (${(decision.confidence * 100).toFixed(0)}%): ${recorta(decision.thesis || "", 140)}`);
 
   let opened = 0;
   const actions = decision.actions || [];
@@ -711,7 +711,7 @@ async function executePmDecision(
 /** Etiqueta el resultado de ejecución de una acción del Gestor (para el journal). */
 function tagOutcome(act: any, outcome: string, note?: string) {
   act.outcome = outcome;
-  if (note) act.outcomeNote = String(note).slice(0, 90);
+  if (note) act.outcomeNote = recorta(String(note), 90);
 }
 
 function realToOpen(p: Position): OpenPos {
@@ -871,7 +871,7 @@ async function manageOpenPositions(
         });
         logN("trade", `🔧 ${p.epic}: SL → ${sl} (${inAtr >= r.trailAtr ? "trailing" : "breakeven"} +${inAtr.toFixed(1)}×ATR)`, p.epic);
       } catch (e: any) {
-        logN("info", `${p.epic}: no se pudo mover el SL (${(e.message || "").slice(0, 50)})`, p.epic);
+        logN("info", `${p.epic}: no se pudo mover el SL (${recorta(e.message || "", 50)})`, p.epic);
       }
     }
 
@@ -888,7 +888,7 @@ async function manageOpenPositions(
           logN("trade", `💰 ${p.epic}: scaling out — cerrado ${close} a +${inAtr.toFixed(1)}×ATR, dejo ${remainder} corriendo`, p.epic);
         }
       } catch (e: any) {
-        logN("info", `${p.epic}: scaling out no aplicado (${(e.message || "").slice(0, 50)})`, p.epic);
+        logN("info", `${p.epic}: scaling out no aplicado (${recorta(e.message || "", 50)})`, p.epic);
       }
     }
   }

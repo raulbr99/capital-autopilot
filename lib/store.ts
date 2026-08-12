@@ -253,6 +253,23 @@ export function pushEquity(equity: number) {
  */
 export const TZ = process.env.ACCOUNT_TZ || "Europe/Madrid";
 
+/**
+ * Recorte de texto para registro y diario. Todo esto se cortaba con un
+ * `.slice(0, n)` a pelo, así que las frases terminaban a mitad de palabra y sin
+ * ninguna marca: en el registro se leía "…COT: GOLD 88.54% long (e" y en el
+ * diario "…la operación es contra la tenden". Un texto cortado en seco no
+ * parece resumido, parece corrompido — y en un registro de operativa la
+ * diferencia importa: no sabes si falta texto o si el bot escribió eso.
+ * Además corta en el último espacio para no partir palabras.
+ */
+export function recorta(s: string, n: number): string {
+  const t = (s || "").trim();
+  if (t.length <= n) return t;
+  const duro = t.slice(0, n - 1);
+  const esp = duro.lastIndexOf(" ");
+  return (esp > n * 0.6 ? duro.slice(0, esp) : duro).trimEnd() + "…";
+}
+
 /** Fecha AAAA-MM-DD en la zona de la cuenta. */
 export function todayKey(ts = Date.now()): string {
   // 'en-CA' formatea como AAAA-MM-DD, que es lo que queremos para comparar
