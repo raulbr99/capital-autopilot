@@ -101,7 +101,26 @@ for (const dev of DEVICES) {
         }
 
         // Objetivos táctiles pequeños (WCAG sugiere ~44 px)
+        /**
+         * Un enlace DENTRO de una frase no cuenta.
+         *
+         * WCAG lo exceptúa expresamente (2.5.8, "inline"): agrandar un enlace
+         * incrustado en un párrafo rompería la línea de texto, así que el
+         * criterio no aplica. Sin esta excepción el informe arrastraba para
+         * siempre un "panel 31×15" que no hay que arreglar, y una lista de
+         * avisos que no se pueden atender acaba ignorándose entera — incluidos
+         * los que sí importan.
+         */
+        const enFrase = (el) => {
+          if (el.tagName !== "A") return false;
+          if (!/^inline/.test(getComputedStyle(el).display)) return false;
+          const padre = el.parentElement;
+          if (!padre) return false;
+          const textoAlrededor = (padre.textContent || "").replace(el.textContent || "", "").trim();
+          return textoAlrededor.length > 0;
+        };
         const small = [...document.querySelectorAll("button, a, select, input")]
+          .filter((el) => !enFrase(el))
           .map((el) => ({ el, r: el.getBoundingClientRect() }))
           .filter(({ r }) => r.width > 0 && r.height > 0 && (r.height < 32 || r.width < 32))
           .map(({ el, r }) => ({
