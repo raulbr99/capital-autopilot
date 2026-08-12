@@ -280,17 +280,22 @@ export default function AnalyticsPage() {
             {/* curva PnL + por instrumento */}
             {/* items-start: sin esto, la tarjeta de la curva se estiraba hasta
                 la altura de la lista de instrumentos y dejaba un hueco muerto */}
-            <section className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_400px]">
-              <div className="rounded-xl border border-industrial bg-soft">
-                <SectionHead label="PnL acumulado" />
-                <div className="p-5">
-                  <EquityChart data={a.pnlCurve.map((p) => ({ ts: p.ts, equity: p.cum }))} markers={markers} />
-                </div>
+            {/*
+              Estas dos tarjetas iban lado a lado (1fr + 400px) y no se parecen
+              en nada de alto: la curva mide ~300 px y la lista, con 21 activos,
+              pasaba de 1.100 — media pantalla en blanco a la izquierda. Ahora
+              cada una ocupa su ancho completo y la lista fluye en columnas.
+            */}
+            <section className="mt-4 rounded-xl border border-industrial bg-soft">
+              <SectionHead label="PnL acumulado" />
+              <div className="p-5">
+                <EquityChart data={a.pnlCurve.map((p) => ({ ts: p.ts, equity: p.cum }))} markers={markers} />
               </div>
-              <div className="rounded-xl border border-industrial bg-soft">
-                <SectionHead label="Por instrumento" />
-                <ByInstrument rows={a.byEpic} />
-              </div>
+            </section>
+
+            <section className="mt-4 rounded-xl border border-industrial bg-soft">
+              <SectionHead label={`Por instrumento · ${a.byEpic.length}`} />
+              <ByInstrument rows={a.byEpic} />
             </section>
 
             {/* P&L diario */}
@@ -353,29 +358,51 @@ function Kpi({
   );
 }
 
+/** Igual que en el panel del Diario: bajo esta muestra el % no es una tasa. */
+const MUESTRA_MIN = 5;
+
 function ByInstrument({ rows }: { rows: { epic: string; pnl: number; trades: number; winRate: number }[] }) {
   if (!rows.length) return <div className="p-8 text-center text-sm text-muted">Sin datos</div>;
   const max = Math.max(...rows.map((r) => Math.abs(r.pnl)), 1);
+  // Se parte en dos mitades en vez de usar una rejilla de 2 columnas: así cada
+  // columna se lee de arriba abajo y el ranking (de más ganador a más perdedor)
+  // sigue siendo el orden de lectura.
+  const corte = Math.ceil(rows.length / 2);
+  const columnas = [rows.slice(0, corte), rows.slice(corte)].filter((c) => c.length);
+
   return (
-    <div className="divide-y divide-industrial/60">
-      {rows.map((r) => (
-        <div key={r.epic} className="flex items-center gap-3 px-4 py-2.5">
-          <div className="w-20 shrink-0">
-            <p className="font-display text-sm">{r.epic}</p>
-            <p className="font-mono text-[10px] text-muted">{r.trades}t · {r.winRate.toFixed(0)}%</p>
-          </div>
-          <div className="flex-1">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-industrial">
-              <div
-                className={`h-full rounded-full ${r.pnl >= 0 ? "bg-long" : "bg-short"}`}
-                style={{ width: `${(Math.abs(r.pnl) / max) * 100}%` }}
-              />
+    <div className="grid grid-cols-1 lg:grid-cols-2">
+      {columnas.map((col, ci) => (
+        <div
+          key={ci}
+          className={`divide-y divide-industrial/60 ${ci > 0 ? "border-t border-industrial lg:border-l lg:border-t-0" : ""}`}
+        >
+          {col.map((r) => (
+            <div key={r.epic} className="flex items-center gap-3 px-4 py-2.5">
+              <div className="w-20 shrink-0">
+                <p className="font-display text-sm">{r.epic}</p>
+                {/* "1t · 100%" sobre una sola operación no es un acierto del
+                    100%, es una moneda que cayó una vez. Y la unidad "t" no la
+                    define nadie. */}
+                <p className="font-mono text-[10px] text-muted">
+                  {r.trades} {r.trades === 1 ? "op" : "ops"}
+                  {r.trades >= MUESTRA_MIN ? ` · ${r.winRate.toFixed(0)}%` : ""}
+                </p>
+              </div>
+              <div className="flex-1">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-industrial">
+                  <div
+                    className={`h-full rounded-full ${r.pnl >= 0 ? "bg-long" : "bg-short"}`}
+                    style={{ width: `${(Math.abs(r.pnl) / max) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <span className={`w-16 shrink-0 text-right font-mono text-[13px] ${pnlClass(r.pnl)}`}>
+                {r.pnl >= 0 ? "+" : ""}
+                {fmt(r.pnl)}
+              </span>
             </div>
-          </div>
-          <span className={`w-16 shrink-0 text-right font-mono text-[13px] ${pnlClass(r.pnl)}`}>
-            {r.pnl >= 0 ? "+" : ""}
-            {fmt(r.pnl)}
-          </span>
+          ))}
         </div>
       ))}
     </div>
