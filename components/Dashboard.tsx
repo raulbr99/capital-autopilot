@@ -177,12 +177,14 @@ export default function Dashboard() {
       id: "toggle",
       label: enabled ? "Detener el piloto" : "Activar el piloto",
       hint: "Motor",
+      confirmar: enabled ? "¿Detener el piloto?" : "¿Activar el piloto?",
       run: () => patch({ enabled: !enabled }),
     },
     {
       id: "atr",
       label: `Stops por volatilidad (ATR): ${cfg?.risk.useAtrStops ? "desactivar" : "activar"}`,
       hint: "Motor",
+      confirmar: `¿${cfg?.risk.useAtrStops ? "Desactivar" : "Activar"} los stops por ATR?`,
       run: () => patch({ risk: { useAtrStops: !cfg?.risk.useAtrStops } }),
     },
     // Mesas

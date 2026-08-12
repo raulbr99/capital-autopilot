@@ -3,7 +3,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTrap, useReturnFocus } from "./ui";
 
-export type Command = { id: string; label: string; hint?: string; run: () => void };
+/**
+ * `confirmar` marca los comandos que TOCAN EL MOTOR EN VIVO. El resto de la app
+ * ya pide dos pasos para cosas mucho menos graves —cerrar una posición
+ * (CERRAR → ¿CERRAR?) o quitar un instrumento (✕ → ¿QUITAR?)— mientras que aquí
+ * "Detener el piloto" salía PRESELECCIONADO: ⌘K y Enter, sin tocar nada más,
+ * paraba la operativa. La acción más consecuente de la aplicación era la más
+ * fácil de disparar sin querer.
+ */
+export type Command = {
+  id: string;
+  label: string;
+  hint?: string;
+  /** Texto de la segunda pulsación. Si está, el comando pide confirmación. */
+  confirmar?: string;
+  run: () => void;
+};
 
 export default function CommandPalette({ commands }: { commands: Command[] }) {
   const [open, setOpen] = useState(false);
@@ -35,6 +50,11 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
   // Orden plano para que las flechas recorran lo mismo que se ve
   const flat = useMemo(() => groups.flatMap(([, list]) => list), [groups]);
 
+  // Cualquier movimiento cancela la confirmación pendiente: solo se confirma
+  // el comando que estás mirando ahora mismo.
+  const [pendiente, setPendiente] = useState<string | null>(null);
+  useEffect(() => setPendiente(null), [sel, q, open]);
+
   useEffect(() => setSel(0), [q, open]);
 
   useEffect(() => {
@@ -56,11 +76,15 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
       } else if (e.key === "Enter") {
         e.preventDefault();
         const c = flat[sel];
-        if (c) {
-          c.run();
-          setOpen(false);
-          setQ("");
+        if (!c) return;
+        if (c.confirmar && pendiente !== c.id) {
+          setPendiente(c.id);
+          return;
         }
+        c.run();
+        setPendiente(null);
+        setOpen(false);
+        setQ("");
       }
     };
     window.addEventListener("keydown", onKey);
@@ -115,16 +139,39 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
                     data-sel={on}
                     onMouseEnter={() => setSel(myIdx)}
                     onClick={() => {
+                      if (c.confirmar && pendiente !== c.id) return setPendiente(c.id);
                       c.run();
+                      setPendiente(null);
                       setOpen(false);
                       setQ("");
                     }}
                     className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[13px] transition-colors ${
-                      on ? "bg-raised text-white" : "text-dim"
+                      pendiente === c.id
+                        ? "bg-short/15 text-short"
+                        : on
+                          ? "bg-raised text-white"
+                          : "text-dim"
                     }`}
                   >
-                    <span className="truncate">{c.label}</span>
-                    {on && <span className="shrink-0 font-mono text-[10px] text-muted">↵</span>}
+                    <span className="truncate">
+                      {pendiente === c.id ? c.confirmar : c.label}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      {/* Que un comando cambie el estado del motor —y no solo
+                          te lleve a otra pantalla— tiene que verse ANTES de
+                          pulsarlo: hasta ahora "Mesa Forex" y "Detener el
+                          piloto" se veían exactamente igual. */}
+                      {c.confirmar && pendiente !== c.id && (
+                        <span className="rounded bg-industrial px-1.5 py-0.5 text-[9px] text-muted">
+                          motor
+                        </span>
+                      )}
+                      {on && (
+                        <span className="font-mono text-[10px] text-muted">
+                          {pendiente === c.id ? "↵ confirmar" : "↵"}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
               })}
