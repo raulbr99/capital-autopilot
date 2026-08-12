@@ -29,7 +29,7 @@ export default function JournalPage() {
       .then((d) => setEntries(d.entries || []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, 30000);
+  }, 60000);
 
   const shown = useMemo(
     () => entries.filter((e) => desk === "all" || e.desk === desk),

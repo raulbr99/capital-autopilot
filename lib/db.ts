@@ -470,15 +470,18 @@ export async function recordJournal(entry: {
   }
 }
 
-export async function getJournal(limit = 50): Promise<any[]> {
+/**
+ * `desk` filtra EN EL SERVIDOR. Las mesas se traían las entradas de las cuatro
+ * y descartaban tres cuartas partes en el cliente: medido, 709 kB por minuto
+ * solo de diario en /forex. Filtrar aquí evita mover lo que no se va a pintar.
+ */
+export async function getJournal(limit = 50, desk?: string): Promise<any[]> {
   const s = await supa();
   if (!s) return [];
   try {
-    const { data } = await s
-      .from("ap_journal")
-      .select("*")
-      .order("ts", { ascending: false })
-      .limit(limit);
+    let q = s.from("ap_journal").select("*").order("ts", { ascending: false });
+    if (desk) q = q.eq("desk", desk);
+    const { data } = await q.limit(limit);
     if (Array.isArray(data)) return data;
   } catch {
     /* noop */

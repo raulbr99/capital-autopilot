@@ -55,18 +55,31 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
 
   const load = useCallback(async () => {
     try {
-      const [s, j] = await Promise.all([
-        fetch("/api/bot/tick?slim=1").then((r) => r.json()),
-        fetch("/api/bot/journal").then((r) => r.json()),
-      ]);
+      const s = await fetch("/api/bot/tick?slim=1").then((r) => r.json());
       setSnap(s);
-      setJournal(((j.entries || []) as JournalEntry[]).filter((e) => (e.desk || null) === category));
     } catch {
       /* */
     }
   }, [category]);
 
   usePoll(load, 12000, [load]);
+
+  /**
+   * El diario iba pegado al sondeo de 12 s y sin filtrar: se descargaban las
+   * entradas de las CUATRO mesas para pintar una. Medido en /forex: 6 llamadas
+   * y 709 kB por minuto, sobre un dato que el Gestor escribe una vez por hora.
+   * Ahora pide solo su mesa (?desk=) y a un ritmo acorde a lo que cambia.
+   */
+  const loadJournal = useCallback(async () => {
+    try {
+      const j = await fetch(`/api/bot/journal?desk=${category}`).then((r) => r.json());
+      setJournal((j.entries || []) as JournalEntry[]);
+    } catch {
+      /* */
+    }
+  }, [category]);
+
+  usePoll(loadJournal, 60000, [loadJournal]);
 
   // Mientras se espera al Gestor, un contador — y en cuanto aparece una entrada
   // de diario POSTERIOR al disparo, se anuncia. Antes el botón decía "decidirá
