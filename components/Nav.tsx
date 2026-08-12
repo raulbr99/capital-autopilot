@@ -115,15 +115,22 @@ export default function Nav({ active }: { active: string }) {
       desplegable con las ocho resuelve las dos preguntas —dónde estoy y a dónde
       puedo ir— sin depender del gesto.
     */}
-    <div className="relative sm:hidden">
+    {/*
+      min-w-0 para que ESTE bloque pueda encoger. Sin él, el botón imponía su
+      ancho completo y, como el bloque de la derecha (equity, conexión, tema) es
+      shrink-0, no cedía ninguno de los dos: medido a 375 px, el equity empezaba
+      16 px ANTES de donde acababa el botón — se montaban el uno sobre el otro.
+      Ahora la etiqueta se recorta y cada cosa ocupa su sitio.
+    */}
+    <div className="relative min-w-0 sm:hidden">
       <button
         onClick={() => setMenu((m) => !m)}
         aria-expanded={menu}
         aria-haspopup="menu"
-        className="flex min-h-[36px] items-center gap-1.5 rounded-lg border border-industrial px-2.5 text-[12.5px] font-medium text-white"
+        className="flex min-h-[36px] w-full min-w-0 items-center gap-1.5 rounded-lg border border-industrial px-2.5 text-[12.5px] font-medium text-white"
       >
-        <span className="max-w-[110px] truncate">{actualItem?.label ?? "Menú"}</span>
-        <span className={`text-[9px] text-muted transition-transform ${menu ? "rotate-180" : ""}`}>▼</span>
+        <span className="min-w-0 flex-1 truncate text-left">{actualItem?.label ?? "Menú"}</span>
+        <span className={`shrink-0 text-[9px] text-muted transition-transform ${menu ? "rotate-180" : ""}`}>▼</span>
       </button>
       {menu && (
         <>
