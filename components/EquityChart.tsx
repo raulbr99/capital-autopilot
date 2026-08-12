@@ -29,6 +29,26 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
     };
   }, [data, markers, range]);
 
+  /**
+   * Cuánto histórico hay REALMENTE cargado. El snapshot trae las últimas 240
+   * filas de ap_equity — filas, no un periodo—, y al ritmo de escritura actual
+   * eso son unas 13 h aunque la tabla guarde 120 días. Con eso, los botones
+   * 1D/1S/1M pintaban exactamente lo mismo que "Todo": cuatro controles con un
+   * único resultado, y encima el filtro caía en silencio a mostrarlo todo
+   * cuando el rango pedido no llegaba a dos puntos. Un panel no debe ofrecer
+   * una vista de un mes si no tiene un mes.
+   */
+  const span = data.length >= 2 ? data[data.length - 1].ts - data[0].ts : 0;
+  const alcanzable = (ms: number) => !Number.isFinite(ms) || ms <= span * 1.05;
+
+  const spanFiltrado = filtered.length >= 2 ? filtered[filtered.length - 1].ts - filtered[0].ts : 0;
+  const periodo =
+    spanFiltrado >= DAY
+      ? `${Math.round(spanFiltrado / DAY)} d`
+      : spanFiltrado >= 3.6e6
+        ? `${Math.round(spanFiltrado / 3.6e6)} h`
+        : `${Math.max(1, Math.round(spanFiltrado / 60_000))} min`;
+
   const delta = filtered.length >= 2 ? filtered[filtered.length - 1].equity - filtered[0].equity : 0;
   // En la curva de P&L ACUMULADO la serie arranca en 0, así que el porcentaje
   // no está definido: mostrar "(0.00%)" ahí no informa, desinforma.
@@ -41,22 +61,34 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
         <span className={`font-mono text-xs tabular-nums ${pnlClass(delta)}`}>
           {pnlFmt(delta)}€{" "}
           <span className="text-muted">
-            {deltaPct != null ? `(${pnlFmt(deltaPct)}%) ` : ""}en el periodo
+            {deltaPct != null ? `(${pnlFmt(deltaPct)}%) ` : ""}
+            {/* "en el periodo" no decía QUÉ periodo, y el eje de abajo solo da
+                horas cuando el rango es corto: había que adivinarlo. */}
+            en {periodo}
           </span>
         </span>
         <div className="flex overflow-hidden rounded-md border border-industrial">
-          {RANGES.map((r) => (
-            <button
-              key={r.k}
-              onClick={() => setRange(r.k)}
-              aria-pressed={range === r.k}
-              className={`min-h-[34px] px-3 py-1.5 font-mono text-[11px] transition-colors ${
-                range === r.k ? "bg-accent text-onaccent" : "text-muted hover:text-dim"
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
+          {RANGES.map((r) => {
+            const puede = alcanzable(r.ms);
+            return (
+              <button
+                key={r.k}
+                onClick={() => puede && setRange(r.k)}
+                disabled={!puede}
+                aria-pressed={range === r.k}
+                title={puede ? undefined : `Solo hay ${periodo} de histórico cargado`}
+                className={`min-h-[34px] px-3 py-1.5 font-mono text-[11px] transition-colors ${
+                  range === r.k
+                    ? "bg-accent text-onaccent"
+                    : puede
+                      ? "text-muted hover:text-dim"
+                      : "cursor-not-allowed text-muted/35"
+                }`}
+              >
+                {r.label}
+              </button>
+            );
+          })}
         </div>
       </div>
       <Curve data={filtered} markers={fmarkers} />
