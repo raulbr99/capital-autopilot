@@ -355,20 +355,40 @@ export function Skeleton({ className = "" }: { className?: string }) {
  */
 export function deskSession(cat: string, now = new Date()): { open: boolean; label: string } {
   if (cat === "crypto") return { open: true, label: "Mercado abierto · 24/7" };
-  const day = now.getUTCDay(); // 0 domingo
-  const h = now.getUTCHours() + now.getUTCMinutes() / 60;
+
+  /**
+   * Hora local de Nueva York, no un desfase fijo en UTC.
+   *
+   * Antes la sesión de bolsa estaba escrita como "13:30–20:00 UTC (horario de
+   * verano)". De noviembre a marzo Nueva York está en EST y su sesión cae en
+   * 14:30–21:00 UTC, así que durante cuatro meses al año el panel habría dicho
+   * "Bolsa de NY cerrada" durante la PRIMERA HORA de negociación y "abierta"
+   * una hora después del cierre. Hoy, en agosto, acierta por casualidad.
+   *
+   * Con la zona horaria real el cambio de hora lo resuelve el navegador, y de
+   * paso vale igual para el arranque y cierre semanal de forex, que también se
+   * definen sobre Nueva York (domingo y viernes a las 17:00 locales).
+   */
+  const ny = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const parte = (t: string) => ny.find((p) => p.type === t)?.value ?? "";
+  const dias: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const day = dias[parte("weekday")] ?? 0;
+  const h = Number(parte("hour")) + Number(parte("minute")) / 60;
 
   if (cat === "stocks") {
-    // Nueva York 13:30–20:00 UTC (horario de verano), L-V
-    const open = day >= 1 && day <= 5 && h >= 13.5 && h < 20;
+    // Sesión regular: 9:30–16:00 hora de Nueva York, de lunes a viernes.
+    const open = day >= 1 && day <= 5 && h >= 9.5 && h < 16;
     return { open, label: open ? "Sesión de Nueva York abierta" : "Bolsa de NY cerrada" };
   }
-  // Forex y materias primas: de domingo 22:00 UTC a viernes 21:00 UTC
+  // Forex y materias primas: del domingo 17:00 al viernes 17:00 hora de NY.
   const open =
-    (day > 1 && day < 5) ||
-    (day === 1 && h >= 0) ||
-    (day === 0 && h >= 22) ||
-    (day === 5 && h < 21);
+    (day >= 1 && day <= 4) || (day === 0 && h >= 17) || (day === 5 && h < 17);
   return { open, label: open ? "Mercado abierto" : "Mercado cerrado · fin de semana" };
 }
 
