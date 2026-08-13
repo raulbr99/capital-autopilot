@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { EpicEval } from "./types";
 import { SectionHead, Skeleton, Sparkline, price, variacion } from "./ui";
+import { marcoLabel } from "@/lib/model";
 
 type Filter = "todas" | "senal" | "posicion";
 
@@ -16,16 +17,31 @@ export default function SignalMatrix({
   /** Para saber qué activos son de solo-compra: sus SELL no se ejecutan. */
   instruments?: { epic: string; longOnly?: boolean }[];
 }) {
-  const soloLargos = new Set(instruments.filter((i) => i.longOnly).map((i) => i.epic));
+  const soloLargos = useMemo(
+    () => new Set(instruments.filter((i) => i.longOnly).map((i) => i.epic)),
+    [instruments]
+  );
   const [filter, setFilter] = useState<Filter>("todas");
+
+  /**
+   * Un SELL en un activo de solo-compra no es una señal: el motor lo descarta.
+   * La tarjeta ya lo decía —sale como "▼ bloqueada" en vez de "▼ SHORT"— pero
+   * el recuento y el triaje seguían tratándolo como oportunidad. Comprobado en
+   * vivo: el contador decía "Con señal 8" con siete accionables, y el SHORT
+   * bloqueado de BTCUSD (71 %) se colocaba por delante de SILVER (69 %) y GOLD
+   * (53 %), que sí se pueden abrir. Ordenar por delante lo que no se puede
+   * tomar invierte justo lo que el triaje existe para resolver.
+   */
+  const bloqueada = (e: EpicEval) => soloLargos.has(e.epic) && e.signal.type === "SELL";
+  const accionable = (e: EpicEval) => e.signal.type !== "FLAT" && !bloqueada(e);
 
   const counts = useMemo(
     () => ({
       todas: evals.length,
-      senal: evals.filter((e) => e.signal.type !== "FLAT").length,
+      senal: evals.filter(accionable).length,
       posicion: evals.filter((e) => e.hasPosition).length,
     }),
-    [evals]
+    [evals, soloLargos]
   );
 
   /**
@@ -34,13 +50,12 @@ export default function SignalMatrix({
    * Orden: señal activa (por confianza) → con posición abierta → resto.
    */
   const sorted = useMemo(() => {
-    const rank = (e: EpicEval) => (e.sinDatos ? 3 : e.signal.type !== "FLAT" ? 0 : e.hasPosition ? 1 : 2);
+    const rank = (e: EpicEval) =>
+      e.sinDatos ? 4 : accionable(e) ? 0 : e.hasPosition ? 1 : bloqueada(e) ? 2 : 3;
     return [...evals]
-      .filter((e) =>
-        filter === "senal" ? e.signal.type !== "FLAT" : filter === "posicion" ? e.hasPosition : true
-      )
+      .filter((e) => (filter === "senal" ? accionable(e) : filter === "posicion" ? e.hasPosition : true))
       .sort((a, b) => rank(a) - rank(b) || (b.signal.confidence ?? 0) - (a.signal.confidence ?? 0));
-  }, [evals, filter]);
+  }, [evals, filter, soloLargos]);
 
   const chip = (id: Filter, label: string) => {
     const on = filter === id;
@@ -125,7 +140,7 @@ function SignalCard({ e, bloqueada }: { e: EpicEval; bloqueada?: boolean }) {
       <div className="border-b border-r border-industrial bg-soft/60 p-4">
         <div className="flex items-center gap-1.5">
           <span className="font-display text-base text-muted">{e.epic}</span>
-          <span className="rounded bg-industrial px-1 py-0.5 font-mono text-[8px] text-muted">{e.resolution}</span>
+          <span className="rounded bg-industrial px-1 py-0.5 font-mono text-[8px] text-muted">{marcoLabel(e.resolution)}</span>
         </div>
         <p className="mt-2 text-[11px] leading-snug text-muted">
           Sin datos en este ciclo — el broker no respondió. Se reintenta en el siguiente.
@@ -173,7 +188,7 @@ function SignalCard({ e, bloqueada }: { e: EpicEval; bloqueada?: boolean }) {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className={`font-display text-base ${active ? "text-white" : "text-dim"}`}>{e.epic}</span>
-            <span className="rounded bg-industrial px-1 py-0.5 font-mono text-[8px] text-muted">{e.resolution}</span>
+            <span className="rounded bg-industrial px-1 py-0.5 font-mono text-[8px] text-muted">{marcoLabel(e.resolution)}</span>
             {e.hasPosition && (
               <span className="rounded bg-accent/10 px-1.5 py-0.5 font-mono text-[8px] text-accent">abierta</span>
             )}
