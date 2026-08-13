@@ -3,6 +3,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LogEntry } from "./types";
 import { SectionHead } from "./ui";
+import { TZ } from "@/lib/model";
+
+/**
+ * El día al que pertenece una entrada, en la zona horaria de la CUENTA — la
+ * misma con la que el bot cuenta sus operaciones del día y reinicia el freno
+ * diario. Un registro que parta los días por el reloj del navegador diría "hoy"
+ * de algo que para el bot fue ayer.
+ */
+const diaKey = (ts: number) =>
+  new Date(ts).toLocaleDateString("es-ES", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+
+const diaLabel = (ts: number) => {
+  const k = diaKey(ts);
+  const ahora = Date.now();
+  if (k === diaKey(ahora)) return "hoy";
+  if (k === diaKey(ahora - 86_400_000)) return "ayer";
+  return new Date(ts).toLocaleDateString("es-ES", { timeZone: TZ, day: "2-digit", month: "short" });
+};
 
 const LEVEL: Record<
   LogEntry["level"],
@@ -123,13 +141,29 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
             </p>
           </div>
         ) : (
-          rows.map((l) => {
+          rows.map((l, i) => {
             const s = LEVEL[l.level] ?? LEVEL.info;
+            /**
+             * Separador de día. Cada fila llevaba solo la hora, así que las
+             * entradas de ayer eran indistinguibles de las de hoy: comprobado
+             * en producción, con apenas 50 entradas el registro ya cruzaba dos
+             * jornadas —12 y 13 de agosto— y un "23:30:12" colgaba bajo un
+             * "09:53:05" sin nada que avisara del salto. En un registro de
+             * operaciones eso no es un detalle de formato: cambia si algo pasó
+             * anoche o dentro de un rato.
+             */
+            const nuevoDia = i === 0 || diaKey(l.ts) !== diaKey(rows[i - 1].ts);
             return (
-              <div
-                key={l.id}
-                className={`flex items-start gap-2.5 border-b border-industrial/50 px-4 py-2.5 last:border-0 ${s.bg}`}
-              >
+              <div key={l.id} className="border-b border-industrial/50 last:border-0">
+              {nuevoDia && (
+                <div className="flex items-center gap-2 border-b border-industrial/50 bg-ink/40 px-4 py-1">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted">
+                    {diaLabel(l.ts)}
+                  </span>
+                  <span className="h-px flex-1 bg-industrial" aria-hidden />
+                </div>
+              )}
+              <div className={`flex items-start gap-2.5 px-4 py-2.5 ${s.bg}`}>
                 <span className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${s.dot}`} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -145,14 +179,18 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
                         ×{l.count}
                       </span>
                     )}
-                    <span className="ml-auto font-mono text-[10px] tabular-nums text-muted">
-                      {new Date(l.ts).toLocaleTimeString("es-ES", { hour12: false })}
+                    <span
+                      className="ml-auto font-mono text-[10px] tabular-nums text-muted"
+                      title={new Date(l.ts).toLocaleString("es-ES", { timeZone: TZ, hour12: false })}
+                    >
+                      {new Date(l.ts).toLocaleTimeString("es-ES", { timeZone: TZ, hour12: false })}
                     </span>
                   </div>
                   <p className={`mt-1 line-clamp-3 text-[12px] leading-snug [overflow-wrap:anywhere] ${s.text}`} title={l.message}>
                     {l.message}
                   </p>
                 </div>
+              </div>
               </div>
             );
           })
