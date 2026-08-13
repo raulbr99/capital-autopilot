@@ -113,15 +113,54 @@ export default function Dashboard() {
     prevClosed.current = c;
   }, [snap, loadTrades]);
 
+  /**
+   * Mismo desperdicio que tenía el Lab: tras el PATCH se pedía un tick COMPLETO
+   * solo para releer la configuración que el propio PATCH ya devuelve.
+   *
+   * Aquí el tick no es una lectura barata: /api/bot/tick ejecuta el motor —150
+   * velas de cada uno de los veinte instrumentos contra Capital— y, con el bot
+   * encendido, la gestión activa de las posiciones abiertas. Así que cambiar el
+   * riesgo por operación, activar los stops por ATR o parar el piloto disparaba
+   * una evaluación entera del universo y podía mover un stop en vivo, además de
+   * dejar los mandos deshabilitados (`busy`) mientras tanto.
+   *
+   * Los datos de mercado no dependen de este cambio: los refresca el sondeo
+   * normal, que ya corre solo. Lo único que cambia es la configuración, y esa
+   * viene en la respuesta.
+   */
   const patch = useCallback(
     async (body: any) => {
       setBusy(true);
       try {
-        await fetch("/api/bot", {
+        const r = await fetch("/api/bot", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        const cfgNuevo = await r.json();
+        if (cfgNuevo && !cfgNuevo.error) {
+          setSnap((s) => (s ? { ...s, state: { ...s.state, config: cfgNuevo } } : s));
+          /*
+            Salvo tres ajustes: el interruptor del piloto y los dos límites que
+            deciden si el motor está ARMADO (operaciones al día y freno diario).
+            `armed` no vive en la configuración, lo calcula el motor, así que sin
+            releerlo la línea "armadas / en seco" se quedaría hasta 6 s diciendo
+            lo anterior — justo debajo del botón que acabas de pulsar. El resto
+            de mandos (stops por ATR, trailing, comité, tamaño, riesgo por
+            operación) no tocan ese estado y no necesitan el viaje.
+          */
+          if (
+            body?.enabled !== undefined ||
+            body?.risk?.maxTradesPerDay !== undefined ||
+            body?.risk?.maxDailyLossPct !== undefined
+          ) {
+            await tick(false);
+          }
+        } else {
+          await tick(false);
+        }
+      } catch {
+        // Si falla, releer es lo único que devuelve la verdad a la pantalla.
         await tick(false);
       } finally {
         setBusy(false);
