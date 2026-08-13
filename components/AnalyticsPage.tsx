@@ -770,6 +770,25 @@ function salidaFiable(t: TradeRecord): boolean {
   return !(t.exit === t.entry && Math.abs(t.pnl || 0) > 0.01);
 }
 
+/**
+ * Tamaño de la posición, legible. Los valores llegan del cálculo de riesgo y
+ * arrastran la basura del binario: 0.0013000000000000002, 0.41000000000000003.
+ */
+const uds = (n: number) =>
+  Number.isFinite(n) ? String(Number(n.toPrecision(4))) : "—";
+
+/**
+ * El historial enseñaba dirección, precios, duración y P&L — todo menos CUÁNTO.
+ * Sin el tamaño, la columna de P&L no se puede reconciliar con el movimiento de
+ * precio que hay a su izquierda: medido sobre las 34 cerradas de producción, el
+ * mismo activo se opera con tamaños muy distintos —GOLD entre 0,03 y 0,12, o
+ * sea 4×; SILVER entre 1 y 4; BTCUSD entre 0,0007 y 0,0018— así que dos
+ * operaciones con idéntico recorrido de precio dan resultados que se diferencian
+ * en un múltiplo, sin nada en pantalla que lo explique.
+ *
+ * El dato ya se consideraba imprescindible: la exportación a CSV lleva su
+ * columna "tamano" desde siempre. Era la única que no estaba en la vista.
+ */
 function TradeTable({ trades }: { trades: TradeRecord[] }) {
   return (
     <>
@@ -789,7 +808,7 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
             <th scope="col" className="px-4 py-2.5 font-normal">Cierre</th>
             <th scope="col" className="px-4 py-2.5 font-normal">Activo</th>
             <th scope="col" className="px-4 py-2.5 font-normal">Dir</th>
-            <th scope="col" className="px-4 py-2.5 font-normal">Entrada → Salida</th>
+            <th scope="col" className="px-4 py-2.5 font-normal">Tamaño · entrada → salida</th>
             <th scope="col" className="px-4 py-2.5 text-right font-normal">Duración</th>
             <th scope="col" className="px-4 py-2.5 text-right font-normal">PnL</th>
           </tr>
@@ -830,6 +849,7 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
                   </span>
                 </td>
                 <td className="px-4 py-2.5 tabular-nums text-dim">
+                  <span className="text-muted">{uds(t.size)}&nbsp;×&nbsp;</span>
                   {price(t.entry)}
                   {salidaFiable(t) ? (
                     ` → ${price(t.exit!)}`
@@ -885,8 +905,9 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
                 })}
               />
               <div className="col-span-3">
-                <p className="tag">Entrada → salida</p>
+                <p className="tag">Tamaño · entrada → salida</p>
                 <p className="mt-0.5 text-dim">
+                  <span className="text-muted">{uds(t.size)} × </span>
                   {price(t.entry)}
                   {salidaFiable(t) ? ` → ${price(t.exit!)}` : <span className="text-muted"> → sin registrar</span>}
                 </p>
