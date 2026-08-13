@@ -25,11 +25,29 @@ export default function SignalMatrix({
    * contradiría consigo misma y la versión equivocada sería la del detalle.
    */
   adxThreshold?: number;
-  /** Para saber qué activos son de solo-compra: sus SELL no se ejecutan. */
-  instruments?: { epic: string; longOnly?: boolean }[];
+  /**
+   * Para saber qué activos son de solo-compra (sus SELL no se ejecutan) y
+   * cuáles están PAUSADOS (no se abre nada en ellos).
+   */
+  instruments?: { epic: string; longOnly?: boolean; paused?: boolean }[];
 }) {
   const soloLargos = useMemo(
     () => new Set(instruments.filter((i) => i.longOnly).map((i) => i.epic)),
+    [instruments]
+  );
+  /**
+   * Activos pausados: el motor no abre nada en ellos (engine.ts, "circuit
+   * breaker"). Y no hace falta que lo pauses tú: el propio motor auto-pausa un
+   * instrumento cuando sus últimas diez operaciones cerradas suman negativo.
+   *
+   * Ese estado solo se veía en UN sitio de toda la aplicación —la tabla de
+   * instrumentos del Lab—, así que aquí un activo recién apartado por mala
+   * racha seguía apareciendo con su BUY al 100 %, el primero de la rejilla por
+   * el triaje. Anunciar como oportunidad lo que el bot acaba de mandar al
+   * banquillo es peor que no anunciar nada.
+   */
+  const pausados = useMemo(
+    () => new Set(instruments.filter((i) => i.paused).map((i) => i.epic)),
     [instruments]
   );
   const [filter, setFilter] = useState<Filter>("todas");
@@ -44,7 +62,9 @@ export default function SignalMatrix({
    * tomar invierte justo lo que el triaje existe para resolver.
    */
   const bloqueada = (e: EpicEval) => soloLargos.has(e.epic) && e.signal.type === "SELL";
-  const accionable = (e: EpicEval) => e.signal.type !== "FLAT" && !bloqueada(e);
+  const pausada = (e: EpicEval) => pausados.has(e.epic);
+  const accionable = (e: EpicEval) =>
+    e.signal.type !== "FLAT" && !bloqueada(e) && !pausada(e);
 
   const counts = useMemo(
     () => ({
@@ -62,11 +82,11 @@ export default function SignalMatrix({
    */
   const sorted = useMemo(() => {
     const rank = (e: EpicEval) =>
-      e.sinDatos ? 4 : accionable(e) ? 0 : e.hasPosition ? 1 : bloqueada(e) ? 2 : 3;
+      e.sinDatos ? 4 : accionable(e) ? 0 : e.hasPosition ? 1 : bloqueada(e) || pausada(e) ? 2 : 3;
     return [...evals]
       .filter((e) => (filter === "senal" ? accionable(e) : filter === "posicion" ? e.hasPosition : true))
       .sort((a, b) => rank(a) - rank(b) || (b.signal.confidence ?? 0) - (a.signal.confidence ?? 0));
-  }, [evals, filter, soloLargos]);
+  }, [evals, filter, soloLargos, pausados]);
 
   const chip = (id: Filter, label: string) => {
     const on = filter === id;
@@ -137,6 +157,7 @@ export default function SignalMatrix({
             key={e.epic}
             e={e}
             bloqueada={soloLargos.has(e.epic) && e.signal.type === "SELL"}
+            pausada={pausados.has(e.epic)}
             adxThreshold={adxThreshold}
           />
         ))}
@@ -148,10 +169,12 @@ export default function SignalMatrix({
 function SignalCard({
   e,
   bloqueada,
+  pausada,
   adxThreshold,
 }: {
   e: EpicEval;
   bloqueada?: boolean;
+  pausada?: boolean;
   adxThreshold: number;
 }) {
   /**
@@ -187,7 +210,7 @@ function SignalCard({
    * el propio sistema tiene prohibido tomar es peor que no anunciar nada.
    */
   const sell = s.type === "SELL" && !bloqueada;
-  const active = buy || sell;
+  const active = (buy || sell) && !pausada;
   const conf = Math.round((s.confidence ?? 0) * 100);
   // Cambio sobre la ventana del sparkline (coherente con la línea: mismo origen)
   const sp = e.spark || [];
@@ -236,14 +259,33 @@ function SignalCard({
         </div>
         <span
           className={`shrink-0 rounded px-2 py-0.5 font-mono text-[10px] ${
-            buy ? "bg-long/15 text-long" : sell ? "bg-short/15 text-short" : "bg-industrial text-muted"
+            active
+              ? buy
+                ? "bg-long/15 text-long"
+                : "bg-short/15 text-short"
+              : "bg-industrial text-muted"
           }`}
+          title={
+            pausada
+              ? "Pausado: el motor no abre posiciones nuevas en este activo. Se reactiva desde el Lab."
+              : bloqueada
+                ? "Activo de solo-compra: el motor descarta los cortos."
+                : undefined
+          }
         >
           {/* Un solo chip. Con dos elementos —"SHORT" más una insignia
               "bloqueada" junto al activo— la cabecera se quedaba sin ancho y
               recortaba una de las dos: primero el nombre del activo, luego la
               propia insignia, que salía como "bl". */}
-          {buy ? "▲ LONG" : sell ? "▼ SHORT" : bloqueada ? "▼ bloqueada" : "● FLAT"}
+          {active
+            ? buy
+              ? "▲ LONG"
+              : "▼ SHORT"
+            : pausada
+              ? `${s.type === "BUY" ? "▲" : s.type === "SELL" ? "▼" : "●"} pausada`
+              : bloqueada
+                ? "▼ bloqueada"
+                : "● FLAT"}
         </span>
       </div>
 

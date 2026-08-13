@@ -801,6 +801,12 @@ function DesksOverview({
    * iba a abrir.
    */
   const soloLargos = new Set(instruments.filter((i) => i.longOnly).map((i) => i.epic));
+  /**
+   * Pausados: el motor no abre nada en ellos, y puede haberlos pausado ÉL solo
+   * (circuit breaker: últimas diez cerradas en negativo). Contarlos como señal
+   * en el resumen anuncia una oportunidad que el propio bot acaba de descartar.
+   */
+  const pausados = new Set(instruments.filter((i) => i.paused).map((i) => i.epic));
   // posiciones de activos que ya no están en el universo (quedaron abiertas al podarlo)
   const legacy = positions.filter((p) => catOf(p.epic) === "otros");
   return (
@@ -810,9 +816,17 @@ function DesksOverview({
         const ev = evals.filter((e) => catOf(e.epic) === d.key);
         const pos = positions.filter((p) => catOf(p.epic) === d.key);
         const pnl = pos.reduce((s, p) => s + (p.upl || 0), 0);
-        const longs = ev.filter((e) => e.signal?.type === "BUY").length;
-        const shorts = ev.filter((e) => e.signal?.type === "SELL" && !soloLargos.has(e.epic)).length;
-        const bloqueadas = ev.filter((e) => e.signal?.type === "SELL" && soloLargos.has(e.epic)).length;
+        const longs = ev.filter(
+          (e) => e.signal?.type === "BUY" && !pausados.has(e.epic)
+        ).length;
+        const shorts = ev.filter(
+          (e) => e.signal?.type === "SELL" && !soloLargos.has(e.epic) && !pausados.has(e.epic)
+        ).length;
+        const bloqueadas = ev.filter(
+          (e) =>
+            e.signal?.type !== "FLAT" &&
+            (pausados.has(e.epic) || (e.signal?.type === "SELL" && soloLargos.has(e.epic)))
+        ).length;
         const ses = deskSession(d.key);
         const full = pos.length >= maxPerDesk;
         return (
@@ -859,7 +873,7 @@ function DesksOverview({
               className="mt-2 h-4 font-mono text-[10px] text-muted"
               title={
                 bloqueadas > 0
-                  ? `${bloqueadas} ${bloqueadas === 1 ? "señal corta descartada" : "señales cortas descartadas"}: activos de solo-compra`
+                  ? `${bloqueadas} ${bloqueadas === 1 ? "señal descartada" : "señales descartadas"}: activos de solo-compra o pausados`
                   : undefined
               }
             >
