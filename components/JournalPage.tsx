@@ -119,12 +119,46 @@ export default function JournalPage() {
             ))}
           </div>
         ) : shown.length === 0 ? (
+          /*
+            Un solo mensaje para dos situaciones distintas, igual que pasaba en
+            Analítica hasta la pasada 112: con 60 entradas en el histórico,
+            filtrar por una mesa sin actividad decía "el gestor IA aún no ha
+            escrito nada" — es decir, negaba todo el diario por culpa de un
+            filtro.
+            Y la instrucción mandaba al sitio equivocado: el interruptor del
+            Gestor no está en el panel, está en el Lab, y desde la pasada 141 se
+            llama "Gestor en la nube". Un estado vacío que da una indicación
+            falsa es peor que uno que no dice nada.
+          */
           <div className="rounded-xl border border-industrial bg-soft p-16 text-center">
-            <p className="text-base font-medium text-dim">El gestor IA aún no ha escrito nada</p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
-              Activa el <span className="text-accent">Gestor de Cartera IA</span> en el panel. En cada ciclo del cron
-              escribirá su tesis y sus decisiones aquí.
-            </p>
+            {entries.length > 0 ? (
+              <>
+                <p className="text-base font-medium text-dim">Ninguna entrada en esta mesa</p>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
+                  Hay {entries.length} {pl(entries.length, "entrada", "entradas")} en el diario, pero
+                  ninguna de{" "}
+                  <span className="text-dim">
+                    {DESK_FILTERS.find((f) => f.key === desk)?.label ?? desk}
+                  </span>
+                  .
+                </p>
+                <button
+                  onClick={() => setDesk("all")}
+                  className="mt-4 min-h-[34px] rounded-lg border border-cement px-3.5 py-2 text-[13px] font-medium text-dim transition-colors hover:border-accent hover:text-accent"
+                >
+                  Ver todas
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-base font-medium text-dim">El Gestor aún no ha escrito nada</p>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
+                  Enciende el <span className="text-accent">Gestor en la nube</span> en el{" "}
+                  <a href="/lab" className="text-accent underline">Lab</a>. En cada ciclo del cron
+                  escribirá aquí su tesis y sus decisiones.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-7">
