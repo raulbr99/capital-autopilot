@@ -8,6 +8,7 @@ import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
 import SentimentBoard from "./SentimentBoard";
 import CotPanel from "./CotPanel";
+import FundingPanel from "./FundingPanel";
 import JournalEntryCard from "./JournalEntryCard";
 
 /**
@@ -392,6 +393,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
         </div>
 
         {category === "stocks" && <SentimentBoard className="mb-5" evals={evals} />}
+        {category === "crypto" && <FundingPanel className="mb-5" />}
         {(category === "forex" || category === "commodities") && (
           <CotPanel category={category} className="mb-5" />
         )}
