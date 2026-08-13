@@ -244,19 +244,38 @@ export default function Dashboard() {
   /**
    * Latido del motor. Distinto de "conectado": el navegador refresca los datos
    * por su cuenta, así que la pantalla sigue viva aunque el cron lleve semanas
-   * sin correr — que es exactamente lo que pasó en julio y nadie vio. El cron
-   * real va cada ~58 min, así que 90 min es todavía normal y 3 h ya no lo es.
+   * sin correr — que es exactamente lo que pasó en julio y nadie vio.
+   *
+   * Estaba calibrado para "el cron real va cada ~58 min", y ya no es cierto: el
+   * latido lo marca .github/workflows/autopilot.yml con "*\/15 * * * *", cada
+   * quince minutos. Con los umbrales viejos, 90 minutos de silencio —SEIS ciclos
+   * perdidos— se pintaban en verde como motor vivo, y tres horas, doce ciclos,
+   * apenas en ámbar. El único indicador que existe para detectar un motor muerto
+   * estaba midiendo con la vara de otra cadencia.
+   *
+   * Los nuevos umbrales dejan margen a la deriva real de GitHub Actions, que no
+   * es puntual: midiendo hoy contra producción se ve un hueco de 46 min entre
+   * dos ciclos. Por eso el verde llega hasta una hora en vez de apretar a los 30.
+   * Y en cuanto se pasa, el texto dice cuántos ciclos faltan, que es lo que se
+   * puede interpretar — "hace 46 min" no significa nada si no sabes cada cuánto
+   * debería correr.
    */
   const latido = (() => {
+    const CICLO_MIN = 15; // .github/workflows/autopilot.yml
     const ts = snap?.state?.lastCronTick ?? 0;
     if (!ts)
       return { texto: "sin latido", tone: "text-muted", dot: "bg-muted", vivo: false, title: "El cron no ha registrado ningún ciclo todavía." };
     const min = Math.max(0, Math.round((Date.now() - ts) / 60_000));
-    const texto = min < 1 ? "ahora mismo" : min < 60 ? `hace ${min} min` : `hace ${Math.round(min / 60)} h`;
-    const title = `Último ciclo del cron: ${new Date(ts).toLocaleString("es-ES")}`;
-    if (min <= 90) return { texto, tone: "text-long", dot: "bg-long", vivo: true, title };
-    if (min <= 180) return { texto, tone: "text-accent", dot: "bg-accent", vivo: false, title };
-    return { texto: `${texto} · parado`, tone: "text-short", dot: "bg-short", vivo: false, title };
+    const base = min < 1 ? "ahora mismo" : min < 60 ? `hace ${min} min` : `hace ${Math.round(min / 60)} h`;
+    const perdidos = Math.floor(min / CICLO_MIN) - 1;
+    const title =
+      `Último ciclo del cron: ${new Date(ts).toLocaleString("es-ES")}` +
+      ` · debería correr cada ${CICLO_MIN} min`;
+    if (min <= 60) return { texto: base, tone: "text-long", dot: "bg-long", vivo: true, title };
+    const faltan = perdidos > 0 ? ` · ${perdidos} ${perdidos === 1 ? "ciclo" : "ciclos"} sin correr` : "";
+    if (min <= 150)
+      return { texto: `${base}${faltan}`, tone: "text-accent", dot: "bg-accent", vivo: false, title };
+    return { texto: `${base}${faltan} · parado`, tone: "text-short", dot: "bg-short", vivo: false, title };
   })();
 
   // El resultado del día en el título: así se vigila desde una pestaña de fondo
