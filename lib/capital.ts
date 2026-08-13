@@ -247,7 +247,30 @@ export async function getPositions(force = false): Promise<Position[]> {
       currency: p.position.currency ?? "USD",
       createdDate: p.position.createdDateUTC ?? p.position.createdDate ?? "",
       stopLevel: typeof p.position.stopLevel === "number" ? p.position.stopLevel : null,
-      limitLevel: typeof p.position.limitLevel === "number" ? p.position.limitLevel : null,
+      /**
+       * Capital nombra el objetivo de dos formas según el recurso: `limitLevel`
+       * en unos sitios y `profitLevel` en otros —lo mismo que en la apertura se
+       * envía `profitDistance`—. Aquí solo se leía `limitLevel`, así que si la
+       * cuenta devuelve `profitLevel` el take-profit era invisible aunque
+       * existiera.
+       *
+       * Y eso arrastraba una consecuencia peor: la corrección que reenvía el
+       * objetivo al mover el stop —el PUT de Capital borra lo que no se
+       * reenvía— solo lo reenvía `si p.limitLevel != null`. Con el objetivo
+       * siempre en null, esa salvaguarda no llegaba a activarse NUNCA y cada
+       * ajuste de trailing seguía borrando el TP.
+       *
+       * Hecho medido: las seis posiciones vivas tienen limitLevel null,
+       * incluida una abierta esta mañana cuyo stop sigue exactamente a 2×ATR de
+       * la entrada, o sea que nunca ha pasado por el trailing. Leer los dos
+       * nombres descarta una de las dos explicaciones posibles y no cuesta nada.
+       */
+      limitLevel:
+        typeof p.position.limitLevel === "number"
+          ? p.position.limitLevel
+          : typeof p.position.profitLevel === "number"
+            ? p.position.profitLevel
+            : null,
       currentPrice: mid ?? null,
     };
   });

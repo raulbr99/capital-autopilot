@@ -177,7 +177,24 @@ export default function PositionsTable({
                       <td className={`px-4 py-3 text-right font-medium tabular-nums ${curTone}`}>{price(cur)}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-dim">
                         {p.stopLevel == null ? <span className="text-short">sin SL</span> : price(p.stopLevel)}
-                        <span className="text-muted"> · {price(p.limitLevel)}</span>
+                        {/*
+                          Un objetivo ausente salía como un guion gris mientras
+                          la falta de stop grita "sin SL" en rojo. Las dos son
+                          ausencias que cambian el trade, y la tarjeta de móvil
+                          ya decía "sin TP" desde hace tiempo: era la tabla de
+                          escritorio la que se había quedado con el guion.
+                        */}
+                        <span className="text-muted"> · </span>
+                        {p.limitLevel == null ? (
+                          <span
+                            className="text-muted"
+                            title="Sin take-profit: la salida depende del trailing stop o de que la señal se dé la vuelta."
+                          >
+                            sin TP
+                          </span>
+                        ) : (
+                          <span className="text-muted">{price(p.limitLevel)}</span>
+                        )}
                       </td>
                       <td className={`px-4 py-3 text-right tabular-nums ${distTone}`}>{distPct == null ? "—" : `${distPct.toFixed(2)}%`}</td>
                       <td className="px-4 py-3 text-right tabular-nums">
