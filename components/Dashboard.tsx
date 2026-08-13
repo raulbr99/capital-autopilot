@@ -933,6 +933,26 @@ function Ticker({ evals, obsoleta }: { evals: Snapshot["evals"]; obsoleta?: bool
         }`}
       >
         {row.map((e, i) => {
+          /**
+           * Un activo que Capital no devolvió entra en `evals` con price 0 —el
+           * motor deja constancia en vez de omitirlo, para que la rejilla no
+           * pase de veinte tarjetas a diecinueve—. La rejilla lo pinta como
+           * "sin datos"; la cinta lo pasaba por el formateador de precios y
+           * escribía "SILVER 0.00", que es una cotización inventada para un
+           * activo del que no se sabe nada. En la fila que más se mira de reojo.
+           */
+          if (e.sinDatos) {
+            return (
+              <span
+                key={i}
+                className="mx-5 inline-flex items-baseline gap-2 font-mono text-[11px] tabular-nums"
+                title={e.sinDatos}
+              >
+                <span className="text-muted">{e.epic}</span>
+                <span className="text-muted/70">sin datos</span>
+              </span>
+            );
+          }
           // Misma ventana (~24 h) para todos los símbolos: una cinta existe
           // para comparar de un vistazo, y antes cada uno medía su propio plazo.
           const v = variacion(e.spark, e.price, e.resolution);
