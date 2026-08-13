@@ -317,8 +317,29 @@ export default function Dashboard() {
                 </>
               )}
             </div>
+            {/*
+              El texto estaba en presente pasara lo que pasara: "Opera en tu
+              cuenta real…" también con el piloto detenido. Y detener el piloto
+              hace DOS cosas que nadie explicaba: no abre nada nuevo, sí — pero
+              además deja de gestionar las posiciones vivas, porque
+              manageOpenPositions solo corre si cfg.enabled. O sea que los stops
+              dejan de moverse y las abiertas se quedan con el que tuvieran.
+              Con seis posiciones encima, eso hay que decirlo antes de pulsar.
+            */}
             <p className="mt-2 max-w-[280px] text-xs leading-relaxed text-muted">
-              Opera en tu cuenta real de Capital.com con las señales validadas. Las órdenes son reales.
+              {enabled ? (
+                <>Opera en tu cuenta real de Capital.com con las señales validadas. Las órdenes son reales.</>
+              ) : positions.length > 0 ? (
+                <>
+                  No abre nada nuevo{" "}
+                  <span className="text-dim">
+                    y deja de mover los stops de las {positions.length} posiciones abiertas
+                  </span>
+                  : se quedan con el que tengan ahora. Cerrarlas sigue siendo manual.
+                </>
+              ) : (
+                <>Detenido: no abrirá posiciones hasta que lo actives.</>
+              )}
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -332,10 +353,16 @@ export default function Dashboard() {
                 />
                 <span className={latido.tone}>{latido.texto}</span>
               </span>
+              {/*
+                Este chip leía solo AUTOPILOT_ARMED, así que decía "armadas" en
+                verde con el piloto DETENIDO — cuando en ese estado no se manda
+                ni una orden. Las dos condiciones tienen que cumplirse: la
+                variable de entorno y el interruptor del panel.
+              */}
               <span className="flex items-center gap-1.5 rounded-lg border border-industrial px-3 py-2 text-xs font-medium text-dim">
                 Órdenes
-                <span className={snap?.armed ? "text-long" : "text-muted"}>
-                  {snap?.armed ? "armadas" : "en seco"}
+                <span className={snap?.armed && enabled ? "text-long" : "text-muted"}>
+                  {!enabled ? "en pausa" : snap?.armed ? "armadas" : "en seco"}
                 </span>
               </span>
             </div>
