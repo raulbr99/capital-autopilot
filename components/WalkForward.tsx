@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { SectionHead, fmt, pf, Sparkline } from "./ui";
+import { RESOLUCIONES } from "@/lib/model";
 
 type Metrics = {
   trades: number;
@@ -157,8 +158,8 @@ export default function WalkForward({
               className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim"
             >
               <option value="motor">la del motor</option>
-              {["MINUTE_15", "MINUTE_30", "HOUR", "HOUR_4", "DAY"].map((r) => (
-                <option key={r} value={r}>{r}</option>
+              {RESOLUCIONES.map((r) => (
+                <option key={r.k} value={r.k}>{r.label}</option>
               ))}
             </select>
             {/*

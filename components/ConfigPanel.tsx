@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { BotConfig } from "./types";
-import { RESOLUTIONS } from "./types";
+import { RESOLUCIONES } from "@/lib/model";
 import { SectionHead, NumField } from "./ui";
 
 const DESK_ORDER = [
@@ -109,8 +109,8 @@ export default function ConfigPanel({
                       onChange={(e) => setRes(i.epic, e.target.value)}
                       className="min-h-[34px] w-[76px] rounded-md border border-cement bg-ink px-1 font-mono text-[10px] text-accent"
                     >
-                      {RESOLUTIONS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
+                      {RESOLUCIONES.map((r) => (
+                        <option key={r.k} value={r.k}>{r.label}</option>
                       ))}
                     </select>
                     <button

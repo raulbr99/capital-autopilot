@@ -103,17 +103,40 @@ export type DeskCategory = "forex" | "crypto" | "stocks" | "commodities";
 
 export type EquityPoint = { ts: number; equity: number };
 
-export const RESOLUTIONS = [
-  "MINUTE",
-  "MINUTE_5",
-  "MINUTE_15",
-  "MINUTE_30",
-  "HOUR",
-  "HOUR_4",
-  "DAY",
-  "WEEK",
+/**
+ * Marcos temporales, en un solo sitio.
+ *
+ * Estaban escritos a mano CINCO veces, y las cinco listas eran distintas:
+ * Configuración ofrecía los ocho, el gráfico de posición siete, el backtest
+ * seis, el walk-forward cinco y el mapa de "velas por día" de la cinta otros
+ * siete. No eran subconjuntos deliberados: nadie decidió que no se pudiera
+ * validar en semanal, simplemente cada lista se escribió un día distinto.
+ *
+ * Y una de las discrepancias rompía algo de verdad: /api/bot/candles rechazaba
+ * MINUTE con "resolución no válida" mientras Configuración lo ofrecía como
+ * marco operativo. Un activo puesto en MINUTE se opera con velas de un minuto
+ * pero su gráfico no se puede abrir en un minuto.
+ *
+ *  · label      lo que ve una persona ("15m"), no la constante de la API
+ *  · velasDia   velas que cubren ~24 h; null si el marco no cabe en un día
+ *  · maxGrafico velas que pide el gráfico de posición en ese marco
+ */
+export const RESOLUCIONES = [
+  { k: "MINUTE", label: "1m", velasDia: 1440, maxGrafico: 200 },
+  { k: "MINUTE_5", label: "5m", velasDia: 288, maxGrafico: 200 },
+  { k: "MINUTE_15", label: "15m", velasDia: 96, maxGrafico: 200 },
+  { k: "MINUTE_30", label: "30m", velasDia: 48, maxGrafico: 200 },
+  { k: "HOUR", label: "1H", velasDia: 24, maxGrafico: 200 },
+  { k: "HOUR_4", label: "4H", velasDia: 6, maxGrafico: 180 },
+  { k: "DAY", label: "1D", velasDia: 1, maxGrafico: 200 },
+  { k: "WEEK", label: "1S", velasDia: null, maxGrafico: 150 },
 ] as const;
+
+export const RESOLUTIONS = RESOLUCIONES.map((r) => r.k);
 export const DEFAULT_RESOLUTION = "HOUR_4";
+/** Nombre legible de un marco; devuelve la constante si no lo conoce. */
+export const marcoLabel = (k: string) =>
+  RESOLUCIONES.find((r) => r.k === k)?.label || k;
 
 /**
  * Posición abierta, tal y como la consumen el motor y la interfaz.

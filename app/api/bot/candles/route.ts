@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { getPrices } from "@/lib/capital";
+import { RESOLUCIONES } from "@/lib/model";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-const ALLOWED = new Set(["MINUTE_5", "MINUTE_15", "MINUTE_30", "HOUR", "HOUR_4", "DAY", "WEEK"]);
+/**
+ * Los marcos que acepta esta ruta son EXACTAMENTE los que se pueden configurar.
+ * Escrita a mano, esta lista se dejó fuera MINUTE: un activo configurado en
+ * velas de un minuto operaba con normalidad pero su gráfico devolvía
+ * "resolución no válida".
+ */
+const ALLOWED = new Set<string>(RESOLUCIONES.map((r) => r.k));
 
 /** Velas OHLC de un activo para el gráfico de una posición. ?epic=&resolution=&max= */
 export async function GET(req: Request) {

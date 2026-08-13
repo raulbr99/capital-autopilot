@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SectionHead, Skeleton, fmt, pf, Sparkline, pl } from "./ui";
+import { RESOLUCIONES } from "@/lib/model";
 
 /** Equity nocional del backtest (lib/sim.ts). Con él, la caída se expresa en %. */
 const BASE_EQUITY = 1000;
@@ -98,9 +99,9 @@ export default function BacktestPanel() {
               className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim"
             >
               <option value="motor">la del motor</option>
-              {["MINUTE", "MINUTE_5", "MINUTE_15", "HOUR", "HOUR_4", "DAY"].map((r) => (
-                <option key={r} value={r}>
-                  {r}
+              {RESOLUCIONES.map((r) => (
+                <option key={r.k} value={r.k}>
+                  {r.label}
                 </option>
               ))}
             </select>

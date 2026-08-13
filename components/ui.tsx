@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { RESOLUCIONES } from "@/lib/model";
 
 export const fmt = (n: number, d = 2) => {
   const v = Number.isFinite(n) ? n : 0;
@@ -550,16 +551,10 @@ export function AppFooter() {
   );
 }
 
-/** Velas que cubren ~24 h en cada resolución. WEEK no cabe en un día. */
-const VELAS_POR_DIA: Record<string, number> = {
-  MINUTE: 1440,
-  MINUTE_5: 288,
-  MINUTE_15: 96,
-  MINUTE_30: 48,
-  HOUR: 24,
-  HOUR_4: 6,
-  DAY: 1,
-};
+/** Velas que cubren ~24 h en cada marco; WEEK no cabe en un día y vale null. */
+const VELAS_POR_DIA: Record<string, number | null> = Object.fromEntries(
+  RESOLUCIONES.map((r) => [r.k, r.velasDia])
+);
 
 /**
  * Variación de precio comparable entre activos.

@@ -10,19 +10,12 @@ import {
   type ISeriesApi,
 } from "lightweight-charts";
 import type { OpenPos } from "./types";
+import { RESOLUCIONES } from "@/lib/model";
 import { fmt, pdec, pnlClass, pnlFmt, useFocusTrap, useReturnFocus } from "./ui";
 
 type Candle = { time: string; open: number; high: number; low: number; close: number };
 
-const RES = [
-  { k: "MINUTE_5", label: "5m", max: 200 },
-  { k: "MINUTE_15", label: "15m", max: 200 },
-  { k: "MINUTE_30", label: "30m", max: 200 },
-  { k: "HOUR", label: "1H", max: 200 },
-  { k: "HOUR_4", label: "4H", max: 180 },
-  { k: "DAY", label: "1D", max: 200 },
-  { k: "WEEK", label: "1W", max: 150 },
-];
+const RES = RESOLUCIONES.map((r) => ({ k: r.k, label: r.label, max: r.maxGrafico }));
 
 export default function PositionChart({
   pos,
