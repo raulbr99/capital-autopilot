@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { BotConfig } from "./types";
-import { RESOLUCIONES } from "@/lib/model";
+import { RESOLUCIONES, DEFAULT_RESOLUTION } from "@/lib/model";
 import { SectionHead, NumField } from "./ui";
 
 const DESK_ORDER = [
@@ -25,6 +25,8 @@ export default function ConfigPanel({
   notifyEnv: { telegram: boolean; discord: boolean };
 }) {
   const [w, setW] = useState("");
+  /** Mesa del activo nuevo. Sin valor por defecto: elegir mal cuesta dinero. */
+  const [mesa, setMesa] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const instruments = cfg.instruments ?? [];
   const byDesk = instruments.reduce<Record<string, typeof instruments>>((acc, i) => {
@@ -32,10 +34,31 @@ export default function ConfigPanel({
     (acc[k] ||= []).push(i);
     return acc;
   }, {});
+  /**
+   * Añadir un instrumento creaba `{ epic, resolution }` y nada más: sin mesa.
+   * Y la mesa no es una etiqueta para agrupar la lista — decide el APALANCAMIENTO
+   * con el que el motor calcula el tamaño de cada posición:
+   *
+   *   forex 30 · commodities 10 · stocks 5 · crypto 2 · sin mesa → 5
+   *
+   * Como el tamaño sale de (equity·margen%)·apalancamiento/precio, un par de
+   * divisas añadido desde aquí se abría SEIS VECES más pequeño de lo que dicta
+   * la configuración de margen, y una cripto DOS VECES Y MEDIA más grande — en
+   * la clase más volátil del universo. Además el activo caía en la mesa
+   * fantasma "otros": compartía el cupo de maxPerDesk con cualquier otro
+   * huérfano y ningún Gestor de mesa lo miraba.
+   *
+   * No había forma de asignar la mesa desde la interfaz, así que un instrumento
+   * añadido aquí quedaba mal dimensionado para siempre. Ahora se elige al
+   * crearlo, y sin valor por defecto: no hay ninguno que sea correcto por
+   * omisión.
+   */
   const add = () => {
     const v = w.toUpperCase().trim();
-    if (!v || instruments.some((i) => i.epic === v)) return;
-    patch({ instruments: [...instruments, { epic: v, resolution: "HOUR_4" }] });
+    if (!v || !mesa || instruments.some((i) => i.epic === v)) return;
+    patch({
+      instruments: [...instruments, { epic: v, resolution: DEFAULT_RESOLUTION, category: mesa }],
+    });
     setW("");
   };
   const remove = (epic: string) =>
@@ -181,15 +204,53 @@ export default function ConfigPanel({
               </div>
             ))}
           </div>
+          {/*
+            Un activo sin mesa no es un activo sin clasificar: es un activo mal
+            dimensionado. Si alguno queda así, hay que decir qué implica.
+          */}
+          {!!byDesk.otros?.length && (
+            <p className="mt-2 flex items-start gap-1.5 rounded-lg border border-short/30 bg-short/5 px-2.5 py-2 text-[11px] leading-relaxed text-dim">
+              <span aria-hidden>⚠️</span>
+              <span>
+                {byDesk.otros.length}{" "}
+                {byDesk.otros.length === 1 ? "instrumento está" : "instrumentos están"} sin mesa: el
+                motor los dimensiona con apalancamiento 5 por defecto —no el de su clase de activo— y
+                ningún Gestor de mesa los sigue. Quítalos y vuélvelos a añadir eligiendo mesa.
+              </span>
+            </p>
+          )}
           <div className="mt-2 flex gap-1.5">
             <input
               value={w}
               onChange={(e) => setW(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && add()}
               placeholder="EPIC ej. NZDUSD"
-              className="min-h-[36px] w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-accent"
+              className="min-h-[36px] w-full min-w-0 border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-accent"
             />
-            <button onClick={add} disabled={busy} aria-label="Añadir instrumento" className="min-h-[36px] min-w-[40px] rounded-lg bg-accent px-3 font-display text-xs text-onaccent disabled:opacity-40">
+            <select
+              value={mesa}
+              onChange={(e) => setMesa(e.target.value)}
+              disabled={busy}
+              aria-label="Mesa del instrumento nuevo"
+              title="Decide el apalancamiento con el que se calcula el tamaño"
+              className={`min-h-[36px] shrink-0 rounded-md border border-cement bg-ink px-1 font-mono text-[10px] ${
+                mesa ? "text-accent" : "text-muted"
+              }`}
+            >
+              <option value="">Mesa…</option>
+              {DESK_ORDER.filter((d) => d.key !== "otros").map((d) => (
+                <option key={d.key} value={d.key}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={add}
+              disabled={busy || !w.trim() || !mesa}
+              aria-label="Añadir instrumento"
+              title={!mesa ? "Elige la mesa: define el apalancamiento" : "Añadir instrumento"}
+              className="min-h-[36px] min-w-[40px] rounded-lg bg-accent px-3 font-display text-xs text-onaccent disabled:opacity-40"
+            >
               +
             </button>
           </div>
