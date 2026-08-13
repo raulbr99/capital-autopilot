@@ -218,7 +218,17 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
                               }`}
                               title={corta ? "Sin muestra suficiente para sostener este veredicto" : undefined}
                             >
-                              {VERDICT[r.verdict].label}
+                              {/*
+                                Con muestra corta el color ya se neutralizaba,
+                                pero el TEXTO seguía dictando sentencia:
+                                "Ventaja probable" sobre 15 operaciones, o
+                                "Sin ventaja" sobre 3. Y el resumen de arriba
+                                decía a la vez "0 con ventaja". Dos afirmaciones
+                                opuestas en la misma tarjeta, y la de la fila es
+                                la que se lee primero. Sin muestra no hay
+                                veredicto que dar, ni a favor ni en contra.
+                              */}
+                              {corta ? "Sin concluir" : VERDICT[r.verdict].label}
                             </span>
                             {corta && (
                               <span
