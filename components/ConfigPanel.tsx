@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { BotConfig } from "./types";
-import { RESOLUCIONES, DEFAULT_RESOLUTION, LIMITES } from "@/lib/model";
+import { RESOLUCIONES, DEFAULT_RESOLUTION, LIMITES, EPIC_RE, MAX_INSTRUMENTOS } from "@/lib/model";
 import { SectionHead, NumField } from "./ui";
 
 const DESK_ORDER = [
@@ -27,6 +27,7 @@ export default function ConfigPanel({
   const [w, setW] = useState("");
   /** Mesa del activo nuevo. Sin valor por defecto: elegir mal cuesta dinero. */
   const [mesa, setMesa] = useState("");
+  const [aviso, setAviso] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const instruments = cfg.instruments ?? [];
   const byDesk = instruments.reduce<Record<string, typeof instruments>>((acc, i) => {
@@ -55,7 +56,19 @@ export default function ConfigPanel({
    */
   const add = () => {
     const v = w.toUpperCase().trim();
-    if (!v || !mesa || instruments.some((i) => i.epic === v)) return;
+    /**
+     * Antes cualquier texto valía. Escribir "hola mundo" creaba un instrumento
+     * que Capital no reconoce, y a partir de ahí cada ciclo del motor gastaba
+     * una petición en él para fallar y dejar una tarjeta "sin datos" en la
+     * rejilla, para siempre, sin que nada dijera por qué. El aviso sale ahora
+     * al lado del campo en vez de que el botón no haga nada.
+     */
+    if (!v || !mesa) return;
+    if (!EPIC_RE.test(v)) return setAviso("Formato no válido: letras, números, punto y guion bajo (máx. 20).");
+    if (instruments.some((i) => i.epic === v)) return setAviso(`${v} ya está en el universo.`);
+    if (instruments.length >= MAX_INSTRUMENTOS)
+      return setAviso(`Tope de ${MAX_INSTRUMENTOS} instrumentos: cada uno cuesta una petición por ciclo.`);
+    setAviso(null);
     patch({
       instruments: [...instruments, { epic: v, resolution: DEFAULT_RESOLUTION, category: mesa }],
     });
@@ -253,10 +266,18 @@ export default function ConfigPanel({
               </span>
             </p>
           )}
+          {aviso && (
+            <p role="alert" className="mt-2 text-[11px] leading-relaxed text-short">
+              {aviso}
+            </p>
+          )}
           <div className="mt-2 flex gap-1.5">
             <input
               value={w}
-              onChange={(e) => setW(e.target.value)}
+              onChange={(e) => {
+                setW(e.target.value);
+                if (aviso) setAviso(null);
+              }}
               onKeyDown={(e) => e.key === "Enter" && add()}
               placeholder="EPIC ej. NZDUSD"
               className="min-h-[36px] w-full min-w-0 border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-accent"

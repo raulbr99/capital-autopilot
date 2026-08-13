@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { bot, log, DEFAULT_RESOLUTION } from "@/lib/store";
-import { saneaConfig } from "@/lib/model";
+import { saneaConfig, EPIC_RE, MAX_INSTRUMENTOS, RESOLUTIONS } from "@/lib/model";
 import { loadConfig, saveConfig, appendLog } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -38,14 +38,32 @@ export async function PATCH(req: Request) {
   }
   // instruments: lista de {epic, resolution}
   if (Array.isArray(body.instruments)) {
+    /**
+     * El universo no es una lista cualquiera: cada instrumento cuesta una
+     * petición de 150 velas a Capital en CADA ciclo. Antes entraba cualquier
+     * texto y cualquier longitud, así que un PATCH con trescientas entradas
+     * bastaba para que el tick pasara del límite de 60 s de la función y el
+     * cron dejara de gestionar las posiciones abiertas. Se filtra por forma de
+     * epic, se descartan duplicados y se corta en MAX_INSTRUMENTOS.
+     */
+    const vistos = new Set<string>();
     cfg.instruments = body.instruments
-      .filter((i: any) => i && i.epic)
+      .filter((i: any) => i && typeof i.epic === "string")
+      .map((i: any) => ({ ...i, epic: String(i.epic).toUpperCase().trim() }))
+      .filter((i: any) => {
+        if (!EPIC_RE.test(i.epic) || vistos.has(i.epic)) return false;
+        vistos.add(i.epic);
+        return true;
+      })
+      .slice(0, MAX_INSTRUMENTOS)
       .map((i: any) => ({
-        epic: String(i.epic).toUpperCase().trim(),
-        resolution: i.resolution || DEFAULT_RESOLUTION,
+        epic: i.epic,
+        resolution: RESOLUTIONS.includes(i.resolution) ? i.resolution : DEFAULT_RESOLUTION,
         ...(typeof i.regimeFilter === "boolean" ? { regimeFilter: i.regimeFilter } : {}),
         // preservar flags que la UI solo re-emite (si se descartan aquí, un guardado los borra de la BD)
-        ...(i.category ? { category: i.category } : {}),
+        ...(["forex", "crypto", "stocks", "commodities"].includes(i.category)
+          ? { category: i.category }
+          : {}),
         ...(i.longOnly === true ? { longOnly: true } : {}),
         ...(i.paused === true ? { paused: true } : {}),
       }));
@@ -53,9 +71,15 @@ export async function PATCH(req: Request) {
   } else if (Array.isArray(body.watchlist)) {
     // compat: editar solo epics preservando resolución de los que ya estaban
     const prev = new Map(cfg.instruments.map((i) => [i.epic, i.resolution]));
+    const vistos2 = new Set<string>();
     cfg.instruments = body.watchlist
       .map((s: string) => String(s).toUpperCase().trim())
-      .filter(Boolean)
+      .filter((epic: string) => {
+        if (!EPIC_RE.test(epic) || vistos2.has(epic)) return false;
+        vistos2.add(epic);
+        return true;
+      })
+      .slice(0, MAX_INSTRUMENTOS)
       .map((epic: string) => ({ epic, resolution: prev.get(epic) || DEFAULT_RESOLUTION }));
     cfg.watchlist = cfg.instruments.map((i) => i.epic);
   }

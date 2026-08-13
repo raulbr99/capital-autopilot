@@ -205,6 +205,18 @@ export type EquityPoint = { ts: number; equity: number };
  *  · velasDia   velas que cubren ~24 h; null si el marco no cabe en un día
  *  · maxGrafico velas que pide el gráfico de posición en ese marco
  */
+/**
+ * Forma válida de un epic de Capital: letras, dígitos, guion bajo y punto.
+ * Y un tope de instrumentos, porque el universo no es una lista cualquiera:
+ * CADA instrumento cuesta una petición de 150 velas a Capital en CADA ciclo del
+ * motor. La ruta aceptaba un array de cualquier longitud con cualquier texto
+ * dentro, así que un PATCH con trescientas entradas —desde una API que hoy no
+ * pide contraseña— dejaría cada tick por encima del límite de 60 s de la
+ * función: el cron se cae y el bot deja de gestionar las posiciones vivas.
+ */
+export const EPIC_RE = /^[A-Z0-9_.]{1,20}$/;
+export const MAX_INSTRUMENTOS = 60;
+
 export const RESOLUCIONES = [
   { k: "MINUTE", label: "1m", velasDia: 1440, maxGrafico: 200 },
   { k: "MINUTE_5", label: "5m", velasDia: 288, maxGrafico: 200 },
