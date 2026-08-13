@@ -162,11 +162,13 @@ export default function ConfigPanel({
                           32×14 medía al convertir la insignia en interruptor
                           (pasada 188): comprobé que la fila no desbordaba y no
                           miré el tamaño táctil, así que dejé veinte dianas de
-                          catorce píxeles de alto en el Lab. La altura mínima no
-                          ensancha la fila —la marcan los controles de 34 px de
-                          al lado—, que era justo lo que quería evitar.
+                          catorce píxeles de alto en el Lab. Y al arreglar solo
+                          la altura se quedó en 30×32: el umbral son 32 en LAS
+                          DOS dimensiones, así que seguía fallando por dos
+                          píxeles de ancho. Ahora 34×34, la misma medida que el
+                          resto de controles de la fila.
                         */
-                        className={`inline-flex min-h-[32px] shrink-0 items-center rounded px-1 text-[8px] ${
+                        className={`inline-flex min-h-[34px] min-w-[34px] shrink-0 items-center justify-center rounded px-1 text-[8px] ${
                           i.longOnly
                             ? "bg-long/15 text-long"
                             : "border border-cement text-muted hover:text-dim"
