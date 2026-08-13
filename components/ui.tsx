@@ -164,38 +164,6 @@ export function NumField({
   );
 }
 
-export function Toggle({
-  on,
-  onClick,
-  busy,
-  labelOn,
-  labelOff,
-}: {
-  on: boolean;
-  onClick: () => void;
-  busy?: boolean;
-  labelOn: string;
-  labelOff: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={busy}
-      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-40 ${
-        on ? "border-accent/40 bg-accent/10 text-accent" : "border-cement text-muted hover:text-dim"
-      }`}
-    >
-      <span className={`relative h-3.5 w-6 rounded-full transition-colors ${on ? "bg-accent" : "bg-cement"}`}>
-        <span
-          className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white transition-all ${
-            on ? "left-[13px]" : "left-0.5"
-          }`}
-        />
-      </span>
-      {on ? labelOn : labelOff}
-    </button>
-  );
-}
 
 export function Sparkline({
   data,

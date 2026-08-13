@@ -783,18 +783,6 @@ function MiniStat({ label, value, tone }: { label: string; value: string | numbe
   );
 }
 
-function PnlPill({ value, currency }: { value: number; currency?: string }) {
-  const pos = value >= 0;
-  return (
-    <div className={`rounded-lg border px-3.5 py-2 text-right ${pos ? "border-long/30 bg-long/5" : "border-short/30 bg-short/5"}`}>
-      <p className="tag">PnL flotante</p>
-      <p className={`font-mono text-lg font-medium ${pos ? "text-long" : "text-short"}`}>
-        {pos ? "+" : ""}
-        {fmt(value)} {currency}
-      </p>
-    </div>
-  );
-}
 
 /**
  * Sin credenciales de Capital no hay precios, ni cuenta, ni órdenes: es el
