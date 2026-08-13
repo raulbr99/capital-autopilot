@@ -283,7 +283,21 @@ export default function Dashboard() {
    */
   const latido = (() => {
     const CICLO_MIN = 15; // .github/workflows/autopilot.yml
-    const ts = snap?.state?.lastCronTick ?? 0;
+    /**
+     * Mientras no ha llegado el primer snapshot no se sabe NADA del motor, y
+     * este indicador afirmaba lo peor que puede afirmar: "sin latido", con el
+     * título "el cron no ha registrado ningún ciclo todavía". Medido con la red
+     * frenada a 400 kbps, eso se sostenía desde el segundo 3 hasta el 15 — doce
+     * segundos diciendo que el motor nunca ha corrido, en el único sitio del
+     * panel que responde a "¿esto sigue vivo?".
+     *
+     * El resto de la pantalla ya distingue las dos cosas: el hero, las KPI y la
+     * rejilla de señales pintan huecos mientras cargan en vez de inventarse un
+     * cero. Este se quedó fuera de aquella corrección.
+     */
+    if (!snap)
+      return { texto: "", tone: "text-muted", dot: "bg-muted", vivo: false, cargando: true, title: "Consultando el estado del motor…" };
+    const ts = snap.state?.lastCronTick ?? 0;
     if (!ts)
       return { texto: "sin latido", tone: "text-muted", dot: "bg-muted", vivo: false, title: "El cron no ha registrado ningún ciclo todavía." };
     const min = Math.max(0, Math.round((Date.now() - ts) / 60_000));
@@ -480,7 +494,11 @@ export default function Dashboard() {
                 <span
                   className={`h-2 w-2 rounded-full ${latido.dot} ${latido.vivo ? "animate-pulseDot" : ""}`}
                 />
-                <span className={latido.tone}>{latido.texto}</span>
+                {"cargando" in latido && latido.cargando ? (
+                  <Skeleton className="h-3 w-16" />
+                ) : (
+                  <span className={latido.tone}>{latido.texto}</span>
+                )}
               </span>
               {/*
                 Este chip leía solo AUTOPILOT_ARMED, así que decía "armadas" en
