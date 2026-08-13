@@ -73,6 +73,23 @@ export default function ConfigPanel({
         i.epic === epic ? { ...i, regimeFilter: !i.regimeFilter } : i
       ),
     });
+  /**
+   * Solo-compra por activo. El motor descarta los SELL de estos instrumentos, y
+   * la rejilla de señales ya los marca como "bloqueada" — pero el flag solo
+   * existía en la semilla del código: no había forma de ponerlo ni de quitarlo
+   * desde ninguna pantalla. O sea que un valor añadido desde aquí quedaba como
+   * el ÚNICO de su mesa que se puede vender en corto, en silencio, mientras los
+   * otros ocho llevan longOnly desde el primer día.
+   *
+   * Va como interruptor en la propia insignia que ya existía, para no meter una
+   * sexta columna en una fila que en móvil vive con 348 px.
+   */
+  const toggleLongOnly = (epic: string) =>
+    patch({
+      instruments: instruments.map((i) =>
+        i.epic === epic ? { ...i, longOnly: !i.longOnly } : i
+      ),
+    });
   const togglePaused = (epic: string) =>
     patch({
       instruments: instruments.map((i) => (i.epic === epic ? { ...i, paused: !i.paused } : i)),
@@ -114,11 +131,28 @@ export default function ConfigPanel({
                   >
                     <span className="flex min-w-0 flex-1 items-center gap-1.5">
                       <span className="truncate font-mono text-[11px] text-white">{i.epic}</span>
-                      {i.longOnly && (
-                        <span className="shrink-0 rounded bg-long/15 px-1 text-[8px] text-long" title="Solo compras: el motor bloquea los cortos">
-                          LONG
-                        </span>
-                      )}
+                      <button
+                        onClick={() => toggleLongOnly(i.epic)}
+                        disabled={busy}
+                        aria-pressed={!!i.longOnly}
+                        aria-label={
+                          i.longOnly
+                            ? `Permitir cortos en ${i.epic}`
+                            : `Solo compras en ${i.epic}`
+                        }
+                        title={
+                          i.longOnly
+                            ? "Solo compras: el motor bloquea los cortos. Clic para permitirlos."
+                            : "Cortos permitidos. Clic para limitarlo a solo compras."
+                        }
+                        className={`shrink-0 rounded px-1 text-[8px] ${
+                          i.longOnly
+                            ? "bg-long/15 text-long"
+                            : "border border-cement text-muted hover:text-dim"
+                        }`}
+                      >
+                        LONG
+                      </button>
                       {i.paused && (
                         <span className="shrink-0 rounded bg-short/15 px-1 text-[8px] text-short" title="Pausado: no abre nuevas posiciones">
                           PAUSA
