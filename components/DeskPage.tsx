@@ -53,6 +53,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
     if (el) setHayMas(el.scrollHeight - el.clientHeight - el.scrollTop > 4);
   }, []);
   const [busy, setBusy] = useState(false);
+  const [cierreErr, setCierreErr] = useState<string | null>(null);
   const [firing, setFiring] = useState(false);
   const [fireMsg, setFireMsg] = useState<{ ok: boolean; text: string; url?: string } | null>(null);
   // Momento del disparo: sirve para reconocer la decisión que llegue DESPUÉS
@@ -149,15 +150,34 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
     }
   };
 
+  /**
+   * Cerrar una posición desde una mesa no hacía NADA visible.
+   *
+   * Se lanzaba el DELETE y se acababa ahí: ni se refrescaba la tabla —así que
+   * la fila seguía en pantalla, con su P&L vivo, hasta el siguiente sondeo (12 s
+   * de espera)— ni se miraba la respuesta. Si Capital rechazaba el cierre
+   * (mercado cerrado, posición ya inexistente, error de sesión) la ruta devuelve
+   * 500 con su motivo, y aquí se descartaba en silencio: la posición seguía
+   * abierta y la pantalla igual que si no hubieras pulsado. En el panel
+   * principal sí se refrescaba; las mesas se quedaron sin ello.
+   *
+   * Para una acción irreversible sobre dinero real, no confirmar nada es lo peor
+   * que puede hacer un botón: invita a volver a pulsarlo.
+   */
   const closePos = async (p: OpenPos) => {
     if (!p.dealId || busy) return;
     setBusy(true);
+    setCierreErr(null);
     try {
-      await fetch(`/api/capital/positions?dealId=${p.dealId}`, { method: "DELETE" });
-    } catch {
-      /* */
+      const r = await fetch(`/api/capital/positions?dealId=${p.dealId}`, { method: "DELETE" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) setCierreErr(d.error || `No se pudo cerrar ${p.epic}.`);
+      else await load();
+    } catch (e) {
+      setCierreErr(e instanceof Error ? e.message : "Error de red al cerrar.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   return (
@@ -327,6 +347,20 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
         <div className={`grid gap-5 ${journal.length > 0 ? "lg:grid-cols-[1fr_340px]" : "grid-cols-1"}`}>
           <div className="min-w-0 space-y-5">
             <SignalMatrix evals={evals} cargando={cargando} instruments={instruments} />
+            {cierreErr && (
+              <p
+                role="alert"
+                className="flex items-start gap-2 rounded-lg border border-short/40 bg-short/10 px-3 py-2 text-[12px] leading-relaxed text-short"
+              >
+                <span aria-hidden>⚠️</span>
+                <span>
+                  {cierreErr} La posición sigue abierta.{" "}
+                  <button onClick={() => setCierreErr(null)} className="underline underline-offset-2">
+                    Entendido
+                  </button>
+                </span>
+              </p>
+            )}
             <PositionsTable
               positions={positions}
               onClose={closePos}

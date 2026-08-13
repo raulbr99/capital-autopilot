@@ -30,6 +30,7 @@ const TRADES_MS = 60000;
 export default function Dashboard() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [trades, setTrades] = useState<TradeRecord[]>([]);
+  const [cierreErr, setCierreErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<"long" | "short" | null>(null);
   const prevClosed = useRef(0);
@@ -169,12 +170,24 @@ export default function Dashboard() {
     [tick]
   );
 
+  /**
+   * Aquí sí se refrescaba, pero tampoco se miraba la respuesta: si Capital
+   * rechaza el cierre —mercado cerrado, posición ya inexistente, sesión
+   * caducada— la ruta devuelve 500 con el motivo y el panel se limitaba a
+   * recargar. La posición reaparecía en la tabla y no había forma de saber si
+   * el cierre falló o si es que el refresco llegó demasiado pronto.
+   */
   const closePos = async (p: OpenPos) => {
     setBusy(true);
+    setCierreErr(null);
     try {
-      await fetch(`/api/capital/positions?dealId=${p.dealId}`, { method: "DELETE" });
+      const r = await fetch(`/api/capital/positions?dealId=${p.dealId}`, { method: "DELETE" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) setCierreErr(d.error || `No se pudo cerrar ${p.epic}.`);
       await tick(false);
       await loadTrades();
+    } catch (e) {
+      setCierreErr(e instanceof Error ? e.message : "Error de red al cerrar.");
     } finally {
       setBusy(false);
     }
@@ -575,6 +588,20 @@ export default function Dashboard() {
         {/* ACTIVIDAD + RIESGO — triage: lo accionable justo después del dinero */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
           <div className="min-w-0 space-y-4">
+            {cierreErr && (
+              <p
+                role="alert"
+                className="mb-2 flex items-start gap-2 rounded-lg border border-short/40 bg-short/10 px-3 py-2 text-[12px] leading-relaxed text-short"
+              >
+                <span aria-hidden>⚠️</span>
+                <span>
+                  {cierreErr} La posición sigue abierta.{" "}
+                  <button onClick={() => setCierreErr(null)} className="underline underline-offset-2">
+                    Entendido
+                  </button>
+                </span>
+              </p>
+            )}
             <PositionsTable
               positions={positions}
               onClose={closePos}
