@@ -102,6 +102,18 @@ function PriceCell({ q }: { q?: SQ }) {
   );
 }
 
+/**
+ * Quita el nombre del medio pegado al final del titular ("… | Seeking Alpha",
+ * "… - Reuters"). Lo publican así casi todos los agregadores y aquí duplicaba
+ * la línea de fuente que va justo debajo, además de comerse ancho en una
+ * columna estrecha. Solo si lo que sobra es corto: hay titulares con barras
+ * legítimas y no conviene amputarlos.
+ */
+function sinSufijo(titulo: string): string {
+  const m = titulo.match(/^(.*\S)\s+[|\u2013\u2014-]\s+([^|\u2013\u2014-]{2,30})$/);
+  return m && m[1].length > 25 ? m[1] : titulo;
+}
+
 function ago(iso: string | null): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
@@ -328,13 +340,21 @@ export default function SentimentBoard({
                 ))}
               {(d?.news ?? []).map((n, i) => (
                 <li key={i}>
+                  {/*
+                    Estos titulares SIEMPRE fueron enlaces, pero no lo parecían:
+                    mismo color que el texto de alrededor, sin subrayado ni
+                    icono, y la única pista era el cambio de color al pasar el
+                    ratón — que en una pantalla táctil no existe. Yo mismo los
+                    di por texto plano al revisar esta tarjeta. Un subrayado
+                    tenue permanente lo resuelve sin ensuciar la columna.
+                  */}
                   <a
                     href={n.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block text-[12px] leading-snug text-dim transition-colors hover:text-accent [overflow-wrap:anywhere]"
+                    className="block text-[12px] leading-snug text-dim underline decoration-cement underline-offset-2 transition-colors hover:text-accent hover:decoration-accent [overflow-wrap:anywhere]"
                   >
-                    {n.title}
+                    {sinSufijo(n.title)}
                   </a>
                   <p className="mt-0.5 font-mono text-[9px] text-muted">
                     {n.source} · {ago(n.publishedDate)}
