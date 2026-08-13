@@ -61,11 +61,14 @@ export default function PositionsTable({
   busy,
   cargando,
   divisa,
+  equity,
 }: {
   positions: OpenPos[];
   onClose: (p: OpenPos) => void;
   cargando?: boolean;
   divisa?: string;
+  /** Equity de la cuenta: sin él, "exposición 328" no dice nada. */
+  equity?: number | null;
   busy: boolean;
 }) {
   const [chartPos, setChartPos] = useState<OpenPos | null>(null);
@@ -204,7 +207,20 @@ export default function PositionsTable({
                     TOTAL · {positions.length} {positions.length === 1 ? "posición" : "posiciones"}
                   </td>
                   <td className="px-4 py-2.5 text-right text-muted" colSpan={3}>
+                    {/*
+                      La exposición nocional suelta es un número sin escala:
+                      "328" sobre una cuenta de 228 € es 1,4 veces el capital, y
+                      sobre una de 5.000 sería nada. El resto del panel ya
+                      contextualiza así sus cifras absolutas —la caída máxima y
+                      el resultado neto van con su "% del capital"—; esta se
+                      quedó fuera.
+                    */}
                     exposición <span className="tabular-nums text-dim">{fmt(totals.notional, 0)}</span>
+                    {equity && equity > 0 ? (
+                      <span className="ml-1 text-muted">
+                        ({(totals.notional / equity).toFixed(1)}× capital)
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-2.5 text-right text-muted">a stop</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-dim">≈{fmt(totals.risk)}</td>
