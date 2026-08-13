@@ -275,7 +275,13 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
           <Kpi
             label="Riesgo a stop"
             value={cargando ? null : riskAtStop > 0 ? `≈${fmt(riskAtStop)}` : "—"}
-            sub={riskAtStop > 0 ? `${currency} si saltan todos` : "sin posiciones"}
+            sub={
+              riskAtStop > 0
+                ? snap?.account?.balance
+                  ? `${((riskAtStop / snap.account.balance) * 100).toFixed(1)}% del capital si saltan todos`
+                  : `${currency} si saltan todos`
+                : "sin posiciones"
+            }
           />
           {/*
             Sin posiciones no hay P&L. Las otras dos cifras de esta misma tira

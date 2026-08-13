@@ -385,7 +385,28 @@ export default function Dashboard() {
 
             {/* guardarrailes en vivo */}
             <div className="mt-3 space-y-2 rounded-lg border border-industrial bg-base p-3.5 text-xs">
-              <Row label="Riesgo abierto" value={openRisk > 0 ? `≈${fmt(openRisk)} ${acc?.currency ?? ""}` : "—"} />
+              {/*
+                El riesgo abierto es LA cifra de seguridad del panel: lo que se
+                pierde si saltan todos los stops a la vez. Iba en euros sueltos,
+                sin escala, igual que la exposición hasta ayer. Con 9,83 € sobre
+                228 no se sabe si eso es prudente o temerario sin hacer la
+                división a mano — y el resto del panel ya lleva su "% del
+                capital" desde hace pasadas.
+                El color entra a partir del 10 %: por encima de ahí, una racha
+                de stops se lleva por delante más de lo que la expectativa
+                recupera en semanas.
+              */}
+              <Row
+                label="Riesgo abierto"
+                value={
+                  openRisk > 0
+                    ? `≈${fmt(openRisk)} ${acc?.currency ?? ""}${
+                        lastEquity ? ` · ${((openRisk / lastEquity) * 100).toFixed(1)}% del capital` : ""
+                      }`
+                    : "—"
+                }
+                tone={lastEquity && openRisk / lastEquity > 0.1 ? "short" : undefined}
+              />
               <Row label="Cooldown" value={cooldownLabel(snap?.cooldownUntil ?? 0)} />
               {cupoAgotado && (
                 <Row
