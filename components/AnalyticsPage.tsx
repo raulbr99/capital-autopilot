@@ -136,7 +136,23 @@ export default function AnalyticsPage() {
   const closedTrades = filtered
     .filter((t) => t.status === "closed")
     .sort((x, y) => (y.closedTs || y.ts) - (x.closedTs || x.ts));
-  const markers = a.pnlCurve.map((p) => ({ ts: p.ts, dir: "BUY" as const, pnl: 0 }));
+  /**
+   * Marcadores de operación bajo la curva. El gráfico los pinta VERDES o ROJOS
+   * según su P&L —`(m.pnl ?? 0) >= 0 ? fill-long : fill-short`— y aquí se
+   * construían a mano con `dir: "BUY"` y `pnl: 0` fijos para todos.
+   *
+   * O sea que la pantalla de Analítica dibujaba cada operación cerrada como una
+   * ganadora. Con el histórico actual —34 cerradas: 10 ganadas, 16 perdidas, 8 a
+   * cero— eran dieciséis pérdidas pintadas de verde, en la única pantalla cuyo
+   * trabajo es juzgar el rendimiento.
+   *
+   * Los datos ya estaban aquí: closedTrades lleva el P&L y la dirección reales,
+   * y respeta los filtros de mesa y activo igual que la curva. El panel
+   * principal ya los construye así.
+   */
+  const markers = closedTrades
+    .filter((t) => t.closedTs)
+    .map((t) => ({ ts: t.closedTs!, dir: t.direction, pnl: t.pnl }));
 
   return (
     <div className="min-h-screen">
