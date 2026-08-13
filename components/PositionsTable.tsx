@@ -37,12 +37,27 @@ function RBar({ r }: { r: number }) {
   const zero = 33.3; // posición de la entrada en la barra
   const pct = clamped >= 0 ? zero + (clamped / 2) * (100 - zero) : zero + clamped * zero;
   const pos = r >= 0;
+  /**
+   * La escala va de −1R a +2R y recortaba en silencio: una posición corriendo a
+   * +3,5R se dibujaba EXACTAMENTE igual que una a +2R, y una pérdida de −1,5R
+   * —que pasa cuando el precio abre con hueco y se salta el stop— igual que un
+   * stop limpio en −1R. La cifra de al lado sí dice el valor real, pero la
+   * barra es lo que se lee de un vistazo, y una escala saturada tiene que
+   * decir que lo está. Un tope más brillante en el borde correspondiente.
+   */
+  const recortado = r > 2 || r < -1;
   return (
     <div className="relative mt-1 h-1 w-full overflow-hidden rounded-full bg-industrial" aria-hidden>
       <div
         className={`absolute top-0 h-full ${pos ? "bg-long/60" : "bg-short/60"}`}
         style={{ left: `${Math.min(zero, pct)}%`, width: `${Math.abs(pct - zero)}%` }}
       />
+      {recortado && (
+        <div
+          className={`absolute top-0 h-full w-1 ${pos ? "bg-long" : "bg-short"}`}
+          style={pos ? { right: 0 } : { left: 0 }}
+        />
+      )}
       <div className="absolute top-0 h-full w-px bg-muted" style={{ left: `${zero}%` }} />
     </div>
   );
