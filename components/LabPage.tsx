@@ -17,9 +17,14 @@ export default function LabPage() {
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("config");
 
+  /**
+   * slim=1 quita registro, curva de equity y operaciones: 17 kB en vez de 35, y
+   * esta página solo lee `config` y `notifyEnv`. slim=2 no vale, porque tira
+   * justo la configuración.
+   */
   const load = useCallback(async () => {
     try {
-      const r = await fetch("/api/bot/tick");
+      const r = await fetch("/api/bot/tick?slim=1");
       const d = await r.json();
       if (!d.error) setSnap(d);
     } catch {
@@ -31,15 +36,40 @@ export default function LabPage() {
     load();
   }, [load]);
 
+  /**
+   * Guardar un ajuste hacía DOS peticiones: el PATCH y, detrás, un /api/bot/tick
+   * entero para releer la configuración. Y el PATCH ya devuelve la configuración
+   * actualizada — es literalmente lo que responde.
+   *
+   * El segundo viaje no era gratis. /api/bot/tick ejecuta el motor: evalúa los
+   * veinte instrumentos pidiendo 150 velas de cada uno a Capital y, si el bot
+   * está encendido, corre además la gestión activa de las posiciones abiertas
+   * (trailing, breakeven, scaling out) sobre la cuenta real. O sea que marcar
+   * una casilla en el Lab disparaba una evaluación completa del universo y podía
+   * mover un stop. Con una veintena de mandos en este panel, configurar el bot
+   * eran veinte evaluaciones completas.
+   *
+   * Y se notaba: `busy` deshabilita TODO el panel mientras dura, así que cada
+   * clic congelaba la configuración entera hasta que volvía el motor.
+   */
   const patch = useCallback(
     async (body: any) => {
       setBusy(true);
       try {
-        await fetch("/api/bot", {
+        const r = await fetch("/api/bot", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        const cfgNuevo = await r.json();
+        if (cfgNuevo && !cfgNuevo.error) {
+          setSnap((s) => (s ? { ...s, state: { ...s.state, config: cfgNuevo } } : s));
+        } else {
+          await load();
+        }
+      } catch {
+        // Si el guardado falla, releer es lo único que devuelve la verdad a la
+        // pantalla: sin esto quedarían los mandos con el valor que no se guardó.
         await load();
       } finally {
         setBusy(false);
