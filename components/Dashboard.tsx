@@ -788,6 +788,19 @@ function DesksOverview({
   maxPerDesk: number;
 }) {
   const catOf = (epic: string) => deskOfEpic(instruments, epic);
+  /**
+   * Activos de solo-compra: sus SELL no los ejecuta el motor.
+   *
+   * En la pasada 163 saqué las señales bloqueadas del recuento y del orden de
+   * la rejilla de señales, y estas cuatro tarjetas —el resumen por mesa del
+   * panel, que es lo primero que se mira— se quedaron contándolas. Diez de los
+   * veinte instrumentos del universo son de solo-compra (las dos criptos y los
+   * ocho valores), así que la mitad del universo puede producir un "1▼" que
+   * anuncia una oportunidad que el motor tiene prohibido tomar. Lo medí en
+   * vivo entonces: BTCUSD encabezaba cripto con un SHORT al 71 % que jamás se
+   * iba a abrir.
+   */
+  const soloLargos = new Set(instruments.filter((i) => i.longOnly).map((i) => i.epic));
   // posiciones de activos que ya no están en el universo (quedaron abiertas al podarlo)
   const legacy = positions.filter((p) => catOf(p.epic) === "otros");
   return (
@@ -798,7 +811,8 @@ function DesksOverview({
         const pos = positions.filter((p) => catOf(p.epic) === d.key);
         const pnl = pos.reduce((s, p) => s + (p.upl || 0), 0);
         const longs = ev.filter((e) => e.signal?.type === "BUY").length;
-        const shorts = ev.filter((e) => e.signal?.type === "SELL").length;
+        const shorts = ev.filter((e) => e.signal?.type === "SELL" && !soloLargos.has(e.epic)).length;
+        const bloqueadas = ev.filter((e) => e.signal?.type === "SELL" && soloLargos.has(e.epic)).length;
         const ses = deskSession(d.key);
         const full = pos.length >= maxPerDesk;
         return (
@@ -839,7 +853,16 @@ function DesksOverview({
               </div>
             </div>
             {/* altura fija: si la línea aparece y desaparece, las tarjetas bailan */}
-            <p className="mt-2 h-4 font-mono text-[10px] text-muted">
+            {/* La señal bloqueada no se cuenta, pero tampoco se esconde: existe
+                y explica por qué la rejilla de señales enseña un activo más. */}
+            <p
+              className="mt-2 h-4 font-mono text-[10px] text-muted"
+              title={
+                bloqueadas > 0
+                  ? `${bloqueadas} ${bloqueadas === 1 ? "señal corta descartada" : "señales cortas descartadas"}: activos de solo-compra`
+                  : undefined
+              }
+            >
               {longs > 0 || shorts > 0 ? (
                 <>
                   {longs > 0 && <span className="text-long">{longs}▲ </span>}
