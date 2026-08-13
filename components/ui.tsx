@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { RESOLUCIONES } from "@/lib/model";
+import { RESOLUCIONES, TZ } from "@/lib/model";
 
 export const fmt = (n: number, d = 2) => {
   const v = Number.isFinite(n) ? n : 0;
@@ -65,15 +65,36 @@ export function DeskGlyph({ cat, className = "h-4 w-4" }: { cat: string; classNa
 }
 
 /** Reloj aislado: solo este componente se re-renderiza cada segundo, no la página. */
+/**
+ * Reloj de la cabecera, en la hora de la CUENTA y diciendo cuál es.
+ *
+ * Iba con la hora del navegador y sin etiqueta ninguna. En esta pantalla
+ * conviven tres relojes distintos: el bot cuenta su día en la zona de la cuenta
+ * —Europe/Madrid: de ahí salen el cupo diario, el freno, los separadores del
+ * registro y el agrupado del diario—, las sesiones de mesa se calculan en
+ * America/New_York, y este marcaba la del dispositivo. Mirado desde fuera de
+ * España, el número grande de la cabecera contradecía en silencio a todo lo
+ * demás: "hoy" empezaba a una hora distinta de la que marca el reloj que
+ * preside la pantalla.
+ *
+ * Ninguna plataforma seria enseña una hora sin decir de dónde es.
+ */
 export function Clock({ className }: { className?: string }) {
   const [now, setNow] = useState("--:--:--");
   useEffect(() => {
-    const tick = () => setNow(new Date().toLocaleTimeString("es-ES", { hour12: false }));
+    const tick = () =>
+      setNow(new Date().toLocaleTimeString("es-ES", { timeZone: TZ, hour12: false }));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
-  return <p className={className}>{now}</p>;
+  const ciudad = (TZ.split("/").pop() || TZ).replace(/_/g, " ");
+  return (
+    <p className={className} title={`Hora de la cuenta · ${TZ}`}>
+      {now}
+      <span className="ml-1.5 text-[10px] font-normal text-muted">{ciudad}</span>
+    </p>
+  );
 }
 
 export function SectionHead({ label, right }: { label: string; right?: React.ReactNode }) {
