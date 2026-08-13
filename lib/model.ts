@@ -19,6 +19,90 @@
 import type { Signal, StrategyConfig } from "./strategy";
 export type { Signal };
 
+/**
+ * Rangos válidos de cada ajuste numérico del motor, en un solo sitio.
+ *
+ * Existen porque la ruta PATCH fundía `body.risk` y `body.strategy` en la
+ * configuración con un spread crudo, sin mirar tipos ni valores. Cualquiera con
+ * la URL —y este panel hoy no pide contraseña— podía dejar la cuenta así:
+ *
+ *   {"risk":{"atrStopMult":0}}        el stop se calcula 0 y openPosition omite
+ *                                     la clave: órdenes SIN STOP
+ *   {"risk":{"riskPercent":"hola"}}   una cadena en el cálculo del tamaño
+ *   {"risk":{"maxDailyLossPct":-5}}   invierte el kill-switch: se dispara solo
+ *
+ * Los mismos rangos alimentan los campos del panel, así que el aviso que ves al
+ * teclear y la regla que aplica el servidor no pueden separarse con el tiempo.
+ * Son límites de sensatez, no de criterio: nadie decide aquí cuánto arriesgar,
+ * solo que un multiplicador no sea cero ni un porcentaje sea negativo.
+ */
+export const LIMITES: {
+  risk: Record<string, [number, number]>;
+  strategy: Record<string, [number, number]>;
+} = {
+  risk: {
+    riskPercent: [0.01, 100],
+    marginPct: [0.01, 100],
+    atrPeriod: [2, 200],
+    atrStopMult: [0.1, 20],
+    atrTpMult: [0.1, 50],
+    maxDailyLossPct: [0, 100],
+    maxTradesPerDay: [0, 500],
+    cooldownMin: [0, 1440],
+    breakevenAtr: [0, 20],
+    trailAtr: [0, 20],
+    trailDistAtr: [0.1, 20],
+    scaleOutAtr: [0, 20],
+    scaleOutPct: [0, 100],
+  },
+  strategy: {
+    fast: [1, 400],
+    slow: [2, 400],
+    rsiPeriod: [2, 200],
+    rsiBuyBelow: [1, 99],
+    rsiSellAbove: [1, 99],
+    minConfidence: [0, 1],
+    adxPeriod: [2, 200],
+    adxThreshold: [0, 100],
+  },
+};
+
+/** Claves booleanas admitidas en cada sub-objeto de la configuración. */
+export const BOOLEANOS = {
+  risk: ["useAtrStops", "activeManage"],
+  strategy: ["useRegimeFilter"],
+} as const;
+
+/**
+ * Filtra un sub-objeto recibido por la API: solo pasan las claves conocidas,
+ * con el tipo correcto y recortadas a su rango. Lo demás se descarta en
+ * silencio — un ajuste desconocido en la configuración de un bot que mueve
+ * dinero no es una extensión, es basura persistida.
+ */
+export function saneaConfig(
+  parte: "risk" | "strategy",
+  body: unknown
+): Record<string, number | boolean> {
+  const out: Record<string, number | boolean> = {};
+  if (!body || typeof body !== "object") return out;
+  const src = body as Record<string, unknown>;
+  for (const [k, [min, max]] of Object.entries(LIMITES[parte])) {
+    const v = src[k];
+    if (typeof v !== "number" || !Number.isFinite(v)) continue;
+    out[k] = Math.min(max, Math.max(min, v));
+  }
+  for (const k of BOOLEANOS[parte]) {
+    if (typeof src[k] === "boolean") out[k] = src[k] as boolean;
+  }
+  // sizingMode es el único texto con valores cerrados
+  if (parte === "risk" && typeof src.sizingMode === "string") {
+    if (["fixed", "percent", "margin"].includes(src.sizingMode)) {
+      (out as Record<string, unknown>).sizingMode = src.sizingMode;
+    }
+  }
+  return out;
+}
+
 export type RiskConfig = {
   sizingMode: "fixed" | "percent" | "margin"; // unidades fijas | % de equity arriesgado | % de equity como margen
   riskPercent: number; // % de equity arriesgado por trade (modo percent)

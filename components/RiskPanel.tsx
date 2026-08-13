@@ -2,6 +2,7 @@
 
 import type { BotConfig } from "./types";
 import { SectionHead, NumField, fmt, pl } from "./ui";
+import { LIMITES } from "@/lib/model";
 
 export default function RiskPanel({
   cfg,
@@ -150,11 +151,11 @@ export default function RiskPanel({
           </p>
           {r.useAtrStops ? (
             <div className="grid grid-cols-3 gap-2">
-              <NumField label="Periodo ATR" value={r.atrPeriod} step={1} busy={busy} min={2} max={200}
+              <NumField label="Periodo ATR" value={r.atrPeriod} step={1} busy={busy} min={LIMITES.risk.atrPeriod[0]} max={LIMITES.risk.atrPeriod[1]}
                 hint="Velas para medir la volatilidad." onCommit={(v) => patch({ risk: { atrPeriod: v } })} />
-              <NumField label="Stop = ×ATR" value={r.atrStopMult} step={0.5} busy={busy} min={0.1} max={20}
+              <NumField label="Stop = ×ATR" value={r.atrStopMult} step={0.5} busy={busy} min={LIMITES.risk.atrStopMult[0]} max={LIMITES.risk.atrStopMult[1]}
                 hint="Distancia del stop = este nº × ATR." onCommit={(v) => patch({ risk: { atrStopMult: v } })} />
-              <NumField label="Objetivo = ×ATR" value={r.atrTpMult} step={0.5} busy={busy} min={0.1} max={50}
+              <NumField label="Objetivo = ×ATR" value={r.atrTpMult} step={0.5} busy={busy} min={LIMITES.risk.atrTpMult[0]} max={LIMITES.risk.atrTpMult[1]}
                 hint="Distancia del take-profit = este nº × ATR." onCommit={(v) => patch({ risk: { atrTpMult: v } })} />
             </div>
           ) : (

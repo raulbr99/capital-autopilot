@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { BotConfig } from "./types";
-import { RESOLUCIONES, DEFAULT_RESOLUTION } from "@/lib/model";
+import { RESOLUCIONES, DEFAULT_RESOLUTION, LIMITES } from "@/lib/model";
 import { SectionHead, NumField } from "./ui";
 
 const DESK_ORDER = [
@@ -291,13 +291,13 @@ export default function ConfigPanel({
         </div>
 
         <div className="grid grid-cols-2 gap-3 border-t border-industrial pt-3">
-          <NumField label="SMA rápida" value={cfg.strategy.fast} step={1} busy={busy} min={1} max={400}
+          <NumField label="SMA rápida" value={cfg.strategy.fast} step={1} busy={busy} min={LIMITES.strategy.fast[0]} max={LIMITES.strategy.fast[1]}
             onCommit={(v) => patch({ strategy: { fast: v } })} />
-          <NumField label="SMA lenta" value={cfg.strategy.slow} step={1} busy={busy} min={2} max={400}
+          <NumField label="SMA lenta" value={cfg.strategy.slow} step={1} busy={busy} min={LIMITES.strategy.slow[0]} max={LIMITES.strategy.slow[1]}
             onCommit={(v) => patch({ strategy: { slow: v } })} />
-          <NumField label="Periodo RSI" value={cfg.strategy.rsiPeriod} step={1} busy={busy} min={2} max={200}
+          <NumField label="Periodo RSI" value={cfg.strategy.rsiPeriod} step={1} busy={busy} min={LIMITES.strategy.rsiPeriod[0]} max={LIMITES.strategy.rsiPeriod[1]}
             onCommit={(v) => patch({ strategy: { rsiPeriod: v } })} />
-          <NumField label="Confianza mínima" value={cfg.strategy.minConfidence} step={0.05} busy={busy} min={0} max={1}
+          <NumField label="Confianza mínima" value={cfg.strategy.minConfidence} step={0.05} busy={busy} min={LIMITES.strategy.minConfidence[0]} max={LIMITES.strategy.minConfidence[1]}
             onCommit={(v) => patch({ strategy: { minConfidence: v } })} />
         </div>
 
@@ -313,9 +313,9 @@ export default function ConfigPanel({
             <span>{cfg.strategy.useRegimeFilter ? "ON" : "OFF"}</span>
           </button>
           <div className="grid grid-cols-2 gap-3">
-            <NumField label="Periodo ADX" value={cfg.strategy.adxPeriod} step={1} busy={busy} min={2} max={200}
+            <NumField label="Periodo ADX" value={cfg.strategy.adxPeriod} step={1} busy={busy} min={LIMITES.strategy.adxPeriod[0]} max={LIMITES.strategy.adxPeriod[1]}
               onCommit={(v) => patch({ strategy: { adxPeriod: v } })} />
-            <NumField label="Umbral ADX" value={cfg.strategy.adxThreshold} step={1} busy={busy} min={0} max={100}
+            <NumField label="Umbral ADX" value={cfg.strategy.adxThreshold} step={1} busy={busy} min={LIMITES.strategy.adxThreshold[0]} max={LIMITES.strategy.adxThreshold[1]}
               onCommit={(v) => patch({ strategy: { adxThreshold: v } })} />
           </div>
         </div>

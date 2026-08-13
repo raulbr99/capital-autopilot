@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { bot, log, DEFAULT_RESOLUTION } from "@/lib/store";
+import { saneaConfig } from "@/lib/model";
 import { loadConfig, saveConfig, appendLog } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -63,11 +64,20 @@ export async function PATCH(req: Request) {
       (cfg as any)[k] = k === "maxPerDesk" ? Math.floor(body[k]) : body[k];
     }
   }
+  /**
+   * Antes esto era un spread crudo: `{ ...cfg.risk, ...body.risk }`. Sin mirar
+   * tipos ni rangos, y sobre la configuración de un bot que opera con dinero
+   * real desde una ruta que hoy no pide contraseña. Ahora cada clave tiene que
+   * ser conocida, del tipo correcto y dentro de su rango; el resto se descarta.
+   * Los rangos viven en lib/model.ts y son los mismos que usan los campos del
+   * panel, para que la validación del servidor y el aviso del formulario no se
+   * separen con el tiempo.
+   */
   if (body.strategy && typeof body.strategy === "object") {
-    cfg.strategy = { ...cfg.strategy, ...body.strategy };
+    cfg.strategy = { ...cfg.strategy, ...saneaConfig("strategy", body.strategy) };
   }
   if (body.risk && typeof body.risk === "object") {
-    cfg.risk = { ...cfg.risk, ...body.risk };
+    cfg.risk = { ...cfg.risk, ...saneaConfig("risk", body.risk) };
   }
   if (body.notify && typeof body.notify === "object") {
     cfg.notify = { ...cfg.notify, ...body.notify };
