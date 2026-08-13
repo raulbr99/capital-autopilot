@@ -176,11 +176,41 @@ export default function LessonsPanel({ desk }: { desk?: string }) {
         </div>
       </div>
 
+      {/*
+        Qué pasó con lo que decidieron. La respuesta trae el recuento completo
+        —abiertas, cerradas, vetadas por el comité, omitidas por límites y
+        fallidas— y de todo eso solo se enseñaba el número de vetos. El resto se
+        servía a los Gestores y se tiraba antes de llegar a la pantalla.
+        Y es la línea más informativa que hay aquí: ahora mismo dice 0 aperturas,
+        3 vetos y 69 esperas, o sea que el Gestor lleva treinta ciclos sin abrir
+        nada. Un panel que se llama "Lo que ha aprendido" tiene que decir eso.
+      */}
+      {(() => {
+        const dec = d.decisiones || {};
+        const partes: string[] = [];
+        const añade = (n: number | undefined, uno: string, varios: string) => {
+          if (n) partes.push(`${n} ${n === 1 ? uno : varios}`);
+        };
+        añade(dec.opened, "apertura", "aperturas");
+        añade(dec.closed, "cierre", "cierres");
+        añade(dec.vetoed, "vetada por el comité", "vetadas por el comité");
+        añade(dec.skipped, "omitida por límites", "omitidas por límites");
+        añade(dec.error, "fallida", "fallidas");
+        añade(dec.held, "espera", "esperas");
+        if (!partes.length) return null;
+        return (
+          <p className="border-t border-industrial px-5 py-2 text-[11px] leading-relaxed text-muted">
+            <span className="text-dim">Sus últimas decisiones:</span>{" "}
+            {dec.opened ? "" : <span className="text-short">ninguna apertura</span>}
+            {dec.opened ? partes.join(" · ") : partes.length ? ` · ${partes.join(" · ")}` : ""}
+          </p>
+        );
+      })()}
+
       <p className="border-t border-industrial px-5 py-2.5 text-[11px] leading-relaxed text-muted">
         Resumen de {d.closed} {pl(d.closed, "operación cerrada", "operaciones cerradas")} · neto{" "}
         <span className={pnlClass(d.netTotal)}>{pnlFmt(d.netTotal)}</span>. Es exactamente lo que reciben
-        los Gestores antes de decidir
-        {d.decisiones?.vetoed ? ` · el comité ha vetado ${d.decisiones.vetoed} de sus propuestas` : ""}.
+        los Gestores antes de decidir.
       </p>
     </div>
   );
