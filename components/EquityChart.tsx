@@ -137,8 +137,27 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
     const tN = data[data.length - 1].ts || t0 + 1;
     const tSpan = tN - t0 || 1;
 
-    const x = (i: number) => (i / (data.length - 1)) * plotW;
+    /**
+     * Eje X por TIEMPO, no por posición en el array.
+     *
+     * La curva se dibujaba repartiendo los puntos a distancia igual, uno detrás
+     * de otro, mientras los marcadores de operación se colocaban por su hora
+     * real: dos escalas distintas en el mismo dibujo. El resultado es que la
+     * chincheta de una compra no señalaba el tramo de curva donde estaba el
+     * equity a esa hora.
+     *
+     * Y el reparto por índice deforma la curva, porque ap_equity no se escribe
+     * a ritmo constante: se escribe también cuando alguien abre el panel. Medido
+     * ahora mismo en producción, sobre 240 puntos y 12 h, la mediana entre
+     * muestras es de 18 segundos y el mayor hueco de 27 minutos — el 3,8 % del
+     * tiempo dibujado con el 0,4 % del ancho. Los ratos con el panel abierto se
+     * comían el gráfico y las horas sin mirar se encogían nueve veces.
+     *
+     * Con las fechas rotuladas en los extremos, ese eje prometía tiempo y
+     * entregaba número de muestra.
+     */
     const xt = (ts: number) => ((ts - t0) / tSpan) * plotW;
+    const x = (i: number) => xt(data[i].ts);
     const y = (v: number) => (flat ? plotH / 2 : plotH - PAD_Y - ((v - min) / span) * (plotH - PAD_Y * 2));
 
     const line = data.map((d, i) => `${x(i)},${y(d.equity)}`).join(" ");
@@ -154,7 +173,7 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
     const back = data.map((_, i) => `${x(data.length - 1 - i)},${y(values[data.length - 1 - i])}`);
     const ddArea = `${peakPts.join(" ")} ${back.join(" ")}`;
 
-    return { values, min, max, plotW, plotH, x, xt, y, line, area, ddArea, up: values[values.length - 1] >= values[0] };
+    return { values, min, max, plotW, plotH, x, xt, y, t0, tSpan, line, area, ddArea, up: values[values.length - 1] >= values[0] };
   }, [data, w]);
 
   if (!geom) {
@@ -166,7 +185,7 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
     );
   }
 
-  const { values, min, max, plotW, plotH, x, xt, y, line, area, ddArea, up } = geom;
+  const { values, min, max, plotW, plotH, x, xt, y, t0, tSpan, line, area, ddArea, up } = geom;
   const tone = up ? "long" : "short";
   const hi = hover != null ? data[hover] : null;
   // Con menos de un día de datos, repetir la fecha en los dos extremos no
@@ -177,12 +196,24 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
   const fecha = (ts: number) =>
     new Date(ts).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 
-  /** Índice del punto más cercano al cursor. */
+  /**
+   * Punto más cercano al cursor, buscado por HORA. Antes se calculaba como
+   * `px / ancho × nº de puntos`, que es el punto más cercano en el array —
+   * correcto solo mientras la curva se repartía por índice. Con el eje ya en
+   * tiempo, esa cuenta devolvía un punto que podía estar lejos del cursor.
+   */
   const onMove = (e: React.PointerEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const px = e.clientX - rect.left;
     if (px > plotW) return setHover(null);
-    setHover(Math.max(0, Math.min(data.length - 1, Math.round((px / plotW) * (data.length - 1)))));
+    const ts = t0 + (px / plotW) * tSpan;
+    let best = 0;
+    let dist = Infinity;
+    for (let i = 0; i < data.length; i++) {
+      const d = Math.abs(data[i].ts - ts);
+      if (d < dist) { dist = d; best = i; }
+    }
+    setHover(best);
   };
 
   return (
