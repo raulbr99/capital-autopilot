@@ -330,7 +330,7 @@ export default function SentimentBoard({
           ) : d && (!Array.isArray(d.news) || d.news.length === 0) ? (
             <p className="text-[11px] text-muted">{d.exaErr ? "Error consultando Exa." : "Sin noticias recientes."}</p>
           ) : (
-            <ul className="space-y-2.5">
+            <ul className="space-y-0.5">
               {loading && !d &&
                 [0, 1, 2, 3].map((i) => (
                   <li key={`hueco-n-${i}`}>
@@ -353,7 +353,13 @@ export default function SentimentBoard({
                     href={n.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block text-[12px] leading-snug text-dim underline decoration-cement underline-offset-2 transition-colors hover:text-accent hover:decoration-accent [overflow-wrap:anywhere]"
+                    /*
+                      316×17 medía este enlace en un iPhone: ancho de sobra y
+                      diecisiete píxeles de alto. Es un titular de una sola
+                      línea, no un enlace dentro de una frase, así que le aplica
+                      el mínimo táctil como a cualquier otro control.
+                    */
+                    className="block py-2.5 text-[12px] leading-snug text-dim underline decoration-cement underline-offset-2 transition-colors hover:text-accent hover:decoration-accent [overflow-wrap:anywhere]"
                   >
                     {sinSufijo(n.title)}
                   </a>

@@ -92,7 +92,14 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
         key={id}
         onClick={() => setFilter(id)}
         aria-pressed={on}
-        className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+        /*
+          Medido con el auditor propio a 390 px: estos tres filtros salían de
+          45×19, 67×19 y 71×19. Diecinueve píxeles de alto, cuando el resto de
+          controles del panel llevan min-h-[34px] desde hace pasadas y el umbral
+          del propio auditor está en 32. Tres dianas de 19 px pegadas entre sí,
+          y errar cambia lo que enseña el registro.
+        */
+        className={`inline-flex min-h-[34px] items-center gap-1 rounded px-2 text-[10px] font-medium transition-colors ${
           on ? "bg-raised text-white" : "text-muted hover:text-dim"
         } ${id === "problemas" && counts.problemas > 0 && !on ? "text-short" : ""}`}
       >
