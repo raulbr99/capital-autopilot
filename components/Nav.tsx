@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusTrap, useReturnFocus } from "./ui";
 
 const GROUPS: { href: string; label: string }[][] = [
   [{ href: "/", label: "Panel" }],
@@ -35,6 +36,20 @@ export default function Nav({ active }: { active: string }) {
   const actual = useRef<HTMLSpanElement | null>(null);
   const [bordes, setBordes] = useState({ izq: false, der: false });
   const [menu, setMenu] = useState(false);
+  /**
+   * El menú de navegación de móvil era la única capa de la aplicación sin
+   * gestión de foco. La paleta de comandos y el modal del gráfico usan estos
+   * dos ayudantes desde hace pasadas; aquí no llegaron.
+   *
+   * Con el menú abierto, seguir tabulando salía a la página de detrás —que está
+   * tapada por la capa, así que el foco se perdía en controles invisibles— y al
+   * cerrarlo el foco no volvía al botón que lo había abierto, sino al principio
+   * del documento. Con teclado o con lector de pantalla, eso es perder el sitio
+   * en cada navegación.
+   */
+  const cajaMenu = useRef<HTMLDivElement | null>(null);
+  useFocusTrap(cajaMenu, menu);
+  useReturnFocus(menu);
 
   // Escape cierra el menú móvil, como el resto de capas de la app
   useEffect(() => {
@@ -42,6 +57,29 @@ export default function Nav({ active }: { active: string }) {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [menu]);
+
+  /**
+   * Cerrar al tocar fuera.
+   *
+   * Antes lo hacía una capa `fixed inset-0` puesta DENTRO del menú. Y `fixed`
+   * no se resuelve contra la ventana cuando un ancestro tiene transform o
+   * filtro: la cabecera lleva backdrop-blur, así que esa capa se convertía en el
+   * bloque contenedor de la cabecera. Medido en producción: el botón "Cerrar
+   * menú" ocupaba 390×64, no la pantalla. O sea que tocar por debajo de la
+   * cabecera —el 92 % de la pantalla de un teléfono, y el gesto natural para
+   * descartar un menú— no cerraba nada.
+   *
+   * De paso desaparece un botón invisible a pantalla completa que estaba en el
+   * orden del tabulador, entre el interruptor del menú y sus destinos.
+   */
+  useEffect(() => {
+    if (!menu) return;
+    const fuera = (e: PointerEvent) => {
+      if (!cajaMenu.current?.contains(e.target as Node)) setMenu(false);
+    };
+    document.addEventListener("pointerdown", fuera);
+    return () => document.removeEventListener("pointerdown", fuera);
   }, [menu]);
 
   const medir = useCallback(() => {
@@ -122,7 +160,7 @@ export default function Nav({ active }: { active: string }) {
       16 px ANTES de donde acababa el botón — se montaban el uno sobre el otro.
       Ahora la etiqueta se recorta y cada cosa ocupa su sitio.
     */}
-    <div className="relative min-w-0 sm:hidden">
+    <div className="relative min-w-0 sm:hidden" ref={cajaMenu}>
       <button
         onClick={() => setMenu((m) => !m)}
         aria-expanded={menu}
@@ -134,11 +172,7 @@ export default function Nav({ active }: { active: string }) {
       </button>
       {menu && (
         <>
-          <button
-            aria-label="Cerrar menú"
-            onClick={() => setMenu(false)}
-            className="fixed inset-0 z-40 cursor-default"
-          />
+
           <div
             role="menu"
             className="absolute left-0 top-full z-50 mt-1.5 w-[190px] overflow-hidden rounded-lg border border-cement bg-soft shadow-elevated"
