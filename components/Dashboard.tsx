@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion, aCuenta } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -206,9 +206,30 @@ export default function Dashboard() {
   // está parado y la cuenta vacía, que es justo lo contrario de informar.
   const loading = !snap;
 
-  // Riesgo agregado (para vigilar dinero real). Las posiciones cuyo stop ya
-  // está por delante de la entrada NO arriesgan nada: sumarlas inflaba la cifra.
-  const openRisk = positions.reduce((s, p) => s + (positionRisk(p).risk ?? 0), 0);
+  /**
+   * Riesgo agregado. Las posiciones cuyo stop ya está por delante de la entrada
+   * NO arriesgan nada: sumarlas inflaba la cifra.
+   *
+   * Y llevaba el mismo error de divisa que corregí ayer en la tabla y en las
+   * mesas, que aquí se me pasó: positionRisk multiplica precios por tamaño, o
+   * sea que devuelve DÓLARES —la divisa en la que cotizan los veinte activos—,
+   * y esto lo rotulaba con la divisa de la cuenta y lo dividía entre un equity
+   * en euros. Con EURUSD en 1,15 son un 15 % de más, y no en un sitio
+   * cualquiera: esta es, según el comentario de abajo, "LA cifra de seguridad
+   * del panel", y su umbral de alarma está en el 10 % del capital. Un riesgo
+   * real del 9 % se pintaba en rojo como 10,4 %.
+   */
+  const eurusd = (snap?.evals ?? []).find((e) => e.epic === "EURUSD")?.price ?? null;
+  let riesgoAprox = false;
+  const openRisk = positions.reduce((s, p) => {
+    const bruto = positionRisk(p).risk ?? 0;
+    const enCuenta = aCuenta(bruto, p.currency, snap?.account?.currency, eurusd);
+    if (enCuenta == null) {
+      riesgoAprox = true;
+      return s + bruto;
+    }
+    return s + enCuenta;
+  }, 0);
   const dayPnlPct = snap?.dailyPnlPct ?? 0;
   /**
    * El resultado del día EN DINERO.
@@ -541,11 +562,15 @@ export default function Dashboard() {
                 value={
                   openRisk > 0
                     ? `≈${fmt(openRisk)} ${acc?.currency ?? ""}${
-                        lastEquity ? ` · ${((openRisk / lastEquity) * 100).toFixed(1)}% del capital` : ""
+                        lastEquity && !riesgoAprox
+                          ? ` · ${((openRisk / lastEquity) * 100).toFixed(1)}% del capital`
+                          : riesgoAprox
+                            ? " · aprox."
+                            : ""
                       }`
                     : "—"
                 }
-                tone={lastEquity && openRisk / lastEquity > 0.1 ? "short" : undefined}
+                tone={lastEquity && !riesgoAprox && openRisk / lastEquity > 0.1 ? "short" : undefined}
               />
               <Row label="Cooldown" value={cooldownLabel(snap?.cooldownUntil ?? 0)} />
               {cupoAgotado && (
@@ -628,7 +653,7 @@ export default function Dashboard() {
               divisa={acc?.currency ?? ""}
               equity={lastEquity}
               marcos={Object.fromEntries((cfg?.instruments ?? []).map((i) => [i.epic, i.resolution]))}
-              eurusd={(snap?.evals ?? []).find((e) => e.epic === "EURUSD")?.price ?? null}
+              eurusd={eurusd}
             />
             <LogFeed logs={historial.logs} />
           </div>
