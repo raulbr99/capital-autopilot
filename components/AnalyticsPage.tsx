@@ -106,9 +106,23 @@ export default function AnalyticsPage() {
     return (epic: string) => m.get(epic);
   }, [instruments]);
 
+  /**
+   * Activos que se pueden elegir CON LA MESA ACTUAL.
+   *
+   * El desplegable ofrecía los veinte del histórico entero pasara lo que
+   * pasara, así que elegir la mesa Forex y luego AAPL —que es de Stocks— daba
+   * cero resultados garantizados. Ese callejón está descrito en el comentario
+   * del estado vacío de más abajo: se arregló el mensaje que salía al caer en
+   * él, pero no que el desplegable siguiera ofreciendo el camino.
+   *
+   * Un filtro de broker acota lo que ofrece a lo que existe detrás.
+   */
   const epics = useMemo(
-    () => Array.from(new Set(trades.map((t) => t.epic))).sort(),
-    [trades]
+    () =>
+      Array.from(
+        new Set(trades.filter((t) => !desk || deskOf(t.epic) === desk).map((t) => t.epic))
+      ).sort(),
+    [trades, desk, deskOf]
   );
 
   const filtered = useMemo(
@@ -173,7 +187,12 @@ export default function AnalyticsPage() {
               {DESK_FILTERS.map((f) => (
                 <button
                   key={f.key}
-                  onClick={() => setDesk(f.key)}
+                  onClick={() => {
+                    setDesk(f.key);
+                    // Si el activo elegido no es de la mesa nueva, la
+                    // combinación no tiene resultados posibles: se suelta.
+                    if (epic && f.key && deskOf(epic) !== f.key) setEpic("");
+                  }}
                   className={`rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
                     desk === f.key ? "bg-accent text-onaccent" : "border border-industrial text-muted hover:text-dim"
                   }`}
