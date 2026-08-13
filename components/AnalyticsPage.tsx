@@ -624,9 +624,18 @@ function DailyBars({ data }: { data: { date: string; pnl: number }[] }) {
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[11px] text-muted">
+        {/*
+          El signo iba escrito a mano: "+" delante de la mejor sesión y nada
+          delante de la peor. Y "mejor" es solo la MENOS MALA cuando todas
+          pierden — que con un filtro de activo es lo normal: hoy, ocho de los
+          veinte activos del histórico tienen todas sus sesiones en rojo, así que
+          filtrar por AAPL pintaba "Mejor +−1.51" y filtrar por MU, "+−27.00".
+          pnlFmt ya pone el signo que toca; el resto del panel lo usa desde hace
+          pasadas. El color también sale del valor, no del puesto en el ranking.
+        */}
         <span>
-          Mejor <span className="font-mono text-long">+{fmt(mejor.pnl)}</span> · Peor{" "}
-          <span className="font-mono text-short">{fmt(peor.pnl)}</span>
+          Mejor <span className={`font-mono ${pnlClass(mejor.pnl)}`}>{pnlFmt(mejor.pnl)}</span> ·
+          Peor <span className={`font-mono ${pnlClass(peor.pnl)}`}>{pnlFmt(peor.pnl)}</span>
         </span>
         <span>
           {vista.length} {vista.length === 1 ? "sesión" : "sesiones"}
