@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion, aCuenta } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion, aCuenta, useDatosViejos } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -205,6 +205,7 @@ export default function Dashboard() {
   // Sin snapshot no sabemos NADA: pintar 0 y "En espera" afirma que el motor
   // está parado y la cuenta vacía, que es justo lo contrario de informar.
   const loading = !snap;
+  const datosViejos = useDatosViejos(lastOk, TICK_MS);
 
   /**
    * Riesgo agregado. Las posiciones cuyo stop ya está por delante de la entrada
@@ -383,7 +384,16 @@ export default function Dashboard() {
       )}
       <CommandPalette commands={commands} />
 
-      <Ticker evals={evals} obsoleta={!online} />
+      {/*
+        La cinta se atenúa cuando los datos dejan de ser actuales, no solo
+        cuando el dispositivo se queda sin red. Su propio comentario explica por
+        qué importa —"es lo que más se mira de reojo" y seguía desfilando con
+        flechas de subida y bajada como si estuviera viva—, pero estaba atada a
+        navigator.onLine, que devuelve true con una wifi que no llega a ninguna
+        parte o con el servidor caído. Ahora usa la misma señal que el aviso de
+        la página y el distintivo de la cabecera: la última lectura buena.
+      */}
+      <Ticker evals={evals} obsoleta={!online || datosViejos} />
 
       <AppHeader
         active="/"
@@ -943,7 +953,7 @@ function Ticker({ evals, obsoleta }: { evals: Snapshot["evals"]; obsoleta?: bool
     <div
       className={`cinta group overflow-hidden border-b border-industrial bg-base ${obsoleta ? "opacity-40 grayscale" : ""}`}
       aria-hidden
-      title={obsoleta ? "Sin conexión: cotizaciones detenidas en la última lectura" : undefined}
+      title={obsoleta ? "Cotizaciones detenidas en la última lectura buena" : undefined}
     >
       <div
         className={`flex w-max whitespace-nowrap py-2 ${

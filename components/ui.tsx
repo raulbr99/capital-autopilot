@@ -704,6 +704,24 @@ export const STALE_MS = 60_000;
  *
  * Ahora sale también por antigüedad, con el mismo umbral y su propio reloj.
  */
+/**
+ * ¿Lo que hay en pantalla ha dejado de ser actual?
+ *
+ * Lleva su propio reloj a propósito: si el broker deja de responder no llega
+ * nada que provoque un render, así que una antigüedad calculada solo durante el
+ * render no avanzaría nunca — el indicador solo detectaría datos viejos cuando
+ * llegasen datos nuevos. Es el mismo motivo por el que el distintivo de la
+ * cabecera tiene el suyo.
+ */
+export function useDatosViejos(lastOk?: number | null, cadaMs?: number) {
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAhora(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, []);
+  return lastOk != null && ahora - lastOk > Math.max(STALE_MS, (cadaMs ?? 0) * 2.5);
+}
+
 export function AvisoSinConexion({
   lastOk,
   cadaMs,
@@ -719,15 +737,9 @@ export function AvisoSinConexion({
   cadaMs?: number;
 }) {
   const online = useOnline();
-  const [ahora, setAhora] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setAhora(Date.now()), 10_000);
-    return () => clearInterval(id);
-  }, []);
-  const umbral = Math.max(STALE_MS, (cadaMs ?? 0) * 2.5);
-  const viejo = lastOk != null && ahora - lastOk > umbral;
+  const viejo = useDatosViejos(lastOk, cadaMs);
   if (online && !viejo) return null;
-  const mins = lastOk == null ? 0 : Math.floor((ahora - lastOk) / 60_000);
+  const mins = lastOk == null ? 0 : Math.floor((Date.now() - lastOk) / 60_000);
   return (
     <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-short/30 bg-short/5 px-4 py-3">
       <span aria-hidden>📡</span>
