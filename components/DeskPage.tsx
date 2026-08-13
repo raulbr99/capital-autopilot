@@ -194,6 +194,21 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
               {firing ? "Lanzando…" : "▶ Ejecutar Gestor ahora"}
             </button>
             {/*
+              Con el mercado cerrado el Gestor puede pensar, pero no ejecutar:
+              el motor descarta sus aperturas con "mercado CLOSED" y cerrar
+              tampoco es posible. Lanzarlo a las 3 de la mañana en la mesa de
+              acciones gasta una ejecución de routine para producir, como mucho,
+              una tesis. No se bloquea el botón —su análisis puede interesarte
+              igualmente— pero sí se dice antes de pulsarlo, que es la
+              diferencia entre elegir y descubrirlo después en el diario.
+            */}
+            {!session.open && !firing && firedAt == null && (
+              <p className="max-w-[230px] text-right text-[11px] leading-snug text-muted">
+                {meta.label === "Stocks" ? "Bolsa cerrada" : "Mercado cerrado"}: analizará, pero no podrá
+                abrir ni cerrar hasta la apertura.
+              </p>
+            )}
+            {/*
               El contador no tenía final: si la routine del Gestor no llega a
               escribir en el diario —falló, caducó el token, la cola se atascó—
               esto seguía diciendo "Pensando…" con el número subiendo para
