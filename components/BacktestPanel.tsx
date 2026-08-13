@@ -185,6 +185,32 @@ export default function BacktestPanel() {
                 title="Suma en la divisa de cada activo, sin convertir: úsala para el signo. El retorno % es lo comparable."
               />
             </div>
+            {/*
+              Fidelidad de la simulación.
+              El simulador abre con SL y TP fijos y los mantiene hasta que uno
+              de los dos toca. El motor en vivo NO opera así: con la gestión
+              activa encendida mueve el stop a la entrada, lo arrastra detrás
+              del precio y cierra parte de la posición en el camino. Nada de eso
+              está en sim.ts — comprobado: ni trailing, ni breakeven, ni cierre
+              parcial.
+              No es un matiz de laboratorio: en producción, 8 de las 35
+              operaciones cerradas terminaron a cero (un 23 %), que es la firma
+              del stop movido a la entrada, y esta simulación no puede producir
+              ni una de ellas: solo sabe salir en el stop o en el objetivo.
+              Mientras eso no se simule, hay que decirlo donde se leen los
+              números, no en un comentario del código.
+            */}
+            <p className="mb-3 flex items-start gap-1.5 rounded-lg border border-industrial bg-base px-3 py-2 text-[11px] leading-relaxed text-muted">
+              <span aria-hidden>⚠️</span>
+              <span>
+                La simulación mantiene el stop y el objetivo fijos hasta que uno toca.{" "}
+                <span className="text-dim">
+                  No incluye la gestión activa que sí corre en vivo
+                </span>{" "}
+                —stop a la entrada, trailing y cierre parcial—, así que estos resultados no describen
+                exactamente al bot que está operando.
+              </span>
+            </p>
             {typeof agg.spreadCost === "number" && agg.spreadCost > 0 && (
               <p className="mb-2 flex items-start gap-1.5 rounded-lg border border-industrial bg-base px-3 py-2 text-[11px] leading-relaxed text-dim">
                 <span aria-hidden>💸</span>

@@ -213,6 +213,24 @@ export default function WalkForward({
           </p>
         )}
 
+        {/*
+          Mismo aviso que el backtest, y aquí pesa más: esta pantalla emite
+          VEREDICTOS ("con ventaja", "se degrada") sobre una simulación que
+          mantiene el stop y el objetivo fijos, mientras el motor en vivo mueve
+          el stop a la entrada, lo arrastra y cierra parte de la posición.
+          En producción, 8 de las 35 cerradas terminaron a cero —la firma del
+          breakeven— y esta simulación no puede producir ninguna.
+        */}
+        {results.length > 0 && (
+          <p className="mb-3 flex items-start gap-1.5 rounded-lg border border-industrial bg-base px-3 py-2 text-[11px] leading-relaxed text-muted">
+            <span aria-hidden>⚠️</span>
+            <span>
+              El veredicto mide una estrategia de stop y objetivo fijos.{" "}
+              <span className="text-dim">No simula la gestión activa</span> —stop a la entrada,
+              trailing y cierre parcial— que el motor sí aplica en vivo.
+            </span>
+          </p>
+        )}
         {results.length > 1 && (
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-industrial bg-base px-3 py-2 text-[11px]">
             <span className="text-muted">
