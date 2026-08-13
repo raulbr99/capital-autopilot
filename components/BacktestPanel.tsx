@@ -171,19 +171,39 @@ export default function BacktestPanel() {
                 value={`${(agg.returnPct ?? 0) >= 0 ? "+" : ""}${(agg.returnPct ?? 0).toFixed(1)}%`}
                 tone={(agg.returnPct ?? 0) >= 0 ? "long" : "short"}
               />
+              {/*
+                Esta suma junta P&L de activos que cotizan en divisas distintas,
+                así que sirve para ver el signo y poco más. La cifra comparable
+                entre activos es la de al lado, el retorno en %, que ya está
+                normalizada sobre el nocional. El title lo dice en vez de dejar
+                que el número parezca dinero de la cuenta.
+              */}
               <Cell
                 label="P&L nocional"
                 value={fmt(agg.netPnl)}
                 tone={agg.netPnl >= 0 ? "long" : "short"}
+                title="Suma en la divisa de cada activo, sin convertir: úsala para el signo. El retorno % es lo comparable."
               />
             </div>
             {typeof agg.spreadCost === "number" && agg.spreadCost > 0 && (
               <p className="mb-2 flex items-start gap-1.5 rounded-lg border border-industrial bg-base px-3 py-2 text-[11px] leading-relaxed text-dim">
                 <span aria-hidden>💸</span>
+                {/*
+                  Iba con un "€" escrito a fuego, y no son euros: el backtest
+                  calcula el P&L multiplicando movimientos de PRECIO por el
+                  tamaño, así que cada activo sale en la divisa en la que cotiza
+                  —dólares casi todo el universo, yenes los dos cruces contra el
+                  JPY— y la cuenta es en euros. Poner el símbolo de la cuenta
+                  encima de esa suma es inventarse una conversión.
+                  Es el mismo error que arreglé en las cifras de riesgo de las
+                  posiciones vivas, donde sí había cambio disponible; aquí no lo
+                  hay, así que lo honesto es no afirmar la divisa.
+                */}
                 <span>
-                  Incluye <span className="font-mono text-white">{fmt(agg.spreadCost)} €</span> de
-                  horquilla ({agg.trades} {pl(agg.trades, "operación", "operaciones")} × spread real del activo). Un backtest sin este
-                  coste siempre sale a favor, y más cuanto más corto sea el marco temporal.
+                  Incluye <span className="font-mono text-white">{fmt(agg.spreadCost)}</span> de
+                  horquilla ({agg.trades} {pl(agg.trades, "operación", "operaciones")} × spread real del activo), en la divisa de
+                  cada activo. Un backtest sin este coste siempre sale a favor, y más cuanto más corto
+                  sea el marco temporal.
                 </span>
               </p>
             )}
@@ -266,10 +286,20 @@ export default function BacktestPanel() {
   );
 }
 
-function Cell({ label, value, tone }: { label: string; value: string; tone?: "long" | "short" }) {
+function Cell({
+  label,
+  value,
+  tone,
+  title,
+}: {
+  label: string;
+  value: string;
+  tone?: "long" | "short";
+  title?: string;
+}) {
   const c = tone === "long" ? "text-long" : tone === "short" ? "text-short" : "text-white";
   return (
-    <div className="bg-soft py-2.5">
+    <div className="bg-soft py-2.5" title={title}>
       <p className={`font-display text-lg ${c}`}>{value}</p>
       <p className="tag mt-0.5">{label}</p>
     </div>
