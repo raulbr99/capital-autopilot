@@ -17,16 +17,38 @@ export const maxDuration = 60;
  * Opera de verdad solo si AUTOPILOT_ARMED === "true" (interruptor durable, no
  * depende del estado en memoria que se reinicia entre invocaciones serverless).
  */
-function authorized(req: Request): boolean {
+/**
+ * Sin CRON_SECRET esto quedaba ABIERTO. Y no es una ruta cualquiera: ejecuta el
+ * motor con el interruptor durable, o sea que una petición sin credencial podía
+ * disparar un ciclo de operativa real fuera de su cadencia, las veces que
+ * quisiera quien conociera la URL. Además el middleware la exime a propósito
+ * —la llama una máquina y no puede pasar por el formulario—, así que esta
+ * comprobación es la ÚNICA que hay.
+ *
+ * Su hermana /api/bot/pm-queue ya falla cerrada: si no hay secreto, rechaza.
+ * Esta hacía lo contrario. Ahora fuera de producción sigue abierta, para que el
+ * desarrollo local no necesite secreto, y en producción exige credencial
+ * siempre. Hoy la variable está definida, así que no cambia nada; lo que cambia
+ * es qué pasa el día que falte.
+ */
+function authorized(req: Request): { ok: boolean; motivo?: string } {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // sin secreto definido -> abierto (solo recomendable en local)
+  if (!secret) {
+    return process.env.VERCEL_ENV === "production"
+      ? { ok: false, motivo: "CRON_SECRET no está definida en producción" }
+      : { ok: true };
+  }
   const auth = req.headers.get("authorization");
-  return auth === `Bearer ${secret}`;
+  return auth === `Bearer ${secret}` ? { ok: true } : { ok: false };
 }
 
 async function handle(req: Request) {
-  if (!authorized(req)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const permiso = authorized(req);
+  if (!permiso.ok) {
+    // El motivo se distingue: si el motor deja de latir por una variable que
+    // falta, el latido del panel se pone rojo sin explicar por qué. Aquí sí.
+    if (permiso.motivo) log("error", `⛔ Cron rechazado: ${permiso.motivo}`);
+    return NextResponse.json({ error: permiso.motivo || "No autorizado" }, { status: 401 });
   }
 
   const armed = autopilotArmed();
