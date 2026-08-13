@@ -429,7 +429,7 @@ export default function Dashboard() {
             aterrizaba sin orientación ninguna. Visualmente lo aporta la marca. */}
         <h1 className="sr-only">Panel de mando · Capital Autopilot</h1>
 
-        <AvisoSinConexion lastOk={lastOk} />
+        <AvisoSinConexion lastOk={lastOk} cadaMs={TICK_MS} />
         {!configured && <ConfigWarning />}
 
         {/* HERO */}

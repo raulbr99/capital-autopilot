@@ -62,6 +62,8 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [epic, setEpic] = useState<string>("");
   const [desk, setDesk] = useState<string>("");
+  /** Última lectura buena: el aviso de datos viejos la necesita para saberlo. */
+  const [lastOk, setLastOk] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -77,6 +79,7 @@ export default function AnalyticsPage() {
        * es mucho mejor enseñar la pantalla vacía que perderla toda.
        */
       setTrades(Array.isArray(d.trades) ? d.trades : []);
+      setLastOk(Date.now());
     } catch {
       /* */
     } finally {
@@ -173,7 +176,7 @@ export default function AnalyticsPage() {
       <AppHeader active="/analytics" />
 
       <main className="mx-auto max-w-[1400px] px-5 py-6 md:px-8">
-        <AvisoSinConexion />
+        <AvisoSinConexion lastOk={lastOk} cadaMs={20000} />
         {/* título + filtros */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

@@ -704,14 +704,28 @@ export const STALE_MS = 60_000;
  *
  * Ahora sale también por antigüedad, con el mismo umbral y su propio reloj.
  */
-export function AvisoSinConexion({ lastOk }: { lastOk?: number | null }) {
+export function AvisoSinConexion({
+  lastOk,
+  cadaMs,
+}: {
+  lastOk?: number | null;
+  /**
+   * Cada cuánto sondea la página que lo pinta. El umbral no puede ser fijo: con
+   * el minuto de la cabecera, una pantalla que se refresca cada minuto —el
+   * Diario— daría el aviso justo antes de cada sondeo bueno, y una alarma que
+   * salta en el funcionamiento normal se aprende a ignorar. Se exige perder
+   * dos ciclos y medio, con el minuto como suelo.
+   */
+  cadaMs?: number;
+}) {
   const online = useOnline();
   const [ahora, setAhora] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setAhora(Date.now()), 10_000);
     return () => clearInterval(id);
   }, []);
-  const viejo = lastOk != null && ahora - lastOk > STALE_MS;
+  const umbral = Math.max(STALE_MS, (cadaMs ?? 0) * 2.5);
+  const viejo = lastOk != null && ahora - lastOk > umbral;
   if (online && !viejo) return null;
   const mins = lastOk == null ? 0 : Math.floor((ahora - lastOk) / 60_000);
   return (

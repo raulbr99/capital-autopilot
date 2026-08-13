@@ -266,7 +266,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
       />
 
       <main className="mx-auto max-w-[1100px] px-5 py-6 md:px-8">
-        <AvisoSinConexion lastOk={lastOk} />
+        <AvisoSinConexion lastOk={lastOk} cadaMs={12000} />
         {/* Barra de mesa: identidad + estado de sesión + acción principal */}
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">

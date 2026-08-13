@@ -26,6 +26,7 @@ export default function JournalPage() {
   /** Últimas 60 sin filtrar: de ahí salen los recuentos de las pestañas. */
   const [global_, setGlobal] = useState<JournalEntry[]>([]);
   const [cargadoDe, setCargadoDe] = useState<string | null>(null);
+  const [lastOk, setLastOk] = useState<number | null>(null);
   const [desk, setDesk] = useState("all");
   const [open, setOpen] = useState<Set<number>>(new Set());
 
@@ -53,6 +54,7 @@ export default function JournalPage() {
       .then((d) => {
         const list: JournalEntry[] = Array.isArray(d.entries) ? d.entries : [];
         setEntries(list);
+        setLastOk(Date.now());
         if (desk === "all") setGlobal(list);
       })
       .catch(() => {})
@@ -105,7 +107,7 @@ export default function JournalPage() {
       <AppHeader active="/journal" />
 
       <main className="mx-auto max-w-[900px] px-5 py-6 md:px-8">
-        <AvisoSinConexion />
+        <AvisoSinConexion lastOk={lastOk} cadaMs={60000} />
         <div className="mb-5">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-white">Diario del Gestor IA</h1>
           <p className="mt-1 text-sm text-dim">

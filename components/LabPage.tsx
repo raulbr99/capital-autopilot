@@ -102,6 +102,12 @@ export default function LabPage() {
       <AppHeader active="/lab" />
 
       <main className="mx-auto max-w-[1100px] px-5 py-6 md:px-8">
+        {/*
+          Aquí NO se pasa `lastOk` a propósito: el Lab carga una vez y no
+          sondea, así que su antigüedad crecería sin parar y el aviso saldría
+          en el funcionamiento normal. Lo que ve esta pantalla es una foto de la
+          configuración, no una cotización.
+        */}
         <AvisoSinConexion />
         <div className="mb-4">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-white">Lab</h1>
