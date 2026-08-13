@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, useOnline } from "./ui";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -54,18 +54,38 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   }, []);
   const [busy, setBusy] = useState(false);
   const [cierreErr, setCierreErr] = useState<string | null>(null);
+  /** Momento de la última lectura buena: lo consume el badge de la cabecera. */
+  const [lastOk, setLastOk] = useState<number | null>(null);
+  const online = useOnline();
   const [firing, setFiring] = useState(false);
   const [fireMsg, setFireMsg] = useState<{ ok: boolean; text: string; url?: string } | null>(null);
   // Momento del disparo: sirve para reconocer la decisión que llegue DESPUÉS
   const [firedAt, setFiredAt] = useState<number | null>(null);
   const [esperaSeg, setEsperaSeg] = useState(0);
 
+  /**
+   * Una sola lectura del motor por refresco.
+   *
+   * La cabecera se alimenta sola cuando la página no le pasa datos: sondea
+   * /api/bot/tick?slim=2 cada 30 s. Y esta página ya sondea /api/bot/tick?slim=1
+   * cada 12 s. O sea que una mesa abierta ejecutaba runEngine SIETE veces por
+   * minuto —cinco por la página y dos por la cabecera— cuando le basta con
+   * cinco; y cada una de esas ejecuciones evalúa los veinte instrumentos contra
+   * Capital y, con el bot encendido, gestiona las posiciones abiertas.
+   *
+   * Peor que el coste: eran dos instantáneas distintas. El equity de la cabecera
+   * podía venir de una lectura y las cifras de la mesa de otra, con hasta medio
+   * minuto de diferencia entre ambas y sin nada que lo indicara. El panel
+   * principal ya le inyecta sus datos a la cabecera desde hace tiempo; las mesas
+   * se quedaron sin hacerlo.
+   */
   const load = useCallback(async () => {
     try {
       const s = await fetch("/api/bot/tick?slim=1").then((r) => r.json());
       setSnap(s);
+      if (!s?.error) setLastOk(Date.now());
     } catch {
-      /* */
+      /* la mesa nunca rompe: el badge de conexión ya envejece solo */
     }
   }, [category]);
 
@@ -182,7 +202,18 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
 
   return (
     <div className="min-h-screen">
-      <AppHeader active={`/${category}`} />
+      <AppHeader
+        active={`/${category}`}
+        live={{
+          equity: snap?.account?.balance ?? null,
+          dayPnlPct: snap?.dailyPnlPct ?? 0,
+          currency: snap?.account?.currency ?? "",
+          configured: snap?.configured ?? true,
+          enabled: snap?.enabled ?? false,
+          lastOk,
+          offline: !online,
+        }}
+      />
 
       <main className="mx-auto max-w-[1100px] px-5 py-6 md:px-8">
         <AvisoSinConexion />
