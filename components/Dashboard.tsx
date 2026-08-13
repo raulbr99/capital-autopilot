@@ -9,7 +9,7 @@ import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
 import LogFeed from "./LogFeed";
 import ExpectancyPanel from "./ExpectancyPanel";
-import CommandPalette, { type Command } from "./CommandPalette";
+import CommandPalette, { abrirPaleta, type Command } from "./CommandPalette";
 import AppHeader from "./AppHeader";
 import Link from "next/link";
 
@@ -297,11 +297,22 @@ export default function Dashboard() {
                 🛑 KILL
               </span>
             )}
+            {/*
+              Iba oculto por debajo de md, así que en un teléfono la paleta no
+              tenía forma de abrirse: ni botón ni atajo. Es donde más falta hace
+              —parar el motor desde la calle— y donde el único acceso posible es
+              tocar. Ahora sale siempre: lupa en móvil, ⌘K donde ese atajo existe.
+            */}
             <button
-              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-              className="hidden rounded-md border border-industrial px-2 py-1 font-mono text-[10px] text-muted transition-colors hover:border-cement hover:text-dim md:block"
+              onClick={abrirPaleta}
+              aria-label="Abrir paleta de comandos"
+              className="flex min-h-[34px] min-w-[34px] items-center justify-center rounded-md border border-industrial px-2 py-1 font-mono text-[10px] text-muted transition-colors hover:border-cement hover:text-dim"
             >
-              ⌘K
+              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 md:hidden" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+                <circle cx="7" cy="7" r="4.5" />
+                <path d="M10.5 10.5 14 14" strokeLinecap="round" />
+              </svg>
+              <span className="hidden md:inline">⌘K</span>
             </button>
           </>
         }

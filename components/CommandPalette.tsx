@@ -20,6 +20,18 @@ export type Command = {
   run: () => void;
 };
 
+/**
+ * Abrir la paleta desde fuera. El botón de la cabecera lo hacía FALSIFICANDO una
+ * pulsación: document.dispatchEvent(new KeyboardEvent("keydown", {key:"k",
+ * metaKey:true})). Un KeyboardEvent construido a mano no burbujea salvo que se
+ * le pida (bubbles va a false por defecto), así que nunca llegaba al listener
+ * que vive en window: el botón no hacía absolutamente nada.
+ *
+ * Comprobado en producción con un navegador real: clic en ⌘K → el diálogo no
+ * aparece; ⌘K de verdad → aparece.
+ */
+export const abrirPaleta = () => window.dispatchEvent(new Event("paleta:abrir"));
+
 export default function CommandPalette({ commands }: { commands: Command[] }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -56,6 +68,12 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
   useEffect(() => setPendiente(null), [sel, q, open]);
 
   useEffect(() => setSel(0), [q, open]);
+
+  useEffect(() => {
+    const abrir = () => setOpen(true);
+    window.addEventListener("paleta:abrir", abrir);
+    return () => window.removeEventListener("paleta:abrir", abrir);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
