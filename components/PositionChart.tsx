@@ -250,16 +250,21 @@ export default function PositionChart({
    *
    * Con `fixed inset-0` uno espera que el fondo cubra la ventana entera. Medido
    * contra producción, no lo hacía: en una ventana de 1280×900 el diálogo salía
-   * de 1280×884 empezando en y=16. Una banda de 16 px arriba se quedaba sin
-   * atenuar y sin responder al clic-para-cerrar, justo encima de la cabecera.
-   * `position: fixed` e `inset: 0px` en los estilos calculados, y ningún
-   * ancestro con transform, filtro o contain — así que el elemento no estaba
-   * resolviendo contra la ventana por su posición en el árbol.
+   * de 1280×884 empezando en y=16, dejando una banda de 16 px arriba sin
+   * atenuar y sin responder al clic-para-cerrar, justo sobre la cabecera.
    *
-   * Es la misma familia de fallo que dejaba el menú de móvil imposible de
-   * cerrar tocando fuera. Sacarlo al body con un portal quita la dependencia de
-   * dónde esté montado, que es la solución estándar y la que no vuelve a
-   * romperse cuando alguien envuelva la tabla en otro contenedor.
+   * La causa es el CONTENEDOR PADRE, no el modal. La tabla de posiciones vive
+   * dentro de un `space-y-4`, que en Tailwind es `> * + * { margin-top: 1rem }`.
+   * El modal es un hijo más de ese contenedor, así que heredaba 16 px de margen
+   * superior — y en un elemento fijo con las cuatro anclas puestas, el margen no
+   * lo desplaza: le RESTA tamaño. 900 − 16 = 884. Cuadra al píxel.
+   *
+   * Lo comprobé metiendo un div de prueba con `fixed inset-0` en cada nivel del
+   * árbol: todos daban 1280×900 en (0,0). El árbol no era el problema; el
+   * margen que le ponía su hermano sí.
+   *
+   * El portal lo saca del alcance de cualquier `space-y-*`, `gap` o margen del
+   * contenedor que lo aloje. Es la solución que no depende de dónde se monte.
    */
   return createPortal(
     <div
