@@ -812,9 +812,26 @@ function duracion(t: TradeRecord) {
  * hace, pero 5 de las 33 operaciones cerradas se guardaron así y no se puede
  * reconstruir el precio real a posteriori. Mejor decir que no está.
  */
+/**
+ * ¿El precio de salida es real o el marcador que deja un cierre sin capturar?
+ *
+ * La regla pedía además que el P&L fuera distinto de cero: `exit === entry` con
+ * resultado ~0 se daba por buena. Pero una salida EXACTAMENTE en el precio de
+ * entrada, al quinto decimal, no ocurre en un mercado real — ocurre cuando el
+ * cierre se reconcilia después y no había precio que registrar, así que se
+ * copió el de entrada. El resultado ~0 no es prueba de nada: es lo que sale
+ * cuando el stop se movió a la entrada y saltó ahí.
+ *
+ * Medido sobre las 35 cerradas de producción: 5 tienen exit == entry y solo 3
+ * se marcaban como no registradas. Las otras dos se pintaban como "258,58 →
+ * 258,58", que es un precio inventado con cinco decimales de precisión.
+ *
+ * El P&L no se toca en ningún caso: ese sí es real, sale del efectivo de la
+ * cuenta y no de estos dos números.
+ */
 function salidaFiable(t: TradeRecord): boolean {
   if (t.exit == null) return false;
-  return !(t.exit === t.entry && Math.abs(t.pnl || 0) > 0.01);
+  return t.exit !== t.entry;
 }
 
 /**
