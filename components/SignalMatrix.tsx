@@ -11,9 +11,20 @@ export default function SignalMatrix({
   evals,
   cargando,
   instruments = [],
+  adxThreshold = 25,
 }: {
   evals: EpicEval[];
   cargando?: boolean;
+  /**
+   * Umbral de ADX con el que el MOTOR separa tendencia de rango. Estaba escrito
+   * a fuego como 25 dentro de la tarjeta, y es un ajuste editable en el Lab que
+   * el resto del panel sí lee de la configuración: el panel principal rotula
+   * "ADX ≥{cfg.strategy.adxThreshold}" y el sello del backtest también. Súbelo a
+   * 30 y estas veinte tarjetas seguirían pintando TREND en verde a un activo con
+   * ADX 26 mientras el motor lo bloquea por lateral — la pantalla se
+   * contradiría consigo misma y la versión equivocada sería la del detalle.
+   */
+  adxThreshold?: number;
   /** Para saber qué activos son de solo-compra: sus SELL no se ejecutan. */
   instruments?: { epic: string; longOnly?: boolean }[];
 }) {
@@ -122,14 +133,27 @@ export default function SignalMatrix({
           </div>
         )}
         {sorted.map((e) => (
-          <SignalCard key={e.epic} e={e} bloqueada={soloLargos.has(e.epic) && e.signal.type === "SELL"} />
+          <SignalCard
+            key={e.epic}
+            e={e}
+            bloqueada={soloLargos.has(e.epic) && e.signal.type === "SELL"}
+            adxThreshold={adxThreshold}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function SignalCard({ e, bloqueada }: { e: EpicEval; bloqueada?: boolean }) {
+function SignalCard({
+  e,
+  bloqueada,
+  adxThreshold,
+}: {
+  e: EpicEval;
+  bloqueada?: boolean;
+  adxThreshold: number;
+}) {
   /**
    * Un activo que Capital no pudo devolver no es un FLAT: es una respuesta que
    * no llegó. Pintarlo igual que los demás afirmaría que no hay señal, que es
@@ -257,11 +281,13 @@ function SignalCard({ e, bloqueada }: { e: EpicEval; bloqueada?: boolean }) {
         <Ind label="SMA-F" v={s.indicators.smaFast} fmtV={price} />
         <Ind label="SMA-S" v={s.indicators.smaSlow} fmtV={price} />
         <Ind label="RSI" v={s.indicators.rsi} d={0} />
-        <div>
+        <div title={`Umbral configurado: ADX ≥ ${adxThreshold}`}>
           <p className="text-muted">ADX</p>
-          <p className={s.indicators.adx >= 25 ? "text-long" : "text-muted"}>
+          <p className={s.indicators.adx >= adxThreshold ? "text-long" : "text-muted"}>
             {Number.isFinite(s.indicators.adx) ? s.indicators.adx.toFixed(0) : "—"}
-            <span className="ml-1 text-[8px]">{s.indicators.adx >= 25 ? "TREND" : "RANGE"}</span>
+            <span className="ml-1 text-[8px]">
+              {s.indicators.adx >= adxThreshold ? "TREND" : "RANGE"}
+            </span>
           </p>
         </div>
       </div>

@@ -398,7 +398,12 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
 
         <div className={`grid gap-5 ${journal.length > 0 ? "lg:grid-cols-[1fr_340px]" : "grid-cols-1"}`}>
           <div className="min-w-0 space-y-5">
-            <SignalMatrix evals={evals} cargando={cargando} instruments={instruments} />
+            <SignalMatrix
+              evals={evals}
+              cargando={cargando}
+              instruments={instruments}
+              adxThreshold={snap?.state?.config?.strategy?.adxThreshold ?? 25}
+            />
             {cierreErr && (
               <p
                 role="alert"
