@@ -135,7 +135,7 @@ export default function LabPage() {
               </p>
             </div>
             <BacktestPanel />
-            <WalkForward watchlist={cfg?.watchlist ?? []} />
+            <WalkForward watchlist={cfg?.watchlist ?? []} instruments={cfg?.instruments ?? []} />
           </div>
         )}
               <AppFooter />

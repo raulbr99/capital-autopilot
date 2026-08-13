@@ -37,11 +37,28 @@ const VERDICT: Record<string, { label: string; cls: string }> = {
 /** Con pocas operaciones fuera de muestra el veredicto es ruido, no evidencia. */
 const MIN_OOS = 20;
 
-export default function WalkForward({ watchlist }: { watchlist: string[] }) {
+export default function WalkForward({
+  watchlist,
+  instruments = [],
+}: {
+  watchlist: string[];
+  /** Con su resolución real: es la que el motor usa para decidir en cada uno. */
+  instruments?: { epic: string; resolution: string }[];
+}) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
   const [results, setResults] = useState<WFResult[]>([]);
-  const [resolution, setResolution] = useState("HOUR");
+  /**
+   * "motor" = validar cada activo en SU resolución, la que el bot usa de verdad.
+   *
+   * El valor por defecto era "HOUR", y el motor no opera NI UN activo en
+   * horaria: son 13 en diario y 7 en cuatro horas. O sea que la herramienta de
+   * validación estaba midiendo una estrategia que no existe — parámetros
+   * óptimos, retenciones y veredictos de un sistema que nadie ejecuta.
+   * Se mantiene la opción de forzar una resolución concreta para experimentar,
+   * pero deja de ser lo que sale por defecto.
+   */
+  const [resolution, setResolution] = useState("motor");
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   /**
@@ -76,6 +93,10 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
           break;
         }
         const epic = watchlist[i];
+        const res =
+          resolution === "motor"
+            ? instruments.find((x) => x.epic === epic)?.resolution || "HOUR_4"
+            : resolution;
         setProgress(epic);
         setHecho({ n: i, total: watchlist.length });
         aborto.current = new AbortController();
@@ -95,7 +116,7 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
            * se lanza a mano, tiene barra de progreso y se puede detener desde
            * la pasada 90. Un validador rápido que nunca valida no sirve de nada.
            */
-          `/api/bot/walkforward?epic=${epic}&resolution=${resolution}&max=1000`,
+          `/api/bot/walkforward?epic=${epic}&resolution=${res}&max=1000`,
           { signal: aborto.current.signal }
         );
         const data = await r.json();
@@ -135,6 +156,7 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
               onChange={(e) => setResolution(e.target.value)}
               className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim"
             >
+              <option value="motor">la del motor</option>
               {["MINUTE_15", "MINUTE_30", "HOUR", "HOUR_4", "DAY"].map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
