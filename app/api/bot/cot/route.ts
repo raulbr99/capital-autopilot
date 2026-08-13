@@ -25,9 +25,30 @@ export async function GET() {
     results.forEach((r) => {
       if (r) map[r.symbol] = r;
     });
+    const reportDate = Object.values(map)[0]?.reportDate ?? null;
+    const antiguedadDias = reportDate
+      ? Math.floor((Date.now() - new Date(reportDate).getTime()) / 86_400_000)
+      : null;
     const data = {
       fetchedAt: new Date().toISOString(),
-      reportDate: Object.values(map)[0]?.reportDate ?? null,
+      reportDate,
+      /**
+       * Cómo leer esto, para el consumidor que no es humano.
+       *
+       * El panel avisa por escrito de que el COT es semanal, que refleja las
+       * posiciones del martes anterior y que es contexto de fondo y NUNCA una
+       * señal de entrada. Los Gestores leen este JSON y no veían nada de eso:
+       * un `net: -58091` sin fecha interpretable se lee como posicionamiento de
+       * hoy. La ruta de funding ya trae su propia `guide`; estas dos no.
+       */
+      guide:
+        `Informe semanal de la CFTC: refleja posiciones del martes anterior` +
+        (antiguedadDias != null ? ` (hace ${antiguedadDias} días)` : "") +
+        `, no de hoy. Es CONTEXTO DE FONDO, nunca una señal de entrada. ` +
+        `net = contratos netos de especuladores no comerciales; net>0 sesgo alcista, net<0 bajista. ` +
+        `change = flujo respecto a la semana previa. pctLong >=80 o <=20 marca posicionamiento extremo: ` +
+        `el mercado ya está todo del mismo lado y eso suele avisar de agotamiento, no confirmar la tendencia.`,
+      antiguedadDias,
       forex: FOREX.map((s) => map[s]).filter(Boolean),
       commodities: COMMODITIES.map((s) => map[s]).filter(Boolean),
     };

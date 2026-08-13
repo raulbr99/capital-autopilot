@@ -63,6 +63,18 @@ export async function GET() {
 
     const data = {
       fetchedAt: new Date().toISOString(),
+      /**
+       * Igual que en COT: las reglas de lectura estaban solo en la interfaz.
+       * La más importante —resultados a 7 días o menos bloquean apertura— es
+       * una REGLA DURA del motor, y el Gestor la recibía sin enunciar.
+       */
+      guide:
+        `buzz = volumen de menciones en Reddit/WSB (ApeWisdom), NO precio: mide atención, no dirección. ` +
+        `pctChange24h es la variación de MENCIONES, no de cotización. ` +
+        `earnings.daysUntil <= 7 bloquea abrir en ese activo: el hueco de apertura tras resultados se salta el stop. ` +
+        `prices.marketState indica si la bolsa está abierta (REGULAR), en pre/after (PRE/POST) o cerrada; ` +
+        `fuera de REGULAR el motor no abre acciones. ` +
+        `Un buzz alto sin confluencia técnica no es una tesis.`,
       stocks,
       trending,
       prices,
