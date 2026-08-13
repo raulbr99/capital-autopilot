@@ -18,18 +18,32 @@ export async function GET(req: Request) {
   }
   const { searchParams } = new URL(req.url);
   const cfg = await loadConfig();
-  const resolution = searchParams.get("resolution") || "MINUTE";
+  /**
+   * "motor" = cada activo en SU resolución, la que el bot usa para decidir.
+   *
+   * Antes esta ruta corría los 20 activos con UNA sola resolución para todos.
+   * Con el universo actual —13 en diario y 7 en cuatro horas— eso significa que
+   * al menos siete resultados de cada ejecución medían una estrategia que no
+   * existe. El mismo fallo que el walk-forward, y aquí afectaba de golpe a todo
+   * el listado, incluido el agregado de la cabecera.
+   */
+  const resolution = searchParams.get("resolution") || "motor";
   const max = Math.min(1000, Number(searchParams.get("max") || 400));
   const epicParam = searchParams.get("epic");
   const epics = epicParam ? [epicParam.toUpperCase()] : cfg.watchlist;
 
   try {
+    const porEpic = new Map(cfg.instruments.map((i) => [i.epic, i.resolution]));
+    const resDe = (epic: string) =>
+      resolution === "motor" ? porEpic.get(epic) || "HOUR_4" : resolution;
     const results = [];
     for (const epic of epics) {
-      const candles = await getPrices(epic, resolution, max);
-      results.push(
-        backtest(epic, candles, cfg.strategy, cfg.risk, cfg.sizePerTrade)
-      );
+      const candles = await getPrices(epic, resDe(epic), max);
+      results.push({
+        ...backtest(epic, candles, cfg.strategy, cfg.risk, cfg.sizePerTrade),
+        /** Con qué marco se midió: sin esto la fila no se puede interpretar. */
+        resolution: resDe(epic),
+      });
     }
     const agg = {
       trades: results.reduce((s, r) => s + r.trades, 0),

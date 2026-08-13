@@ -36,7 +36,7 @@ export default function BacktestPanel() {
   // resultado (medido: en 1 min es ~66% del rango de la vela en EURUSD), así
   // que arrancar ahí empuja a concluir que la estrategia no vale cuando lo que
   // no vale es el marco. Las opciones rápidas siguen ahí para quien las busque.
-  const [resolution, setResolution] = useState("HOUR_4");
+  const [resolution, setResolution] = useState("motor");
   const [err, setErr] = useState<string | null>(null);
 
   const run = async () => {
@@ -70,7 +70,7 @@ export default function BacktestPanel() {
         const s = data.strategy;
         setSello({
           ts: Date.now(),
-          marco: data.resolution || resolution,
+          marco: resolution === "motor" ? "marco de cada activo" : data.resolution || resolution,
           params: s
             ? `SMA ${s.fast}/${s.slow} · RSI ${s.rsiPeriod} · conf ≥${s.minConfidence}${
                 s.useRegimeFilter ? ` · ADX ≥${s.adxThreshold}` : ""
@@ -97,6 +97,7 @@ export default function BacktestPanel() {
               onChange={(e) => setResolution(e.target.value)}
               className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim"
             >
+              <option value="motor">la del motor</option>
               {["MINUTE", "MINUTE_5", "MINUTE_15", "HOUR", "HOUR_4", "DAY"].map((r) => (
                 <option key={r} value={r}>
                   {r}
@@ -215,6 +216,7 @@ export default function BacktestPanel() {
                        (de ahí el guion). Mismo umbral de muestra que el resto
                        de la app. */
                     <p className="whitespace-nowrap font-mono text-[10px] tabular-nums text-muted">
+                      {(r as any).resolution ? `${(r as any).resolution} · ` : ""}
                       {r.trades} {pl(r.trades, "op", "ops")}
                       {r.trades >= MUESTRA_MIN
                         ? ` · ${r.winRate.toFixed(0)}% · PF ${pf(r.profitFactor)}`
