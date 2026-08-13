@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePoll } from "./ui";
+import { usePoll, Skeleton } from "./ui";
 
 type Ape = {
   ticker: string;
@@ -234,6 +234,22 @@ export default function SentimentBoard({
             <span className="w-12 shrink-0 text-right">Señal</span>
           </div>
           <div className="space-y-1.5">
+            {/*
+              Sin datos, la tarjeta pintaba la cabecera de columnas y el rótulo
+              "NOTICIAS · EXA" con NADA debajo: promete cinco columnas y una
+              lista de titulares que no existen todavía. Es el mismo hueco que
+              se corrigió en el panel COT y en las mesas — aquí se quedó.
+            */}
+            {loading && !d &&
+              [0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={`hueco-${i}`} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-12 shrink-0" />
+                  <Skeleton className="h-5 min-w-0 flex-1" />
+                  <Skeleton className="hidden h-3 w-14 shrink-0 sm:block" />
+                  <Skeleton className="h-3 w-[72px] shrink-0" />
+                  <Skeleton className="h-3 w-12 shrink-0" />
+                </div>
+              ))}
             {stocks.slice(0, 14).map((s) => (
               <div key={s.ticker} className="flex items-center gap-3">
                 <span className="w-12 shrink-0 font-mono text-[13px] font-semibold text-white">{s.ticker}</span>
@@ -302,6 +318,14 @@ export default function SentimentBoard({
             <p className="text-[11px] text-muted">{d.exaErr ? "Error consultando Exa." : "Sin noticias recientes."}</p>
           ) : (
             <ul className="space-y-2.5">
+              {loading && !d &&
+                [0, 1, 2, 3].map((i) => (
+                  <li key={`hueco-n-${i}`}>
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="mt-1.5 h-3 w-4/5" />
+                    <Skeleton className="mt-1.5 h-2 w-24" />
+                  </li>
+                ))}
               {(d?.news ?? []).map((n, i) => (
                 <li key={i}>
                   <a
