@@ -291,13 +291,13 @@ export default function ConfigPanel({
         </div>
 
         <div className="grid grid-cols-2 gap-3 border-t border-industrial pt-3">
-          <NumField label="SMA rápida" value={cfg.strategy.fast} step={1} busy={busy}
+          <NumField label="SMA rápida" value={cfg.strategy.fast} step={1} busy={busy} min={1} max={400}
             onCommit={(v) => patch({ strategy: { fast: v } })} />
-          <NumField label="SMA lenta" value={cfg.strategy.slow} step={1} busy={busy}
+          <NumField label="SMA lenta" value={cfg.strategy.slow} step={1} busy={busy} min={2} max={400}
             onCommit={(v) => patch({ strategy: { slow: v } })} />
-          <NumField label="Periodo RSI" value={cfg.strategy.rsiPeriod} step={1} busy={busy}
+          <NumField label="Periodo RSI" value={cfg.strategy.rsiPeriod} step={1} busy={busy} min={2} max={200}
             onCommit={(v) => patch({ strategy: { rsiPeriod: v } })} />
-          <NumField label="Confianza mínima" value={cfg.strategy.minConfidence} step={0.05} busy={busy}
+          <NumField label="Confianza mínima" value={cfg.strategy.minConfidence} step={0.05} busy={busy} min={0} max={1}
             onCommit={(v) => patch({ strategy: { minConfidence: v } })} />
         </div>
 
@@ -313,9 +313,9 @@ export default function ConfigPanel({
             <span>{cfg.strategy.useRegimeFilter ? "ON" : "OFF"}</span>
           </button>
           <div className="grid grid-cols-2 gap-3">
-            <NumField label="Periodo ADX" value={cfg.strategy.adxPeriod} step={1} busy={busy}
+            <NumField label="Periodo ADX" value={cfg.strategy.adxPeriod} step={1} busy={busy} min={2} max={200}
               onCommit={(v) => patch({ strategy: { adxPeriod: v } })} />
-            <NumField label="Umbral ADX" value={cfg.strategy.adxThreshold} step={1} busy={busy}
+            <NumField label="Umbral ADX" value={cfg.strategy.adxThreshold} step={1} busy={busy} min={0} max={100}
               onCommit={(v) => patch({ strategy: { adxThreshold: v } })} />
           </div>
         </div>

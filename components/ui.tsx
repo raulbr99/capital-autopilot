@@ -139,6 +139,25 @@ export function StatCard({
   );
 }
 
+/**
+ * Campo numérico de la configuración. Por aquí pasan TODOS los ajustes del
+ * motor sobre una cuenta con dinero real, y no tenía ningún límite.
+ *
+ * El caso feo no es teórico: escribir 0 en "Stop = ×ATR" hace que el motor
+ * calcule stopDist = ATR × 0 = 0, y openPosition monta el cuerpo con
+ * `...(params.stopDistance ? { stopDistance } : {})` — cero es falso en
+ * JavaScript, así que la orden sale SIN STOP. Una tecla, ningún aviso, y la
+ * siguiente posición se abre a riesgo ilimitado. Un −2 en "Riesgo por
+ * operación" o un periodo de ATR de 1 entran igual de fáciles.
+ *
+ * Ahora cada campo declara su rango, el navegador lo respeta en las flechas y
+ * el valor se recorta al confirmarlo — un rango que solo vive en el atributo
+ * `min` no protege de escribir a mano.
+ *
+ * Y si el campo se deja vacío o con algo que no es un número, se restaura el
+ * valor vigente en vez de quedarse en blanco: antes el hueco se quedaba ahí,
+ * enseñando "sin valor" sobre un ajuste que sí tiene uno.
+ */
 export function NumField({
   label,
   value,
@@ -147,6 +166,8 @@ export function NumField({
   busy,
   hint,
   suffix,
+  min,
+  max,
 }: {
   label: string;
   value: number;
@@ -155,9 +176,17 @@ export function NumField({
   busy?: boolean;
   hint?: string;
   suffix?: string;
+  min?: number;
+  max?: number;
 }) {
   const [v, setV] = useState(String(value));
   useEffect(() => setV(String(value)), [value]);
+  const acotar = (n: number) => {
+    let x = n;
+    if (min != null && x < min) x = min;
+    if (max != null && x > max) x = max;
+    return x;
+  };
   return (
     <label className="block">
       <span className="tag">{label}</span>
@@ -168,9 +197,14 @@ export function NumField({
           value={v}
           disabled={busy}
           onChange={(e) => setV(e.target.value)}
+          min={min}
+          max={max}
           onBlur={() => {
             const n = parseFloat(v);
-            if (Number.isFinite(n) && n !== value) onCommit(n);
+            if (!Number.isFinite(n)) return setV(String(value));
+            const c = acotar(n);
+            if (c !== n) setV(String(c));
+            if (c !== value) onCommit(c);
           }}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
           className="w-full rounded-lg border border-cement bg-base px-2.5 py-2 font-mono text-sm text-white transition-colors focus:border-accent disabled:opacity-40"

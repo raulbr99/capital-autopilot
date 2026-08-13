@@ -150,18 +150,18 @@ export default function RiskPanel({
           </p>
           {r.useAtrStops ? (
             <div className="grid grid-cols-3 gap-2">
-              <NumField label="Periodo ATR" value={r.atrPeriod} step={1} busy={busy}
+              <NumField label="Periodo ATR" value={r.atrPeriod} step={1} busy={busy} min={2} max={200}
                 hint="Velas para medir la volatilidad." onCommit={(v) => patch({ risk: { atrPeriod: v } })} />
-              <NumField label="Stop = ×ATR" value={r.atrStopMult} step={0.5} busy={busy}
+              <NumField label="Stop = ×ATR" value={r.atrStopMult} step={0.5} busy={busy} min={0.1} max={20}
                 hint="Distancia del stop = este nº × ATR." onCommit={(v) => patch({ risk: { atrStopMult: v } })} />
-              <NumField label="Objetivo = ×ATR" value={r.atrTpMult} step={0.5} busy={busy}
+              <NumField label="Objetivo = ×ATR" value={r.atrTpMult} step={0.5} busy={busy} min={0.1} max={50}
                 hint="Distancia del take-profit = este nº × ATR." onCommit={(v) => patch({ risk: { atrTpMult: v } })} />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              <NumField label="Stop (puntos)" value={cfg.stopDistance} step={10} busy={busy}
+              <NumField label="Stop (puntos)" value={cfg.stopDistance} step={10} busy={busy} min={1}
                 hint="Distancia fija del stop-loss." onCommit={(v) => patch({ stopDistance: v })} />
-              <NumField label="Objetivo (puntos)" value={cfg.profitDistance} step={10} busy={busy}
+              <NumField label="Objetivo (puntos)" value={cfg.profitDistance} step={10} busy={busy} min={1}
                 hint="Distancia fija del take-profit." onCommit={(v) => patch({ profitDistance: v })} />
             </div>
           )}
@@ -176,6 +176,8 @@ export default function RiskPanel({
               suffix="%"
               value={r.maxDailyLossPct}
               step={0.5}
+              min={0}
+              max={100}
               busy={busy}
               hint="Si pierdes este % del capital en el día, el bot se desarma solo (kill-switch). 0 = desactivado."
               onCommit={(v) => patch({ risk: { maxDailyLossPct: v } })}
@@ -184,6 +186,8 @@ export default function RiskPanel({
               label="Máx. operaciones/día"
               value={r.maxTradesPerDay}
               step={1}
+              min={0}
+              max={500}
               busy={busy}
               hint="Tope de operaciones que abre por día."
               onCommit={(v) => patch({ risk: { maxTradesPerDay: v } })}
@@ -193,6 +197,8 @@ export default function RiskPanel({
               suffix="min"
               value={r.cooldownMin}
               step={5}
+              min={0}
+              max={1440}
               busy={busy}
               hint="Minutos sin operar después de una operación perdedora."
               onCommit={(v) => patch({ risk: { cooldownMin: v } })}
@@ -201,6 +207,8 @@ export default function RiskPanel({
               label="Máx. por mesa"
               value={cfg.maxPerDesk}
               step={1}
+              min={0}
+              max={50}
               busy={busy}
               hint="Posiciones abiertas a la vez como máximo en cada mesa (forex, crypto, stocks, commodities). No hay límite global."
               onCommit={(v) => patch({ maxPerDesk: v })}
@@ -235,16 +243,16 @@ export default function RiskPanel({
           {r.activeManage ? (
             <>
               <div className="grid grid-cols-2 gap-2">
-                <NumField label="Stop a entrada desde" suffix="×ATR" value={r.breakevenAtr ?? 0} step={0.5} busy={busy}
+                <NumField label="Stop a entrada desde" suffix="×ATR" value={r.breakevenAtr ?? 0} step={0.5} busy={busy} min={0} max={20}
                   hint="Con esta ganancia, el stop sube a tu precio de entrada: la operación deja de poder perder."
                   onCommit={(v) => patch({ risk: { breakevenAtr: v } })} />
-                <NumField label="Trailing desde" suffix="×ATR" value={r.trailAtr ?? 0} step={0.5} busy={busy}
+                <NumField label="Trailing desde" suffix="×ATR" value={r.trailAtr ?? 0} step={0.5} busy={busy} min={0} max={20}
                   hint="A partir de esta ganancia el stop empieza a seguir al precio."
                   onCommit={(v) => patch({ risk: { trailAtr: v } })} />
-                <NumField label="Distancia del trailing" suffix="×ATR" value={r.trailDistAtr ?? 0} step={0.5} busy={busy}
+                <NumField label="Distancia del trailing" suffix="×ATR" value={r.trailDistAtr ?? 0} step={0.5} busy={busy} min={0.1} max={20}
                   hint="Cuánto se queda el stop por detrás del precio mientras lo sigue."
                   onCommit={(v) => patch({ risk: { trailDistAtr: v } })} />
-                <NumField label="Cierre parcial desde" suffix="×ATR" value={r.scaleOutAtr ?? 0} step={0.5} busy={busy}
+                <NumField label="Cierre parcial desde" suffix="×ATR" value={r.scaleOutAtr ?? 0} step={0.5} busy={busy} min={0} max={20}
                   hint="Con esta ganancia se cierra parte de la posición y el resto sigue corriendo. 0 lo desactiva."
                   onCommit={(v) => patch({ risk: { scaleOutAtr: v } })} />
               </div>
