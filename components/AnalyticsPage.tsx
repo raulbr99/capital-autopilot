@@ -67,7 +67,7 @@ export default function AnalyticsPage() {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch("/api/bot/trades");
+      const r = await fetch("/api/bot/trades?slim=1");
       const d = await r.json();
       /**
        * Array.isArray y no `|| []`: el segundo solo cubre undefined. Si la API

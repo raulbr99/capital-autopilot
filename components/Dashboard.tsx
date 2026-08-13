@@ -16,8 +16,9 @@ import Link from "next/link";
 const TICK_MS = 6000;
 /**
  * El histórico (registro + curva de equity) NO cambia al ritmo de los precios:
- * appendEquity deduplica por debajo de 120 s y el registro solo crece cuando
- * corre el motor (~58 min). Aun así el panel se traía el payload COMPLETO cada
+ * appendEquity deduplica por debajo de 120 s y el registro crece sobre todo
+ * cuando corre el cron (cada 15 min, ver el latido). Aun así el panel se traía
+ * el payload COMPLETO cada
  * 6 s. Medido con un minuto de panel abierto: 11 llamadas a /api/bot/tick y
  * 370 kB, más 105 kB de /api/bot/trades — 476 kB por minuto de estar mirando.
  * Ahora el sondeo rápido pide ?slim=1 (sin registro, curva ni operaciones) y
@@ -75,7 +76,7 @@ export default function Dashboard() {
 
   const loadTrades = useCallback(async () => {
     try {
-      const r = await fetch("/api/bot/trades");
+      const r = await fetch("/api/bot/trades?slim=1");
       const d = await r.json();
       setTrades(Array.isArray(d.trades) ? d.trades : []);
     } catch {
