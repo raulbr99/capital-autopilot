@@ -28,13 +28,27 @@ export default function PositionChart({
   pos,
   onClose,
   divisa = "",
+  marcoMotor,
 }: {
   pos: OpenPos;
   onClose: () => void;
   /** Divisa de la cuenta: el P&L de la cabecera llevaba un € fijo. */
   divisa?: string;
+  /** Resolución con la que el motor decide en ESTE activo. */
+  marcoMotor?: string;
 }) {
-  const [res, setRes] = useState("HOUR_4");
+  /**
+   * Abrir en el marco que usa el motor para este activo, no en 4 horas fijas.
+   *
+   * Las líneas que dibuja el gráfico —entrada, stop y objetivo— se calcularon
+   * con el ATR de SU resolución. Con 13 de los 20 activos operando en diario,
+   * abrir el modal en 4 horas enseñaba esos niveles sobre velas que no son las
+   * que los produjeron: un stop a 2×ATR diario se ve arbitrario sobre un
+   * gráfico de 4 horas. Los otros marcos siguen a un clic.
+   */
+  const [res, setRes] = useState(
+    marcoMotor && RES.some((r) => r.k === marcoMotor) ? marcoMotor : "HOUR_4"
+  );
   const [loading, setLoading] = useState(true);
   const [empty, setEmpty] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);

@@ -525,7 +525,14 @@ export default function Dashboard() {
         {/* ACTIVIDAD + RIESGO — triage: lo accionable justo después del dinero */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
           <div className="min-w-0 space-y-4">
-            <PositionsTable positions={positions} onClose={closePos} busy={busy} divisa={acc?.currency ?? ""} equity={lastEquity} />
+            <PositionsTable
+              positions={positions}
+              onClose={closePos}
+              busy={busy}
+              divisa={acc?.currency ?? ""}
+              equity={lastEquity}
+              marcos={Object.fromEntries((cfg?.instruments ?? []).map((i) => [i.epic, i.resolution]))}
+            />
             <LogFeed logs={historial.logs} />
           </div>
 

@@ -77,6 +77,7 @@ export default function PositionsTable({
   cargando,
   divisa,
   equity,
+  marcos,
 }: {
   positions: OpenPos[];
   onClose: (p: OpenPos) => void;
@@ -84,6 +85,8 @@ export default function PositionsTable({
   divisa?: string;
   /** Equity de la cuenta: sin él, "exposición 328" no dice nada. */
   equity?: number | null;
+  /** epic → resolución del motor, para abrir el gráfico en su marco. */
+  marcos?: Record<string, string>;
   busy: boolean;
 }) {
   const [chartPos, setChartPos] = useState<OpenPos | null>(null);
@@ -316,7 +319,14 @@ export default function PositionsTable({
         </>
       )}
     </div>
-    {chartPos && <PositionChart pos={chartPos} onClose={() => setChartPos(null)} divisa={divisa} />}
+    {chartPos && (
+      <PositionChart
+        pos={chartPos}
+        onClose={() => setChartPos(null)}
+        divisa={divisa}
+        marcoMotor={marcos?.[chartPos.epic]}
+      />
+    )}
     </>
   );
 }
