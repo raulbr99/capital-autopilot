@@ -652,7 +652,7 @@ function Ticker({ evals, obsoleta }: { evals: Snapshot["evals"]; obsoleta?: bool
    */
   return (
     <div
-      className={`group overflow-hidden border-b border-industrial bg-base ${obsoleta ? "opacity-40 grayscale" : ""}`}
+      className={`cinta group overflow-hidden border-b border-industrial bg-base ${obsoleta ? "opacity-40 grayscale" : ""}`}
       aria-hidden
       title={obsoleta ? "Sin conexión: cotizaciones detenidas en la última lectura" : undefined}
     >

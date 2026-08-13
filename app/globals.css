@@ -82,6 +82,16 @@ body {
     animation: none !important;
     transform: none !important;
   }
+  /*
+   * Detener la cinta la deja congelada en su primer tramo: mide ~7.600 px
+   * dentro de un contenedor con overflow oculto, así que quien pide movimiento
+   * reducido veía SIEMPRE los mismos seis activos y no tenía forma de llegar a
+   * los otros catorce. Respetar la preferencia no puede significar esconder
+   * contenido: si no se mueve sola, que se pueda desplazar a mano.
+   */
+  .cinta {
+    overflow-x: auto !important;
+  }
 }
 
 .font-display,
