@@ -226,22 +226,52 @@ export default function ConfigPanel({
         </div>
 
         <div className="space-y-2 border-t border-industrial pt-3">
+          <p className="tag">Quién decide</p>
+          {/*
+            Esta sección MENTÍA. El único interruptor visible estaba atado a
+            pmMode —el Gestor inline por OpenRouter, deprecado y apagado— y se
+            rotulaba "GESTOR DE CARTERA IA — la IA decide: OFF". Mientras tanto
+            quien decide de verdad cada operación es cloudPm, que está encendido
+            y no tenía NINGÚN control ni indicador aquí. O sea que la pantalla
+            de configuración afirmaba que la IA no manda, en un bot donde la IA
+            manda: comprobado contra la config en vivo (pmMode false, cloudPm
+            true) y contra el diario, lleno de sus decisiones.
+          */}
           <button
             disabled={busy}
-            onClick={() => patch({ pmMode: !cfg.pmMode })}
+            onClick={() => patch({ cloudPm: !cfg.cloudPm })}
             className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] font-medium ${
-              cfg.pmMode ? "border-accent/50 bg-accent/10 text-accent ring-accent" : "border-cement text-muted"
+              cfg.cloudPm ? "border-accent/50 bg-accent/10 text-accent" : "border-cement text-muted"
             }`}
           >
-            🧠 GESTOR DE CARTERA IA — la IA decide
-            <span>{cfg.pmMode ? "ON" : "OFF"}</span>
+            🧠 Gestor en la nube — decide cada ciclo
+            <span>{cfg.cloudPm ? "ON" : "OFF"}</span>
           </button>
+          <p className="text-[10px] leading-snug text-muted">
+            {cfg.cloudPm ? (
+              <>
+                Cuatro routines de Claude —una por mesa— leen mercado, noticias y su propio histórico, y
+                dejan sus decisiones en cola; el motor las ejecuta dentro de tus límites de riesgo. Sus
+                tesis están en el{" "}
+                <a href="/journal" className="text-accent underline">Diario IA</a>.
+              </>
+            ) : (
+              <>Apagado: abre y cierra solo el motor técnico, con sus reglas de SMA, RSI y ADX.</>
+            )}
+          </p>
+          <div className="flex items-center justify-between rounded-lg border border-industrial px-3 py-2 text-[11px]">
+            <span className="text-muted">🗳️ Comité IA — vota antes de abrir</span>
+            <span className={cfg.committee ? "text-long" : "text-muted"}>
+              {cfg.committee ? `ON · ${cfg.committeeMinApprovals ?? 1} aprob. mín.` : "OFF"}
+            </span>
+          </div>
           {cfg.pmMode && (
-            <p className="text-[10px] leading-snug text-muted">
-              La IA lee mercado + noticias y decide abrir/cerrar (dentro de tus límites de riesgo); el motor
-              técnico queda en pausa. Mira el{" "}
-              <a href="/journal" className="text-accent underline">Diario IA</a>.
-            </p>
+            <div className="flex items-center justify-between rounded-lg border border-short/40 bg-short/5 px-3 py-2 text-[11px]">
+              <span className="text-short">Gestor inline (OpenRouter) — deprecado, gasta por tick</span>
+              <button disabled={busy} onClick={() => patch({ pmMode: false })} className="underline">
+                apagar
+              </button>
+            </div>
           )}
           <button
             disabled={busy}
