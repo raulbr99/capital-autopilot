@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   createChart,
   ColorType,
@@ -244,7 +245,23 @@ export default function PositionChart({
     return () => window.removeEventListener("keydown", h);
   }, [onClose]);
 
-  return (
+  /**
+   * El modal se cuelga del <body>, no del sitio del árbol donde vive la tabla.
+   *
+   * Con `fixed inset-0` uno espera que el fondo cubra la ventana entera. Medido
+   * contra producción, no lo hacía: en una ventana de 1280×900 el diálogo salía
+   * de 1280×884 empezando en y=16. Una banda de 16 px arriba se quedaba sin
+   * atenuar y sin responder al clic-para-cerrar, justo encima de la cabecera.
+   * `position: fixed` e `inset: 0px` en los estilos calculados, y ningún
+   * ancestro con transform, filtro o contain — así que el elemento no estaba
+   * resolviendo contra la ventana por su posición en el árbol.
+   *
+   * Es la misma familia de fallo que dejaba el menú de móvil imposible de
+   * cerrar tocando fuera. Sacarlo al body con un portal quita la dependencia de
+   * dónde esté montado, que es la solución estándar y la que no vuelve a
+   * romperse cuando alguien envuelva la tabla en otro contenedor.
+   */
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm"
       onClick={onClose}
@@ -335,7 +352,8 @@ export default function PositionChart({
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
