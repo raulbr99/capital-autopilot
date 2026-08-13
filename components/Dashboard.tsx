@@ -158,6 +158,20 @@ export default function Dashboard() {
   // está por delante de la entrada NO arriesgan nada: sumarlas inflaba la cifra.
   const openRisk = positions.reduce((s, p) => s + (positionRisk(p).risk ?? 0), 0);
   const dayPnlPct = snap?.dailyPnlPct ?? 0;
+  /**
+   * El resultado del día EN DINERO.
+   *
+   * El panel solo lo daba en porcentaje. Con una cuenta de 228 €, un "+0,21 %"
+   * son 47 céntimos: el porcentaje es comparable entre cuentas pero no se
+   * siente, y el importe es el que dice si merece la pena mirar. Un broker
+   * enseña los dos, y aquí el euro del día no aparecía en ninguna pantalla —
+   * el "PNL FLOTANTE" de la tira es otra cosa: lo que llevan las posiciones
+   * abiertas, no lo que ha hecho la jornada.
+   *
+   * Se despeja del ancla: equity_actual − equity_actual/(1+pct/100).
+   */
+  const dayPnlEur =
+    lastEquity && Math.abs(dayPnlPct) > 0 ? lastEquity - lastEquity / (1 + dayPnlPct / 100) : 0;
   const killPct = cfg?.risk.maxDailyLossPct ?? 0;
   /** ¿Se han agotado las operaciones del día? A partir de aquí no abre más. */
   const cupoAgotado =
@@ -397,6 +411,11 @@ export default function Dashboard() {
               <MiniStat
                 label="PNL HOY"
                 value={loading ? null : `${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
+                sub={
+                  loading || !lastEquity || Math.abs(dayPnlEur) < 0.005
+                    ? undefined
+                    : `${pnlFmt(dayPnlEur)} ${acc?.currency ?? ""}`
+                }
                 tone={Math.abs(dayPnlPct) < 0.005 ? undefined : dayPnlPct > 0 ? "long" : "short"}
               />
               {/* "TRADES HOY" cabía; "OPERACIONES HOY" no —se truncaba en "OPERACIONES H…"—.
@@ -769,7 +788,17 @@ function Ticker({ evals, obsoleta }: { evals: Snapshot["evals"]; obsoleta?: bool
   );
 }
 
-function MiniStat({ label, value, tone }: { label: string; value: string | number | null; tone?: "long" | "short" }) {
+function MiniStat({
+  label,
+  value,
+  sub,
+  tone,
+}: {
+  label: string;
+  value: string | number | null;
+  sub?: string;
+  tone?: "long" | "short";
+}) {
   const c = tone === "long" ? "text-long" : tone === "short" ? "text-short" : "text-white";
   return (
     <div className="min-w-0 bg-soft px-1 py-3.5">
@@ -778,6 +807,7 @@ function MiniStat({ label, value, tone }: { label: string; value: string | numbe
       ) : (
         <p className={`truncate font-mono text-lg font-medium tabular-nums sm:text-xl ${c}`}>{value}</p>
       )}
+      {sub && <p className="truncate font-mono text-[10px] tabular-nums text-muted">{sub}</p>}
       <p className="tag mt-0.5 truncate">{label}</p>
     </div>
   );
