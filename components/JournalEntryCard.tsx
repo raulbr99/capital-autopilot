@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import type { JournalEntry, JournalAction } from "./types";
+import { TZ } from "@/lib/model";
+
+/** Jornada de una fecha en la zona de la CUENTA, igual que el resto del panel. */
+const diaKey = (d: Date) =>
+  d.toLocaleDateString("es-ES", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
 
 const ACT: Record<string, { label: string; cls: string }> = {
   OPEN: { label: "ABRE", cls: "bg-long/15 text-long" },
@@ -56,6 +61,19 @@ export default function JournalEntryCard({
   const todas = Array.isArray(entry.actions) ? entry.actions : [];
   const esperasVacias = todas.filter((a) => a.action === "HOLD" && !a.epic).length;
   const acciones = todas.filter((a) => !(a.action === "HOLD" && !a.epic));
+  const fechaEntrada = new Date(entry.ts);
+  const esHoy = diaKey(fechaEntrada) === diaKey(new Date());
+  const diaCorto =
+    diaKey(fechaEntrada) === diaKey(new Date(Date.now() - 86_400_000))
+      ? "ayer"
+      : fechaEntrada.toLocaleDateString("es-ES", { timeZone: TZ, day: "2-digit", month: "short" });
+  const hora = fechaEntrada.toLocaleTimeString("es-ES", {
+    timeZone: TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const fechaCompleta = fechaEntrada.toLocaleString("es-ES", { timeZone: TZ, hour12: false });
   const thesis = entry.thesis || "—";
   const long = thesis.length > THESIS_LIMIT;
   const quiet = sum.kind === "held";
@@ -84,8 +102,19 @@ export default function JournalEntryCard({
             {entry.desk}
           </span>
         )}
-        <span className="font-mono text-[10px] tabular-nums text-muted">
-          {new Date(entry.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false })}
+        {/*
+          En la página de Diario la fecha la pone la cabecera de cada jornada.
+          En el carril de una mesa no hay cabeceras, así que cada decisión salía
+          rotulada solo con su hora — "20:44" — sin decir de cuándo.
+          Medido contra producción: el carril de Stocks lista veinte entradas que
+          van del 6 de julio al 12 de agosto, treinta y siete días, todas con
+          pinta de haber pasado hoy. En un registro de decisiones sobre dinero,
+          cuándo se tomó una decisión no es un adorno.
+          Se añade el día solo cuando NO es hoy, y solo donde falta la cabecera.
+        */}
+        <span className="font-mono text-[10px] tabular-nums text-muted" title={fechaCompleta}>
+          {compact && !esHoy && <span className="text-dim">{diaCorto} · </span>}
+          {hora}
         </span>
         <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${sum.cls}`}>{sum.label}</span>
         <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[9px] font-medium text-accent">
