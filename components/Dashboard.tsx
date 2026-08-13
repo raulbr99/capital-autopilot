@@ -76,7 +76,7 @@ export default function Dashboard() {
     try {
       const r = await fetch("/api/bot/trades");
       const d = await r.json();
-      setTrades(d.trades || []);
+      setTrades(Array.isArray(d.trades) ? d.trades : []);
     } catch {
       /* */
     }

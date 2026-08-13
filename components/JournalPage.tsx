@@ -26,7 +26,7 @@ export default function JournalPage() {
   usePoll(() => {
     fetch("/api/bot/journal")
       .then((r) => r.json())
-      .then((d) => setEntries(d.entries || []))
+      .then((d) => setEntries(Array.isArray(d.entries) ? d.entries : []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, 60000);

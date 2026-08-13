@@ -79,7 +79,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const loadJournal = useCallback(async () => {
     try {
       const j = await fetch(`/api/bot/journal?desk=${category}`).then((r) => r.json());
-      setJournal((j.entries || []) as JournalEntry[]);
+      setJournal((Array.isArray(j.entries) ? j.entries : []) as JournalEntry[]);
     } catch {
       /* */
     }

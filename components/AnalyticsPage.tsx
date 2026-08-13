@@ -67,7 +67,16 @@ export default function AnalyticsPage() {
     try {
       const r = await fetch("/api/bot/trades");
       const d = await r.json();
-      setTrades(d.trades || []);
+      /**
+       * Array.isArray y no `|| []`: el segundo solo cubre undefined. Si la API
+       * devuelve el campo con OTRA forma —un objeto, una cadena, un fragmento
+       * de respuesta cortada— el `|| []` lo deja pasar y el primer .filter()
+       * revienta la página entera. Comprobado forzando {trades:{roto:true}}:
+       * Analítica caía a la pantalla de "no se ha podido dibujar".
+       * La frontera de error hace su trabajo, pero para un panel de vigilancia
+       * es mucho mejor enseñar la pantalla vacía que perderla toda.
+       */
+      setTrades(Array.isArray(d.trades) ? d.trades : []);
     } catch {
       /* */
     } finally {

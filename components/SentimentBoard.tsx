@@ -173,8 +173,9 @@ export default function SentimentBoard({
       .finally(() => setLoading(false));
   }, 5 * 60 * 1000);
 
-  const maxMentions = Math.max(1, ...(d?.stocks ?? []).map((s) => s.mentions));
-  const stocks = [...(d?.stocks ?? [])].sort((a, b) => b.mentions - a.mentions);
+  const listaStocks = Array.isArray(d?.stocks) ? d!.stocks : [];
+  const maxMentions = Math.max(1, ...listaStocks.map((s) => s.mentions));
+  const stocks = [...listaStocks].sort((a, b) => b.mentions - a.mentions);
   const priceMap = new Map((d?.prices ?? []).map((p) => [p.symbol, p]));
   const earnMap = new Map((d?.earnings ?? []).map((e) => [e.symbol, e]));
   const signalMap = new Map(evals.map((e) => [e.epic, e.signal?.type]));
@@ -326,7 +327,7 @@ export default function SentimentBoard({
             <p className="text-[11px] leading-relaxed text-muted">
               Añade <span className="font-mono text-dim">EXA_API_KEY</span> en Vercel para ver titulares.
             </p>
-          ) : d && d.news.length === 0 ? (
+          ) : d && (!Array.isArray(d.news) || d.news.length === 0) ? (
             <p className="text-[11px] text-muted">{d.exaErr ? "Error consultando Exa." : "Sin noticias recientes."}</p>
           ) : (
             <ul className="space-y-2.5">
