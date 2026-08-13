@@ -303,7 +303,7 @@ export function ConnBadge({
     return () => clearInterval(id);
   }, []);
   const staleMs = lastOk == null ? null : ahora - lastOk;
-  const stale = offline || (staleMs != null && staleMs > 60_000);
+  const stale = offline || (staleMs != null && staleMs > STALE_MS);
   const mins = stale && staleMs != null ? Math.floor(staleMs / 60_000) : 0;
   const color = stale ? "bg-short" : !configured ? "bg-short" : enabled ? "bg-long" : "bg-accent";
   const label = offline
@@ -683,15 +683,47 @@ export function variacion(
  * teléfono. Es el mismo argumento que llevó a unificar el pie: un aviso que
  * solo sale en una pantalla no es un aviso.
  */
-export function AvisoSinConexion() {
+/** A partir de aquí los datos en pantalla dejan de considerarse actuales. */
+export const STALE_MS = 60_000;
+
+/**
+ * Aviso de datos no actuales.
+ *
+ * Salía solo con `navigator.onLine === false`, que es una señal optimista: vale
+ * para el modo avión, pero devuelve true con una wifi conectada que no llega a
+ * ninguna parte, con un portal cautivo o cuando el que no responde es el
+ * servidor. Justo los casos en los que uno sigue mirando cifras viejas creyendo
+ * que son de ahora.
+ *
+ * El dato bueno ya existía: el distintivo de la cabecera se pone rojo cuando la
+ * última lectura buena pasa de un minuto, y lo calcula con su propio reloj
+ * precisamente porque si el broker deja de responder no hay nada que provoque
+ * un render. Pero ese distintivo es un punto de color en una esquina; el aviso
+ * que EXPLICA lo que está pasando —y que el bot sigue operando en el servidor—
+ * se quedaba callado.
+ *
+ * Ahora sale también por antigüedad, con el mismo umbral y su propio reloj.
+ */
+export function AvisoSinConexion({ lastOk }: { lastOk?: number | null }) {
   const online = useOnline();
-  if (online) return null;
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAhora(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, []);
+  const viejo = lastOk != null && ahora - lastOk > STALE_MS;
+  if (online && !viejo) return null;
+  const mins = lastOk == null ? 0 : Math.floor((ahora - lastOk) / 60_000);
   return (
     <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-short/30 bg-short/5 px-4 py-3">
       <span aria-hidden>📡</span>
       <p className="text-[12.5px] leading-relaxed text-dim">
-        <span className="font-medium text-short">Sin conexión.</span> Estás viendo la última
-        información conocida, no la actual.{" "}
+        <span className="font-medium text-short">
+          {online ? "El broker no responde." : "Sin conexión."}
+        </span>{" "}
+        Estás viendo la última información conocida
+        {online && mins >= 1 ? ` (de hace ${mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h`})` : ""}, no
+        la actual.{" "}
         <span className="text-white">El bot sigue operando en el servidor</span>: sus decisiones y tus
         stops no dependen de este dispositivo.
       </p>
