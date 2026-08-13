@@ -34,8 +34,22 @@ type Exp = {
 export default function ExpectancyPanel({
   className = "",
   divisa = "",
+  cerradas,
 }: {
   className?: string;
+  /**
+   * Nº de operaciones cerradas que conoce el panel padre. Este componente hacía
+   * un único fetch al montar y no volvía a mirar: en un tablero que se sondea
+   * cada pocos segundos y que se deja abierto todo el día, las cuatro métricas
+   * de arriba —aciertos, resultado por operación, profit factor y neto— y la
+   * proyección se quedaban congeladas en el instante en que se cargó la página.
+   * Cerrar una posición delante de ti no movía ninguna.
+   *
+   * En vez de añadir otro sondeo, se recarga cuando cambia el recuento de
+   * cerradas que el tablero YA está sondeando: se actualiza exactamente cuando
+   * hay algo nuevo que contar, y ni un byte antes.
+   */
+  cerradas?: number;
   /**
    * Divisa de la cuenta. El componente llevaba un "€" escrito a fuego en la
    * proyección —y la variable se llamaba `eur`—, así que una cuenta en libras o
@@ -57,7 +71,7 @@ export default function ExpectancyPanel({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [cerradas]);
 
   const shell = (children: React.ReactNode) => (
     <div className={`overflow-hidden rounded-xl border border-industrial bg-soft ${className}`}>

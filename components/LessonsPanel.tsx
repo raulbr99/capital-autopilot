@@ -36,12 +36,23 @@ type Data = {
 export default function LessonsPanel({ desk }: { desk?: string }) {
   const [d, setD] = useState<Data | null>(null);
 
+  /**
+   * Al cambiar de mesa, `d` seguía siendo el de la mesa anterior hasta que
+   * llegara la respuesta nueva: durante ese hueco el panel presentaba las
+   * cifras de forex bajo el filtro de acciones. Vaciarlo primero es preferible
+   * a enseñar un número correcto atribuido a quien no es.
+   */
   useEffect(() => {
+    let vivo = true;
+    setD(null);
     const q = desk && desk !== "all" ? `?desk=${desk}` : "";
     fetch(`/api/bot/lessons${q}`)
       .then((r) => r.json())
-      .then((x) => !x.error && setD(x))
+      .then((x) => vivo && !x.error && setD(x))
       .catch(() => {});
+    return () => {
+      vivo = false;
+    };
   }, [desk]);
 
   if (!d || !d.closed) return null;

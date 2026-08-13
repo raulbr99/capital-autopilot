@@ -596,7 +596,11 @@ export default function Dashboard() {
         />
 
         {/* EXPECTATIVA REAL (análisis, no triage) */}
-        <ExpectancyPanel className="mt-4" divisa={acc?.currency ?? ""} />
+        <ExpectancyPanel
+          className="mt-4"
+          divisa={acc?.currency ?? ""}
+          cerradas={trades.filter((t) => t.status === "closed").length}
+        />
 
         <AppFooter />
       </main>
