@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { JournalEntry } from "./types";
 import AppHeader from "./AppHeader";
 import { Skeleton, usePoll, pl, AppFooter, AvisoSinConexion } from "./ui";
+import { TZ } from "@/lib/model";
 import JournalEntryCard, { summarize } from "./JournalEntryCard";
 import LessonsPanel from "./LessonsPanel";
 
@@ -15,26 +16,52 @@ const DESK_FILTERS = [
   { key: "commodities", label: "Commodities" },
 ];
 
-const dayKey = (ts: string) => new Date(ts).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+/** La jornada se parte en la zona de la CUENTA, no en la del navegador: es la
+ *  misma con la que el bot cuenta su día. */
+const dayKey = (ts: string) =>
+  new Date(ts).toLocaleDateString("es-ES", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" });
 
 export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  /** Últimas 60 sin filtrar: de ahí salen los recuentos de las pestañas. */
+  const [global_, setGlobal] = useState<JournalEntry[]>([]);
+  const [cargadoDe, setCargadoDe] = useState<string | null>(null);
   const [desk, setDesk] = useState("all");
   const [open, setOpen] = useState<Set<number>>(new Set());
 
+  /**
+   * Filtrar por mesa se hacía en el navegador sobre las 60 entradas más
+   * recientes del diario entero. La ruta acepta ?desk= desde hace pasadas —el
+   * panel de lecciones de esta misma página ya lo usa— y aplica el límite
+   * DESPUÉS del filtro, así que devuelve 20 de esa mesa en vez de las que
+   * quepan dentro de una ventana global.
+   *
+   * La diferencia no es teórica. Medido contra producción:
+   *   Stocks filtrado en el navegador →  6 entradas, todas del 12-13 de agosto
+   *   Stocks pedido al servidor       → 20 entradas, del 6 de julio al 12 de agosto
+   *
+   * O sea que la mesa de acciones enseñaba seis decisiones y escondía más de un
+   * mes de diario. Y como esa mesa solo opera en sesión de Nueva York, sus
+   * entradas son las que antes se caen de una ventana global — el filtro
+   * castigaba justo a la mesa con menos actividad. Este fichero llegó a
+   * explicar el hueco como una consecuencia del horario; era el recorte.
+   */
   usePoll(() => {
-    fetch("/api/bot/journal")
+    const q = desk === "all" ? "" : `?desk=${encodeURIComponent(desk)}`;
+    fetch(`/api/bot/journal${q}`)
       .then((r) => r.json())
-      .then((d) => setEntries(Array.isArray(d.entries) ? d.entries : []))
+      .then((d) => {
+        const list: JournalEntry[] = Array.isArray(d.entries) ? d.entries : [];
+        setEntries(list);
+        if (desk === "all") setGlobal(list);
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
-  }, 60000);
+      .finally(() => setCargadoDe(desk));
+  }, 60000, [desk]);
 
-  const shown = useMemo(
-    () => entries.filter((e) => desk === "all" || e.desk === desk),
-    [entries, desk]
-  );
+  /** Mientras la respuesta de la mesa nueva no ha llegado, lo cargado es de otra. */
+  const loading = cargadoDe !== desk;
+  const shown = entries;
 
   // Agrupado por día: un diario se lee por jornadas, no como lista infinita
   const days = useMemo(() => {
@@ -59,15 +86,19 @@ export default function JournalPage() {
   /**
    * Entradas por mesa. Los filtros de señales y los del registro en vivo llevan
    * su recuento desde hace pasadas; estos no, así que había que pulsarlos uno a
-   * uno para descubrir cuáles tienen algo. Y el reparto dice bastante: con el
-   * histórico actual, Stocks acumula muchas menos decisiones que las demás
-   * porque su mesa solo abre en sesión de Nueva York.
+   * uno para descubrir cuáles tienen algo.
+   */
+  /**
+   * Ojo con estos números: son cuántas entradas de cada mesa hay entre las 60
+   * más recientes del diario, no cuántas tiene la mesa. Sirven para ver de un
+   * vistazo qué mesas están activas; el total de cada una es lo que se lista al
+   * seleccionarla. El title lo dice para que el número no se lea como un total.
    */
   const porMesa = useMemo(() => {
-    const m: Record<string, number> = { all: entries.length };
-    for (const e of entries) if (e.desk) m[e.desk] = (m[e.desk] || 0) + 1;
+    const m: Record<string, number> = { all: global_.length };
+    for (const e of global_) if (e.desk) m[e.desk] = (m[e.desk] || 0) + 1;
     return m;
-  }, [entries]);
+  }, [global_]);
 
   return (
     <div className="min-h-screen">
@@ -94,6 +125,11 @@ export default function JournalPage() {
               {f.label}
               {porMesa[f.key] != null && (
                 <span
+                  title={
+                    f.key === "all"
+                      ? "Entradas cargadas"
+                      : "Entradas de esta mesa entre las 60 más recientes del diario"
+                  }
                   className={`ml-1.5 tabular-nums ${desk === f.key ? "opacity-70" : "text-muted"}`}
                 >
                   {porMesa[f.key]}
@@ -131,11 +167,11 @@ export default function JournalPage() {
             falsa es peor que uno que no dice nada.
           */
           <div className="rounded-xl border border-industrial bg-soft p-16 text-center">
-            {entries.length > 0 ? (
+            {global_.length > 0 ? (
               <>
                 <p className="text-base font-medium text-dim">Ninguna entrada en esta mesa</p>
                 <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
-                  Hay {entries.length} {pl(entries.length, "entrada", "entradas")} en el diario, pero
+                  Hay {global_.length} {pl(global_.length, "entrada", "entradas")} recientes en el diario, pero
                   ninguna de{" "}
                   <span className="text-dim">
                     {DESK_FILTERS.find((f) => f.key === desk)?.label ?? desk}
