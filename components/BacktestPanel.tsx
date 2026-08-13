@@ -233,10 +233,20 @@ export default function BacktestPanel() {
                 </span>
               </p>
             )}
+            {/*
+              Aquí quedaban tres "€" más de los que quité en la pasada 206 al
+              coste de horquilla. Mismo error y misma media corrección de
+              siempre: arreglé la frase que estaba mirando y no las tres de al
+              lado. El equity nocional de 1.000 es una referencia para dimensionar,
+              no un saldo, y el P&L que sale de él está en la divisa de cada
+              activo —dólares casi todo el universo, yenes los cruces contra el
+              JPY—, así que ponerle el símbolo de la cuenta es inventárselo.
+            */}
             <p className="mb-3 text-[10px] leading-relaxed text-muted">
-              Cada operación arriesga el mismo % de un equity nocional de 1.000 € → el P&L es
+              Cada operación arriesga el mismo % de un equity nocional de 1.000 → el P&L es
               comparable entre activos (BTC ya no se dispara). El <span className="text-dim">retorno %</span> es
-              la métrica fiable; el P&L nocional es solo su traducción a €.
+              la métrica fiable; el P&L nocional es solo su traducción a importe, en la divisa de cada
+              activo.
             </p>
           </>
         )}
@@ -290,13 +300,13 @@ export default function BacktestPanel() {
                       {/* Era "peor racha 98.66". Una racha es una serie de
                           pérdidas seguidas; esto es la CAÍDA MÁXIMA desde el
                           pico (lib/sim.ts la calcula como peak − equity), o sea
-                          otra cosa. Y el número iba sin unidad: son euros sobre
-                          el equity nocional de 1.000 €, así que en porcentaje
-                          se lee solo y además se compara con el retorno que
-                          tiene justo encima. */}
+                          otra cosa. Y el número iba sin unidad: es un importe
+                          sobre el equity nocional de 1.000, así que en
+                          porcentaje se lee solo y además se compara con el
+                          retorno que tiene justo encima. */}
                       <p
                         className="font-mono text-[10px] tabular-nums text-muted"
-                        title={`Caída máxima desde el pico: ${fmt(r.maxDrawdown)} € sobre el equity nocional de ${BASE_EQUITY} €`}
+                        title={`Caída máxima desde el pico: ${fmt(r.maxDrawdown)} sobre el equity nocional de ${BASE_EQUITY}, en la divisa del activo`}
                       >
                         caída máx. {((r.maxDrawdown / BASE_EQUITY) * 100).toFixed(1)}%
                       </p>
