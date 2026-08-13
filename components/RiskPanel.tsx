@@ -216,8 +216,9 @@ export default function RiskPanel({
           stop de una posición viva y cierran media posición sola. Están
           encendidos, el registro enseña sus efectos ("SL → 64.6735, trailing
           +2.2×ATR") y hasta ahora no había forma de saber con qué regla, ni de
-          cambiarla. Fue además esta gestión la que borraba el take-profit en
-          silencio hasta la pasada 75.
+          cambiarla. (Aquí ponía que esta gestión borraba el take-profit en
+          silencio; no era cierto. El objetivo se leía del campo equivocado de
+          Capital y por eso salía vacío en la tabla.)
         */}
         <div className="space-y-3 border-t border-industrial pt-3">
           <p className="tag">Gestión de posiciones abiertas</p>

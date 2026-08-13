@@ -927,13 +927,21 @@ async function manageOpenPositions(
         const sl = roundTo(target, dec);
         /**
          * El PUT de Capital REEMPLAZA las órdenes asociadas a la posición: lo
-         * que no se reenvía, se borra. Como aquí solo iba `stopLevel`, el
-         * take-profit que el motor había puesto al abrir desaparecía en el
-         * primer ajuste de breakeven o trailing — en silencio, sin error y sin
-         * traza en el registro. Comprobado contra Capital: las 5 posiciones
-         * vivas tenían stop y `limitLevel: null`, y la columna TP de la tabla
-         * llevaba tiempo enseñando "—" en todas las filas.
-         * Reenviar el objetivo actual lo conserva.
+         * que no se reenvía, se borra. Por eso se reenvía el objetivo actual
+         * junto al stop.
+         *
+         * CORRECCIÓN de lo que decía antes esta nota. Se escribió creyendo que
+         * este PUT era el que borraba el take-profit, porque las posiciones
+         * vivas salían con `limitLevel: null`. No era eso: Capital devuelve el
+         * objetivo en `profitLevel` y lib/capital.ts solo leía `limitLevel`, así
+         * que el TP existía y no se veía. Arreglada la lectura, las seis
+         * posiciones abiertas tienen su objetivo a 3×ATR, exactamente el
+         * configurado, y ninguna había pasado todavía por el trailing.
+         *
+         * O sea que el borrado nunca llegó a demostrarse. El reenvío se queda
+         * igualmente: la semántica del PUT es la que es, y esta salvaguarda —que
+         * hasta ahora no podía activarse, porque el objetivo siempre se leía
+         * como null— ahora sí funciona.
          */
         await updatePosition(p.dealId, {
           stopLevel: sl,
