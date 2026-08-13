@@ -159,6 +159,9 @@ export default function Dashboard() {
   const openRisk = positions.reduce((s, p) => s + (positionRisk(p).risk ?? 0), 0);
   const dayPnlPct = snap?.dailyPnlPct ?? 0;
   const killPct = cfg?.risk.maxDailyLossPct ?? 0;
+  /** ¿Se han agotado las operaciones del día? A partir de aquí no abre más. */
+  const cupoAgotado =
+    !!cfg && (snap?.tradesToday ?? 0) >= cfg.risk.maxTradesPerDay && cfg.risk.maxTradesPerDay > 0;
   const lossUsed = dayPnlPct < 0 ? Math.min(-dayPnlPct / killPct, 1) : 0; // 0..1 del presupuesto de pérdida diaria
 
   // Límite por mesa (sin límite global): rojo si alguna mesa excede su cupo
@@ -360,7 +363,19 @@ export default function Dashboard() {
               {/* "TRADES HOY" cabía; "OPERACIONES HOY" no —se truncaba en "OPERACIONES H…"—.
                   La app ya usa "op/ops" como forma compacta en celdas densas
                   (backtest, lecciones, por instrumento): misma regla aquí. */}
-              <MiniStat label="OPS. HOY" value={loading ? null : `${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`} />
+              {/*
+                El cupo diario era el ÚNICO límite sin estado visual: "4/4" se
+                pintaba igual que "1/4", y al alcanzarlo el bot deja de abrir
+                durante el resto de la jornada. El resto de topes sí lo dicen —
+                la mesa llena sale en rojo, el cooldown y el freno diario tienen
+                su línea— así que este se leía como si nada hubiera cambiado
+                justo cuando el motor se ha quedado quieto por diseño.
+              */}
+              <MiniStat
+                label="OPS. HOY"
+                value={loading ? null : `${snap?.tradesToday ?? 0}/${cfg?.risk.maxTradesPerDay ?? "—"}`}
+                tone={cupoAgotado ? "short" : undefined}
+              />
               <MiniStat
                 label="POSICIONES"
                 value={loading ? null : `${positions.length}`}
@@ -372,6 +387,13 @@ export default function Dashboard() {
             <div className="mt-3 space-y-2 rounded-lg border border-industrial bg-base p-3.5 text-xs">
               <Row label="Riesgo abierto" value={openRisk > 0 ? `≈${fmt(openRisk)} ${acc?.currency ?? ""}` : "—"} />
               <Row label="Cooldown" value={cooldownLabel(snap?.cooldownUntil ?? 0)} />
+              {cupoAgotado && (
+                <Row
+                  label="Cupo diario"
+                  value={`agotado (${cfg?.risk.maxTradesPerDay}) — no abre más hoy`}
+                  tone="short"
+                />
+              )}
               {killPct > 0 ? (
                 <div className="pt-1.5">
                   <div className="mb-1 flex items-center justify-between text-[10px] text-muted">
