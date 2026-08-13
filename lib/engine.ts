@@ -246,12 +246,23 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
       // Filtro macro: no abrir con evento de alto impacto inminente para las divisas
       // del activo (45 min antes .. 15 después) — la volatilidad de la noticia se come
       // el stop. Fail-open: sin feed o sin divisas mapeadas, no bloquea.
+      /**
+       * Los rechazos van a nivel "veto", no "info".
+       *
+       * El nivel se creó en la pasada 87 justo para esto: lo que el bot decide
+       * NO hacer. Pero solo se le asignó al rechazo del comité y a la
+       * auto-pausa; los otros tres motivos por los que el motor se abstiene
+       * —evento macro inminente, mercado cerrado y pausa tras pérdida— seguían
+       * como información suelta, indistinguibles de "Gestor forex: ejecuto su
+       * decisión" entre cincuenta líneas. Justo los que explican por qué un
+       * panel lleva horas sin abrir nada.
+       */
       try {
         const macro = await relevantEvents(e.epic, { aheadMin: 45, behindMin: 15 });
         if (macro.length) {
           const ev = macro[0];
           const when = ev.minutesUntil >= 0 ? `en ${ev.minutesUntil} min` : `hace ${-ev.minutesUntil} min`;
-          logN("info", `⏸️ ${e.epic}: evento macro inminente (${ev.currency} ${ev.title}, ${when}) — no abro`, e.epic);
+          logN("veto", `⏸️ ${e.epic}: evento macro inminente (${ev.currency} ${ev.title}, ${when}) — no abro`, e.epic);
           continue;
         }
       } catch {
@@ -812,7 +823,7 @@ async function executeOpen(p: {
   try {
     const md = await getMarketDetails(p.epic);
     if (md.marketStatus && md.marketStatus !== "TRADEABLE") {
-      logN("info", `⏸️ ${p.epic}: mercado ${md.marketStatus} — no se abre ahora`, p.epic);
+      logN("veto", `⏸️ ${p.epic}: mercado ${md.marketStatus} — no se abre ahora`, p.epic);
       return false;
     }
   } catch {
@@ -1036,7 +1047,7 @@ async function reconcileClosedTrades(
   const mins = b.config.risk.cooldownMin;
   if (per < 0 && mins > 0 && reallyClosed.length) {
     b.cooldownUntil = Date.now() + mins * 60_000;
-    logN("info", `⏸️ Pausa de ${mins} min tras cierre en pérdida (no se abren nuevas entradas)`);
+    logN("veto", `⏸️ Pausa de ${mins} min tras cierre en pérdida (no se abren nuevas entradas)`);
   }
 
   b.prevDeposit = deposit;
