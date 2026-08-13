@@ -207,6 +207,59 @@ export default function RiskPanel({
             />
           </div>
         </div>
+
+        {/*
+          Gestión de posiciones ABIERTAS.
+          Seis parámetros del motor sin ningún control ni indicador en toda la
+          aplicación: activeManage, breakevenAtr, trailAtr, trailDistAtr,
+          scaleOutAtr y scaleOutPct. Y no son menores — son los que MUEVEN el
+          stop de una posición viva y cierran media posición sola. Están
+          encendidos, el registro enseña sus efectos ("SL → 64.6735, trailing
+          +2.2×ATR") y hasta ahora no había forma de saber con qué regla, ni de
+          cambiarla. Fue además esta gestión la que borraba el take-profit en
+          silencio hasta la pasada 75.
+        */}
+        <div className="space-y-3 border-t border-industrial pt-3">
+          <p className="tag">Gestión de posiciones abiertas</p>
+          <button
+            disabled={busy}
+            onClick={() => patch({ risk: { activeManage: !r.activeManage } })}
+            className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-[11px] font-medium ${
+              r.activeManage ? "border-accent/40 bg-accent/10 text-accent" : "border-cement text-muted"
+            }`}
+          >
+            Mover el stop mientras la posición vive
+            <span>{r.activeManage ? "ON" : "OFF"}</span>
+          </button>
+          {r.activeManage ? (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <NumField label="Stop a entrada desde" suffix="×ATR" value={r.breakevenAtr ?? 0} step={0.5} busy={busy}
+                  hint="Con esta ganancia, el stop sube a tu precio de entrada: la operación deja de poder perder."
+                  onCommit={(v) => patch({ risk: { breakevenAtr: v } })} />
+                <NumField label="Trailing desde" suffix="×ATR" value={r.trailAtr ?? 0} step={0.5} busy={busy}
+                  hint="A partir de esta ganancia el stop empieza a seguir al precio."
+                  onCommit={(v) => patch({ risk: { trailAtr: v } })} />
+                <NumField label="Distancia del trailing" suffix="×ATR" value={r.trailDistAtr ?? 0} step={0.5} busy={busy}
+                  hint="Cuánto se queda el stop por detrás del precio mientras lo sigue."
+                  onCommit={(v) => patch({ risk: { trailDistAtr: v } })} />
+                <NumField label="Cierre parcial desde" suffix="×ATR" value={r.scaleOutAtr ?? 0} step={0.5} busy={busy}
+                  hint="Con esta ganancia se cierra parte de la posición y el resto sigue corriendo. 0 lo desactiva."
+                  onCommit={(v) => patch({ risk: { scaleOutAtr: v } })} />
+              </div>
+              <p className="text-[10px] leading-relaxed text-muted">
+                {(r.scaleOutAtr ?? 0) > 0 && (r.scaleOutPct ?? 0) > 0
+                  ? `En el cierre parcial se recoge el ${Math.round((r.scaleOutPct ?? 0) * 100)}% de la posición.`
+                  : "Cierre parcial desactivado: la posición se gestiona entera."}{" "}
+                Estas reglas modifican órdenes reales en Capital sobre posiciones ya abiertas.
+              </p>
+            </>
+          ) : (
+            <p className="text-[10px] leading-relaxed text-muted">
+              Apagado: el stop y el objetivo se quedan donde se pusieron al abrir.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
