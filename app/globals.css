@@ -50,7 +50,16 @@ body {
   overflow-x: clip;
 }
 
-/* Foco visible por teclado (a11y) — solo :focus-visible, no clicks */
+/*
+ * Foco visible por teclado (a11y) — solo :focus-visible, nunca al hacer clic.
+ *
+ * OJO: no añadir `focus:outline-none` en los componentes. Esa utilidad tiene
+ * más especificidad que esta regla (clase + pseudoclase frente a pseudoclase
+ * sola) y la anula TAMBIÉN para el teclado. Había ocho, y dejaban sin contorno
+ * a los doce desplegables del Lab: comprobado leyendo el outline calculado con
+ * cada uno enfocado. Como esta regla ya distingue teclado de ratón, esa
+ * utilidad no protegía de nada y solo rompía la accesibilidad.
+ */
 :focus-visible {
   outline: 2px solid rgb(var(--accent));
   outline-offset: 2px;

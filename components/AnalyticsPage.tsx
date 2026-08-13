@@ -165,7 +165,7 @@ export default function AnalyticsPage() {
               value={epic}
               onChange={(e) => setEpic(e.target.value)}
               aria-label="Filtrar por instrumento"
-              className="rounded-lg border border-cement bg-base px-3 py-2 font-mono text-[12px] text-dim focus:border-accent focus:outline-none"
+              className="rounded-lg border border-cement bg-base px-3 py-2 font-mono text-[12px] text-dim focus:border-accent"
             >
               <option value="">Todos los activos</option>
               {epics.map((e) => (

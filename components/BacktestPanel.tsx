@@ -81,7 +81,7 @@ export default function BacktestPanel() {
               value={resolution}
               aria-label="Resolución de velas"
               onChange={(e) => setResolution(e.target.value)}
-              className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim focus:outline-none"
+              className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim"
             >
               {["MINUTE", "MINUTE_5", "MINUTE_15", "HOUR", "HOUR_4", "DAY"].map((r) => (
                 <option key={r} value={r}>

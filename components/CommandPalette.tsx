@@ -118,7 +118,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar comando o página…"
           aria-label="Buscar comando"
-          className="w-full border-b border-industrial bg-ink px-4 py-3 text-sm text-white placeholder:text-muted focus:outline-none"
+          className="w-full border-b border-industrial bg-ink px-4 py-3 text-sm text-white placeholder:text-muted"
         />
         <div ref={listRef} className="max-h-[340px] overflow-y-auto py-1">
           {flat.length === 0 && (

@@ -151,7 +151,7 @@ export function NumField({
             if (Number.isFinite(n) && n !== value) onCommit(n);
           }}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          className="w-full rounded-lg border border-cement bg-base px-2.5 py-2 font-mono text-sm text-white transition-colors focus:border-accent focus:outline-none disabled:opacity-40"
+          className="w-full rounded-lg border border-cement bg-base px-2.5 py-2 font-mono text-sm text-white transition-colors focus:border-accent disabled:opacity-40"
         />
         {suffix && (
           <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 font-mono text-[11px] text-muted">

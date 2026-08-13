@@ -65,7 +65,7 @@ export default function LoginForm() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-cement bg-base px-3 py-2.5 text-sm text-white focus:border-accent focus:outline-none"
+            className="mt-1.5 w-full rounded-lg border border-cement bg-base px-3 py-2.5 text-sm text-white focus:border-accent"
           />
         </label>
 

@@ -107,7 +107,7 @@ export default function ConfigPanel({
                       disabled={busy}
                       aria-label={`Resolución de ${i.epic}`}
                       onChange={(e) => setRes(i.epic, e.target.value)}
-                      className="min-h-[34px] w-[76px] rounded-md border border-cement bg-ink px-1 font-mono text-[10px] text-accent focus:outline-none"
+                      className="min-h-[34px] w-[76px] rounded-md border border-cement bg-ink px-1 font-mono text-[10px] text-accent"
                     >
                       {RESOLUTIONS.map((r) => (
                         <option key={r} value={r}>{r}</option>
@@ -187,7 +187,7 @@ export default function ConfigPanel({
               onChange={(e) => setW(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && add()}
               placeholder="EPIC ej. NZDUSD"
-              className="min-h-[36px] w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-accent focus:outline-none"
+              className="min-h-[36px] w-full border border-cement bg-ink px-2 py-1.5 font-mono text-[11px] text-white placeholder:text-muted focus:border-accent"
             />
             <button onClick={add} disabled={busy} aria-label="Añadir instrumento" className="min-h-[36px] min-w-[40px] rounded-lg bg-accent px-3 font-display text-xs text-onaccent disabled:opacity-40">
               +

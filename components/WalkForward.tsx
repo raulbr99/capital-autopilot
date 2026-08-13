@@ -118,7 +118,7 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
               value={resolution}
               aria-label="Resolución de velas"
               onChange={(e) => setResolution(e.target.value)}
-              className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim focus:outline-none"
+              className="border border-cement bg-ink px-1.5 py-0.5 font-mono text-[10px] text-dim"
             >
               {["MINUTE_15", "MINUTE_30", "HOUR", "HOUR_4", "DAY"].map((r) => (
                 <option key={r} value={r}>{r}</option>
