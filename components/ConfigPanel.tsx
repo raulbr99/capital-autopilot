@@ -158,7 +158,15 @@ export default function ConfigPanel({
                             ? "Solo compras: el motor bloquea los cortos. Clic para permitirlos."
                             : "Cortos permitidos. Clic para limitarlo a solo compras."
                         }
-                        className={`shrink-0 rounded px-1 text-[8px] ${
+                        /*
+                          32×14 medía al convertir la insignia en interruptor
+                          (pasada 188): comprobé que la fila no desbordaba y no
+                          miré el tamaño táctil, así que dejé veinte dianas de
+                          catorce píxeles de alto en el Lab. La altura mínima no
+                          ensancha la fila —la marcan los controles de 34 px de
+                          al lado—, que era justo lo que quería evitar.
+                        */
+                        className={`inline-flex min-h-[32px] shrink-0 items-center rounded px-1 text-[8px] ${
                           i.longOnly
                             ? "bg-long/15 text-long"
                             : "border border-cement text-muted hover:text-dim"

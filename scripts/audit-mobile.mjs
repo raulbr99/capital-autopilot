@@ -14,7 +14,14 @@ import { mkdirSync } from "node:fs";
 const BASE = process.argv[2] || "https://capital-autopilot.vercel.app";
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const OUT = "audit";
-const PAGES = ["/", "/forex", "/stocks", "/analytics", "/journal", "/lab"];
+/**
+ * Las cuatro mesas NO son la misma pantalla: cada una monta un bloque de
+ * contexto distinto —sentimiento en acciones, COT en forex y materias primas,
+ * funding en cripto— y ese bloque es el que trae tablas y filas anchas. Cripto
+ * y materias primas no estaban en la lista, así que el panel de funding se
+ * desplegó sin que ningún auditor lo hubiera visto nunca en un teléfono.
+ */
+const PAGES = ["/", "/forex", "/crypto", "/stocks", "/commodities", "/analytics", "/journal", "/lab"];
 const DEVICES = [
   { name: "iphone-se", width: 375, height: 667 },
   { name: "iphone-14", width: 390, height: 844 },

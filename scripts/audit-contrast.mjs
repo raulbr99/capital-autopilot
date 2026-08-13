@@ -10,7 +10,8 @@ import puppeteer from "puppeteer-core";
 
 const BASE = process.argv[2] || "https://capital-autopilot.vercel.app";
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const PAGES = ["/", "/forex", "/analytics", "/journal", "/lab"];
+/** Una mesa por tipo de bloque de contexto: sentimiento, COT y funding. */
+const PAGES = ["/", "/forex", "/crypto", "/stocks", "/analytics", "/journal", "/lab"];
 
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
 let totalFails = 0;
