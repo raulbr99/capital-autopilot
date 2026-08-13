@@ -19,6 +19,7 @@ import type { TradeRecord, DeskCategory } from "./types";
  * único fichero duplicado.
  */
 import { analyze } from "@/lib/analytics";
+import { TZ } from "@/lib/model";
 import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion, pdec } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
@@ -701,10 +702,11 @@ function exportarCsv(trades: TradeRecord[], etiqueta: string, divisa: string) {
     const t = String(v ?? "");
     return /[",;\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
-  // Zona de la cuenta, no UTC: el panel enseña Europe/Madrid en todas partes.
+  // Zona de la cuenta, no UTC, y desde la constante compartida: tenerla escrita
+  // a mano aquí era la tercera copia del mismo dato.
   // 'sv-SE' formatea como AAAA-MM-DD HH:MM:SS, que es lo que ordena bien.
   const iso = (ms?: number) =>
-    ms ? new Date(ms).toLocaleString("sv-SE", { timeZone: "Europe/Madrid" }) : "";
+    ms ? new Date(ms).toLocaleString("sv-SE", { timeZone: TZ }) : "";
   /** Precio con los decimales del activo; sin esto salen dobles en crudo. */
   const num = (v: number | undefined, d: number) =>
     v == null || !Number.isFinite(v) ? "" : Number(v.toFixed(d));

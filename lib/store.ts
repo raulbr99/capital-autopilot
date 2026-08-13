@@ -193,7 +193,8 @@ export function pushEquity(equity: number) {
  * ayer bajo el rótulo "HOY" y el cupo de operaciones diarias se reiniciaba a
  * deshora. Configurable por si la cuenta cambia de país.
  */
-export const TZ = process.env.ACCOUNT_TZ || "Europe/Madrid";
+import { TZ } from "./model";
+export { TZ };
 
 /**
  * Recorte de texto para registro y diario. Todo esto se cortaba con un

@@ -166,3 +166,20 @@ export type EpicEval = {
    */
   sinDatos?: string;
 };
+
+/**
+ * Zona horaria de la cuenta. Una sola definición para las dos mitades.
+ *
+ * Estaba en lib/store.ts leyendo ACCOUNT_TZ —y el motor la respetaba— mientras
+ * el agrupado del P&L diario y la exportación a CSV llevaban "Europe/Madrid"
+ * escrito a mano. Cambiar la variable habría movido el día del bot (su cupo
+ * diario, su ancla de equity, su freno) sin mover las barras del gráfico ni las
+ * marcas de tiempo del CSV: dos calendarios distintos en la misma aplicación.
+ *
+ * NEXT_PUBLIC_ACCOUNT_TZ existe porque Next solo inyecta en el navegador las
+ * variables con ese prefijo. Con las dos puestas al mismo valor, servidor y
+ * cliente comparten calendario; sin ninguna, ambos caen en Madrid como hasta
+ * ahora.
+ */
+export const TZ =
+  process.env.NEXT_PUBLIC_ACCOUNT_TZ || process.env.ACCOUNT_TZ || "Europe/Madrid";

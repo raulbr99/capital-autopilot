@@ -3,6 +3,7 @@
  */
 
 import type { TradeRecord } from "./store";
+import { TZ } from "./model";
 
 // Una operación cerrada EXACTAMENTE a cero no es un acierto: es un empate.
 // Contarla como ganadora inflaba el win rate (8 de 33 en el histórico actual:
@@ -107,7 +108,7 @@ export function analyze(trades: TradeRecord[]): Analytics {
     // Día natural del usuario, no UTC: si no, lo cerrado entre medianoche y
     // las 02:00 de Madrid caía en la barra del día anterior.
     const d = new Date(t.closedTs || t.ts).toLocaleDateString("en-CA", {
-      timeZone: "Europe/Madrid",
+      timeZone: TZ,
     });
     dayMap.set(d, (dayMap.get(d) || 0) + (t.pnl || 0));
   }
