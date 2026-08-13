@@ -43,7 +43,21 @@ export default function BacktestPanel() {
     setLoading(true);
     setErr(null);
     try {
-      const r = await fetch(`/api/bot/backtest?resolution=${resolution}&max=400`);
+      /**
+       * 1000 velas, no 400. Mismo caso que el walk-forward ayer: la ruta admite
+       * mil y el panel pedía menos de la mitad, con el efecto de que casi todas
+       * las filas salían con "muestra corta" y sin porcentaje. En la pasada 91
+       * lo atribuí a que la estrategia es selectiva; medido ahora en MSFT a 4
+       * horas, es el parámetro: 400 velas dan 26 operaciones y 1000 dan 55.
+       *
+       * El retorno empeora al ampliar (−4,83 % → −10,42 %) con el acierto
+       * clavado en 31 %. Eso no es un problema del cambio: es que el tramo
+       * corto favorecía al sistema y la muestra larga lo desmiente. Un backtest
+       * está para eso.
+       *
+       * Coste medido sobre los 20 activos: de 3,2 a 4,7 s.
+       */
+      const r = await fetch(`/api/bot/backtest?resolution=${resolution}&max=1000`);
       const data = await r.json();
       if (data.configured === false) {
         setErr("Conecta tus credenciales de Capital.com para backtestear.");
