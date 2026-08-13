@@ -80,7 +80,22 @@ export default function WalkForward({ watchlist }: { watchlist: string[] }) {
         setHecho({ n: i, total: watchlist.length });
         aborto.current = new AbortController();
         const r = await fetch(
-          `/api/bot/walkforward?epic=${epic}&resolution=${resolution}&max=600`,
+          /**
+           * 1000 velas, no 600. La ruta admite hasta mil y el panel pedía la
+           * mitad larga, con una consecuencia que solo se ve al ejecutar la
+           * validación entera: NINGUNO de los 20 activos alcanzaba las 20
+           * operaciones fuera de muestra, así que el walk-forward no podía
+           * concluir nada. Medido en MSFT: con 600 velas salen 19 operaciones
+           * OOS en 4 ventanas; con 1000, 41 en 9 — y el profit factor pasa de
+           * 1,47 a 1,34, que es la lectura honesta: más datos, algo menos de
+           * brillo y por fin una muestra defendible.
+           *
+           * Cuesta tiempo: de 1,6 a 3,8 s por activo (medido en GOLD), o sea
+           * que los 20 pasan de ~40 s a ~80. Aceptable para una herramienta que
+           * se lanza a mano, tiene barra de progreso y se puede detener desde
+           * la pasada 90. Un validador rápido que nunca valida no sirve de nada.
+           */
+          `/api/bot/walkforward?epic=${epic}&resolution=${resolution}&max=1000`,
           { signal: aborto.current.signal }
         );
         const data = await r.json();
