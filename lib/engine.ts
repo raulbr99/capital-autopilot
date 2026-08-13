@@ -796,6 +796,9 @@ function realToOpen(p: Position): OpenPos {
     stopLevel: p.stopLevel,
     limitLevel: p.limitLevel,
     currentPrice: p.currentPrice,
+    // Divisa del instrumento. Sin ella, la interfaz no puede saber que un
+    // "riesgo 2.07" está en dólares mientras la cuenta lleva euros.
+    currency: p.currency,
     // Capital ya nos la da y se estaba descartando: sin ella, el gráfico de la
     // posición no puede señalar en qué vela se entró.
     openedAt: p.createdDate || undefined,

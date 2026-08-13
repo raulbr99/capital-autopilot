@@ -493,6 +493,40 @@ export function useOnline() {
  * (llegó a marcar +21R). Vive aquí porque se calculaba en tres sitios y solo
  * uno de ellos contemplaba el caso.
  */
+/**
+ * Convertir a la divisa de la CUENTA un importe que sale de precios.
+ *
+ * Todo lo que se calcula multiplicando precios por tamaño —el riesgo hasta el
+ * stop, la exposición nocional— queda en la divisa en la que COTIZA el
+ * instrumento, no en la de la cuenta. Y aquí la cuenta es en euros mientras las
+ * seis posiciones abiertas cotizan en dólares, así que el panel venía
+ * dividiendo dólares entre euros para anunciar "5,2 % del capital si saltan
+ * todos". Con el euro-dólar por encima de la paridad, eso infla la cifra
+ * alrededor de un 8 % — y en la exposición, que es diez veces mayor, el error
+ * se cuenta en puntos porcentuales de apalancamiento.
+ *
+ * El cambio sale del propio universo: EURUSD es uno de los veinte instrumentos
+ * que el bot evalúa cada ciclo, así que su precio ya viaja en el snapshot. Si no
+ * está, o si el instrumento cotiza en una divisa que no es ninguna de las dos
+ * (los cruces contra el yen, por ejemplo), se devuelve null y quien pinte decide
+ * qué decir — pero no se afirma una equivalencia que no se tiene.
+ */
+export function aCuenta(
+  importe: number,
+  divisaPos: string | undefined,
+  divisaCuenta: string | undefined,
+  eurusd: number | null | undefined
+): number | null {
+  if (!Number.isFinite(importe)) return null;
+  const a = (divisaPos || "").toUpperCase();
+  const b = (divisaCuenta || "").toUpperCase();
+  if (!a || !b || a === b) return importe;
+  if (!eurusd || eurusd <= 0) return null;
+  if (a === "USD" && b === "EUR") return importe / eurusd;
+  if (a === "EUR" && b === "USD") return importe * eurusd;
+  return null;
+}
+
 export function positionRisk(p: {
   direction: "BUY" | "SELL";
   entry: number;

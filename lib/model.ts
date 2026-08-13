@@ -159,6 +159,8 @@ export type OpenPos = {
   stopLevel?: number | null;
   limitLevel?: number | null;
   currentPrice?: number | null;
+  /** Divisa en la que cotiza el instrumento (USD en todo el universo actual). */
+  currency?: string;
   /** Momento de apertura (ISO), para marcarlo en el gráfico. */
   openedAt?: string;
 };

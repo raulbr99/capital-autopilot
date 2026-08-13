@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, useOnline } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, useOnline, aCuenta } from "./ui";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -144,8 +144,27 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const positions = (snap?.openPositions ?? []).filter((p) => epicCat.get(p.epic) === category);
   const deskPnl = positions.reduce((s, p) => s + (p.upl || 0), 0);
   // Exposición nocional y riesgo hasta el stop: las dos cifras que mira un operador
-  const exposure = positions.reduce((s, p) => s + Math.abs(p.size * p.entry), 0);
-  const riskAtStop = positions.reduce((s, p) => s + (positionRisk(p).risk ?? 0), 0);
+  /**
+   * Cambio euro-dólar del propio universo: EURUSD se evalúa en cada ciclo, así
+   * que su precio ya está en este snapshot. Sirve para llevar a la divisa de la
+   * cuenta lo que sale de multiplicar precios por tamaño.
+   */
+  const eurusd = (snap?.evals ?? []).find((e) => e.epic === "EURUSD")?.price ?? null;
+  const enCuenta = (importe: number, p: { currency?: string }) =>
+    aCuenta(importe, p.currency, currency, eurusd);
+  /** true si ALGUNA posición no se ha podido convertir: entonces no se afirma el %. */
+  let sinConvertir = false;
+  const suma = (f: (p: (typeof positions)[number]) => number) =>
+    positions.reduce((acc, p) => {
+      const v = enCuenta(f(p), p);
+      if (v == null) {
+        sinConvertir = true;
+        return acc + f(p);
+      }
+      return acc + v;
+    }, 0);
+  const exposure = suma((p) => Math.abs(p.size * p.entry));
+  const riskAtStop = suma((p) => positionRisk(p).risk ?? 0);
   const maxPerDesk = snap?.state.config.maxPerDesk ?? 4;
   const currency = snap?.account?.currency ?? "";
   const session = deskSession(category);
@@ -333,7 +352,9 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             sub={
               exposure > 0
                 ? snap?.account?.balance
-                  ? `${currency} · ${(exposure / snap.account.balance).toFixed(1)}× capital`
+                  ? `${currency} · ${(exposure / snap.account.balance).toFixed(1)}× capital${
+                      sinConvertir ? " (aprox.)" : ""
+                    }`
                   : currency
                 : `${evals.length} ${evals.length === 1 ? "activo" : "activos"} · ${signals} con señal`
             }
@@ -343,9 +364,9 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             value={cargando ? null : riskAtStop > 0 ? `≈${fmt(riskAtStop)}` : "—"}
             sub={
               riskAtStop > 0
-                ? snap?.account?.balance
+                ? snap?.account?.balance && !sinConvertir
                   ? `${((riskAtStop / snap.account.balance) * 100).toFixed(1)}% del capital si saltan todos`
-                  : `${currency} si saltan todos`
+                  : `${currency} si saltan todos${sinConvertir ? " · aprox." : ""}`
                 : "sin posiciones"
             }
           />
@@ -400,6 +421,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
               divisa={currency}
               equity={snap?.account?.balance ?? null}
               marcos={Object.fromEntries(instruments.map((i) => [i.epic, i.resolution]))}
+              eurusd={eurusd}
             />
             {journal.length === 0 && (
               <div className="dotgrid rounded-xl border border-industrial bg-soft px-5 py-7 text-center">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { OpenPos } from "./types";
-import { SectionHead, fmt, price, pnlClass, pnlFmt, positionRisk, Skeleton } from "./ui";
+import { SectionHead, fmt, price, pnlClass, pnlFmt, positionRisk, Skeleton, aCuenta } from "./ui";
 import dynamic from "next/dynamic";
 
 // El modal del gráfico arrastra lightweight-charts (~56 kB). Como solo se abre
@@ -16,9 +16,23 @@ const ChartIcon = (
   </svg>
 );
 
-function derive(p: OpenPos) {
+/**
+ * `risk`, `notional` y `lockedGain` salen de multiplicar PRECIOS por tamaño, así
+ * que nacen en la divisa en la que cotiza el instrumento — dólares en todo el
+ * universo actual— mientras la cuenta lleva euros. Se convertían nunca: la
+ * columna RIESGO enseñaba dólares justo al lado de un P&L en euros, y el
+ * múltiplo de R dividía uno entre otro. Con el cambio disponible se pasan a la
+ * divisa de la cuenta; sin él se dejan como están y la fila lo dice en su title.
+ */
+function derive(p: OpenPos, divisaCuenta?: string, eurusd?: number | null) {
   const cur = p.currentPrice ?? p.entry;
-  const { risk, locked, lockedGain } = positionRisk(p);
+  const conv = (v: number) => aCuenta(v, p.currency, divisaCuenta, eurusd);
+  const r0 = positionRisk(p);
+  const riskConv = r0.risk == null ? null : conv(r0.risk);
+  const convertido = r0.risk == null || riskConv != null;
+  const { locked } = r0;
+  const risk = riskConv ?? r0.risk;
+  const lockedGain = conv(r0.lockedGain) ?? r0.lockedGain;
   const distPct = p.stopLevel != null && cur ? (Math.abs(cur - p.stopLevel) / cur) * 100 : null;
   const distTone = distPct == null ? "text-muted" : distPct < 0.5 ? "text-short" : "text-dim";
   // ¿el precio actual favorece la posición? (LONG sube / SHORT baja)
@@ -27,8 +41,9 @@ function derive(p: OpenPos) {
   // Resultado en múltiplos de RIESGO: como puntúa un operador ("voy +1.2R"),
   // comparable entre activos aunque los euros sean distintos.
   const rMult = risk && risk > 0 ? p.upl / risk : null;
-  const notional = Math.abs(p.size * p.entry);
-  return { cur, risk, distPct, distTone, curTone, rMult, notional, locked, lockedGain };
+  const notionalBruto = Math.abs(p.size * p.entry);
+  const notional = conv(notionalBruto) ?? notionalBruto;
+  return { cur, risk, distPct, distTone, curTone, rMult, notional, locked, lockedGain, convertido };
 }
 
 /** Barra de recorrido del trade: -1R (stop) .. 0 (entrada) .. +2R. */
@@ -78,6 +93,7 @@ export default function PositionsTable({
   divisa,
   equity,
   marcos,
+  eurusd,
 }: {
   positions: OpenPos[];
   onClose: (p: OpenPos) => void;
@@ -87,6 +103,8 @@ export default function PositionsTable({
   equity?: number | null;
   /** epic → resolución del motor, para abrir el gráfico en su marco. */
   marcos?: Record<string, string>;
+  /** Cambio EUR/USD del propio universo, para llevar riesgo y nocional a la cuenta. */
+  eurusd?: number | null;
   busy: boolean;
 }) {
   const [chartPos, setChartPos] = useState<OpenPos | null>(null);
@@ -95,7 +113,7 @@ export default function PositionsTable({
   // Totales de la cartera: un blotter de broker siempre cierra con su suma
   const totals = positions.reduce(
     (a, p) => {
-      const { risk, notional } = derive(p);
+      const { risk, notional } = derive(p, divisa, eurusd);
       a.pnl += p.upl || 0;
       a.risk += risk ?? 0;
       a.notional += notional;
@@ -163,7 +181,7 @@ export default function PositionsTable({
               </thead>
               <tbody>
                 {positions.map((p) => {
-                  const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain } = derive(p);
+                  const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain, convertido } = derive(p, divisa, eurusd);
                   return (
                     <tr key={p.key} className="border-b border-industrial/60 hover:bg-raised">
                       <td className="px-4 py-3 text-white">{p.epic}</td>
@@ -205,7 +223,16 @@ export default function PositionsTable({
                             asegurada
                           </span>
                         ) : (
-                          <span className="text-dim">≈{fmt(risk)}</span>
+                          <span
+                            className="text-dim"
+                            title={
+                              convertido
+                                ? `Pérdida si salta el stop, en ${divisa || "la divisa de la cuenta"}`
+                                : `Pérdida si salta el stop, en ${p.currency || "la divisa del instrumento"} — sin cambio disponible para pasarla a ${divisa || "la de la cuenta"}`
+                            }
+                          >
+                            ≈{fmt(risk)}
+                          </span>
                         )}
                       </td>
                       <td className="min-w-[92px] px-4 py-3 text-right">
@@ -271,7 +298,7 @@ export default function PositionsTable({
           {/* Móvil: tarjetas apiladas */}
           <div className="space-y-2 p-3 md:hidden">
             {positions.map((p) => {
-              const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain } = derive(p);
+              const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain } = derive(p, divisa, eurusd);
               return (
                 <div key={p.key} className="rounded-lg border border-industrial bg-base p-3">
                   <div className="flex items-center justify-between">

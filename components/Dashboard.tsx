@@ -628,6 +628,7 @@ export default function Dashboard() {
               divisa={acc?.currency ?? ""}
               equity={lastEquity}
               marcos={Object.fromEntries((cfg?.instruments ?? []).map((i) => [i.epic, i.resolution]))}
+              eurusd={(snap?.evals ?? []).find((e) => e.epic === "EURUSD")?.price ?? null}
             />
             <LogFeed logs={historial.logs} />
           </div>
