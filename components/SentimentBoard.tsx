@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePoll, Skeleton } from "./ui";
 
 type Ape = {
@@ -154,11 +154,18 @@ function SignalChip({ tipo }: { tipo?: "BUY" | "SELL" | "FLAT" }) {
 export default function SentimentBoard({
   className = "",
   evals = [],
+  onEstadoMercado,
 }: {
   className?: string;
   /** Señales del motor: sin ellas, buzz y técnico viven en dos tablas que el
    *  lector tiene que cruzar a mano desplazándose arriba y abajo. */
   evals?: { epic: string; signal: { type: "BUY" | "SELL" | "FLAT" } }[];
+  /**
+   * Estado real del mercado según Yahoo (REGULAR, PRE, POST, CLOSED). Se lo
+   * devuelve a la mesa para que su distintivo de sesión deje de calcularlo a
+   * mano con un horario fijo.
+   */
+  onEstadoMercado?: (estado: string) => void;
 }) {
   const [d, setD] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
@@ -181,6 +188,9 @@ export default function SentimentBoard({
   const signalMap = new Map(evals.map((e) => [e.epic, e.signal?.type]));
   const blocked = (d?.earnings ?? []).filter((e) => e.daysUntil != null && e.daysUntil <= 7);
   const marketState = d?.prices?.[0]?.marketState ?? "";
+  useEffect(() => {
+    if (marketState) onEstadoMercado?.(marketState);
+  }, [marketState, onEstadoMercado]);
 
   return (
     <div className={`rounded-xl border border-industrial bg-soft ${className}`}>

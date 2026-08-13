@@ -168,7 +168,37 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const riskAtStop = suma((p) => positionRisk(p).risk ?? 0);
   const maxPerDesk = snap?.state.config.maxPerDesk ?? 4;
   const currency = snap?.account?.currency ?? "";
-  const session = deskSession(category);
+  /**
+   * Estado de sesión de la mesa.
+   *
+   * deskSession lo calcula con el horario regular de Nueva York, y ese cálculo
+   * no sabe de festivos de la bolsa: el día de Acción de Gracias o el 4 de
+   * julio, el distintivo diría "Sesión de Nueva York abierta" toda la mañana
+   * mientras el motor rechaza cada apertura con "mercado CLOSED". Y son justo
+   * los días en que uno mira el panel preguntándose por qué no pasa nada.
+   *
+   * En la mesa de acciones no hace falta adivinarlo: el tablero de sentimiento
+   * que ya vive en esta página trae el estado REAL de Yahoo —REGULAR, PRE,
+   * POST, CLOSED—, así que lo usamos cuando llega. El horario calculado queda
+   * como respaldo hasta que responda, y para las demás mesas, que no tienen esa
+   * fuente. Sin peticiones nuevas: es el dato que el tablero ya pide.
+   */
+  const [estadoYahoo, setEstadoYahoo] = useState<string>("");
+  const sessionCalc = deskSession(category);
+  const session =
+    category === "stocks" && estadoYahoo
+      ? estadoYahoo === "REGULAR"
+        ? { open: true, label: "Sesión de Nueva York abierta" }
+        : {
+            open: false,
+            label:
+              estadoYahoo === "PRE"
+                ? "Pre-market · sesión sin abrir"
+                : estadoYahoo === "POST" || estadoYahoo === "POSTPOST"
+                  ? "After-hours · sesión cerrada"
+                  : "Bolsa de NY cerrada",
+          }
+      : sessionCalc;
   const signals = evals.filter((e) => e.signal.type !== "FLAT").length;
 
   const runGestor = async () => {
@@ -392,7 +422,9 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
           />
         </div>
 
-        {category === "stocks" && <SentimentBoard className="mb-5" evals={evals} />}
+        {category === "stocks" && (
+          <SentimentBoard className="mb-5" evals={evals} onEstadoMercado={setEstadoYahoo} />
+        )}
         {category === "crypto" && <FundingPanel className="mb-5" />}
         {(category === "forex" || category === "commodities") && (
           <CotPanel category={category} className="mb-5" />
