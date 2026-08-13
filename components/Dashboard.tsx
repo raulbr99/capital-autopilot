@@ -310,9 +310,17 @@ export default function Dashboard() {
                 <Skeleton className="h-8 w-40" />
               ) : (
                 <>
-                  <span className={`h-2.5 w-2.5 rounded-full ${enabled ? "animate-pulseDot bg-long" : "bg-muted"}`} />
-                  <span className={`font-display text-3xl font-semibold tracking-tight ${enabled ? "text-white" : "text-dim"}`}>
-                    {enabled ? "Activo" : "En espera"}
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full ${
+                      !configured ? "bg-short" : enabled ? "animate-pulseDot bg-long" : "bg-muted"
+                    }`}
+                  />
+                  <span
+                    className={`font-display text-3xl font-semibold tracking-tight ${
+                      !configured ? "text-short" : enabled ? "text-white" : "text-dim"
+                    }`}
+                  >
+                    {!configured ? "Sin conexión" : enabled ? "Activo" : "En espera"}
                   </span>
                 </>
               )}
@@ -327,7 +335,11 @@ export default function Dashboard() {
               Con seis posiciones encima, eso hay que decirlo antes de pulsar.
             */}
             <p className="mt-2 max-w-[280px] text-xs leading-relaxed text-muted">
-              {enabled ? (
+              {!configured ? (
+                /* Sin credenciales no puede operar: decir "opera en tu cuenta
+                   real" ahí es sencillamente falso. */
+                <>Sin conexión con Capital.com: no hay precios ni cuenta, y no se puede operar.</>
+              ) : enabled ? (
                 <>Opera en tu cuenta real de Capital.com con las señales validadas. Las órdenes son reales.</>
               ) : positions.length > 0 ? (
                 <>
@@ -784,14 +796,62 @@ function PnlPill({ value, currency }: { value: number; currency?: string }) {
   );
 }
 
+/**
+ * Sin credenciales de Capital no hay precios, ni cuenta, ni órdenes: es el
+ * estado más roto en el que puede estar el panel y su aviso daba una
+ * instrucción IMPOSIBLE de seguir donde se lee. Decía "copia .env.local.example
+ * a .env.local", que solo sirve ejecutando el proyecto en tu máquina; esto
+ * corre en Vercel, donde no hay ficheros que copiar. Quien llegara aquí desde
+ * el panel desplegado se quedaba sin salida.
+ *
+ * Ahora da los comandos reales y completos —incluido el redespliegue, sin el
+ * cual la variable no existe en el runtime en marcha, la misma lección de la
+ * tarjeta de acceso en la pasada 101— y menciona el fichero local como lo que
+ * es: la alternativa para desarrollo.
+ */
+const COMANDOS_CAPITAL = `vercel env add CAPITAL_API_KEY production
+vercel env add CAPITAL_IDENTIFIER production
+vercel env add CAPITAL_PASSWORD production
+vercel deploy --prod`;
+
 function ConfigWarning() {
+  const [copiado, setCopiado] = useState(false);
   return (
     <div className="mb-5 rounded-xl border border-short/30 bg-short/5 p-4">
       <p className="text-sm font-semibold text-short">Credenciales no configuradas</p>
       <p className="mt-2 text-xs leading-relaxed text-dim">
-        Copia <code className="rounded bg-industrial px-1 font-mono text-accent">.env.local.example</code> a{" "}
-        <code className="rounded bg-industrial px-1 font-mono text-accent">.env.local</code> con tus credenciales de Capital.com.
-        El panel no podrá operar hasta entonces.
+        Sin ellas no hay precios, ni saldo, ni órdenes: el panel no puede operar. Defínelas en Vercel y
+        vuelve a desplegar.
+      </p>
+      <div className="mt-3 overflow-hidden rounded-lg border border-industrial bg-base">
+        <div className="flex items-center justify-between border-b border-industrial px-3 py-1.5">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-muted">En producción</span>
+          <button
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(COMANDOS_CAPITAL);
+                setCopiado(true);
+                setTimeout(() => setCopiado(false), 1800);
+              } catch {
+                /* sin portapapeles: el texto sigue seleccionable */
+              }
+            }}
+            className={`-my-1 min-h-[32px] rounded px-2.5 font-mono text-[10px] transition-colors ${
+              copiado ? "text-long" : "text-muted hover:text-accent"
+            }`}
+          >
+            {copiado ? "copiado ✓" : "copiar"}
+          </button>
+        </div>
+        <pre className="overflow-x-auto px-3 py-2 font-mono text-[11px] leading-relaxed text-dim">
+          {COMANDOS_CAPITAL}
+        </pre>
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-muted">
+        En local, copia{" "}
+        <code className="rounded bg-industrial px-1 font-mono text-dim">.env.local.example</code> a{" "}
+        <code className="rounded bg-industrial px-1 font-mono text-dim">.env.local</code> con esas mismas
+        claves.
       </p>
     </div>
   );
