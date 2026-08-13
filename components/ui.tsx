@@ -359,6 +359,16 @@ export function pdec(n: number) {
 }
 
 /** Precio con los decimales propios del activo. Compartido por tabla y señales. */
+/**
+ * Tamaño de una posición, legible. Los valores salen del cálculo de riesgo y
+ * arrastran la basura del binario: 0.0013000000000000002, 0.41000000000000003.
+ * Vivía dentro de Analítica; lo usa también el detalle de una posición abierta,
+ * así que pasa aquí antes de convertirse en dos copias que se separan.
+ */
+export function uds(n: number) {
+  return Number.isFinite(n) ? String(Number(n.toPrecision(4))) : "—";
+}
+
 export function price(n: number | null | undefined) {
   return n == null ? "—" : fmt(n, pdec(n));
 }

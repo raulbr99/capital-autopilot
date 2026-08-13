@@ -12,7 +12,7 @@ import {
 } from "lightweight-charts";
 import type { OpenPos } from "./types";
 import { RESOLUCIONES } from "@/lib/model";
-import { fmt, pdec, pnlClass, pnlFmt, useFocusTrap, useReturnFocus } from "./ui";
+import { fmt, pdec, pnlClass, pnlFmt, uds, useFocusTrap, useReturnFocus } from "./ui";
 
 type Candle = { time: string; open: number; high: number; low: number; close: number };
 
@@ -282,8 +282,19 @@ export default function PositionChart({
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-industrial px-5 py-3.5">
           <div className="flex items-center gap-3">
             <span className="font-mono text-sm font-semibold text-white">{pos.epic}</span>
+            {/*
+              El TAMAÑO faltaba en toda esta pantalla: cabecera, niveles y pie.
+              Sin él, el P&L de al lado no se puede reconciliar con el recorrido
+              de precio que enseña el gráfico — que es justo para lo que se abre
+              este modal. Y la fila de la tabla desde la que se llega SÍ lo trae:
+              el detalle perdía un dato que ya estaba a la vista un clic antes.
+              Es el mismo hueco que tenía el historial de operaciones cerradas.
+            */}
             <span className={`font-mono text-xs ${pos.direction === "BUY" ? "text-long" : "text-short"}`}>
               {pos.direction === "BUY" ? "▲ LONG" : "▼ SHORT"}
+              <span className="ml-1.5 text-muted" title="Tamaño de la posición">
+                {uds(pos.size)}
+              </span>
             </span>
             <span className={`font-mono text-xs ${pnlClass(pos.upl)}`}>
               {pnlFmt(pos.upl)}

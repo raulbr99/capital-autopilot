@@ -20,7 +20,7 @@ import type { TradeRecord, DeskCategory } from "./types";
  */
 import { analyze } from "@/lib/analytics";
 import { TZ } from "@/lib/model";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion, pdec } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion, pdec, uds } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -816,13 +816,6 @@ function salidaFiable(t: TradeRecord): boolean {
   if (t.exit == null) return false;
   return !(t.exit === t.entry && Math.abs(t.pnl || 0) > 0.01);
 }
-
-/**
- * Tamaño de la posición, legible. Los valores llegan del cálculo de riesgo y
- * arrastran la basura del binario: 0.0013000000000000002, 0.41000000000000003.
- */
-const uds = (n: number) =>
-  Number.isFinite(n) ? String(Number(n.toPrecision(4))) : "—";
 
 /**
  * El historial enseñaba dirección, precios, duración y P&L — todo menos CUÁNTO.
