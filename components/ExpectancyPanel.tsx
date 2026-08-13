@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { SectionHead, StatCard, fmt, pf, pnlClass, pnlFmt, pl } from "./ui";
 
+type DirStat = { trades: number; wins: number; losses: number; winRate: number; net: number };
+
 type Exp = {
   closed: number;
   wins: number;
@@ -26,6 +28,7 @@ type Exp = {
   projWeekPct: number;
   projMonthPct: number;
   enough: boolean;
+  byDirection?: { long: DirStat; short: DirStat };
 };
 
 export default function ExpectancyPanel({
@@ -112,6 +115,21 @@ export default function ExpectancyPanel({
             <b className={`font-mono ${beatsBreakeven ? "text-long" : "text-short"}`}>{d.winRate.toFixed(0)}%</b>
           </span>
         )}
+        {/*
+          Mejor y peor operación. Venían en la respuesta desde el principio y el
+          panel las tiraba. La peor de todas es la cifra que dice si el riesgo
+          por operación se está respetando: hoy son 27 sobre una cuenta de 227,
+          un 12 % del capital en una sola posición.
+        */}
+        <span className="text-dim">
+          Mejor <b className="font-mono text-long">{pnlFmt(d.best)}</b> · peor{" "}
+          <b className="font-mono text-short">{pnlFmt(d.worst)}</b>
+          {d.equity > 0 && (
+            <span className="ml-1 text-muted">
+              ({Math.abs((d.worst / d.equity) * 100).toFixed(1)}% de la cuenta)
+            </span>
+          )}
+        </span>
         <span
           className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
             beatsBreakeven ? "bg-long/15 text-long" : "bg-short/15 text-short"
@@ -120,6 +138,29 @@ export default function ExpectancyPanel({
           {beatsBreakeven ? "✓ con ventaja" : "✗ bajo equilibrio"}
         </span>
       </div>
+
+      {/*
+        Largos y cortos por separado. El endpoint calcula este desglose y se lo
+        sirve a los Gestores desde hace pasadas; el panel lo recibía y no lo
+        pintaba. Es el dato más accionable que hay aquí: medido en producción,
+        los largos aciertan un 50 % y los cortos un 25 %, con el mismo número de
+        operaciones cada uno. El 38 % agregado de arriba no describe a ninguno
+        de los dos — describe una media de dos sistemas distintos.
+      */}
+      {d.byDirection && (
+        <div className="border-t border-industrial px-5 py-3.5">
+          <p className="tag mb-2.5">Por dirección</p>
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-industrial bg-industrial">
+            <Dir label="▲ Largos" s={d.byDirection.long} divisa={divisa} equilibrio={d.breakevenWinRate} />
+            <Dir label="▼ Cortos" s={d.byDirection.short} divisa={divisa} equilibrio={d.breakevenWinRate} />
+          </div>
+          {/* Partir la muestra en dos la deja a la mitad: decirlo aquí evita
+              que un 25 % sobre doce operaciones decididas se lea como un hecho. */}
+          <p className="mt-2 text-[11px] leading-snug text-muted">
+            Cada lado se mide sobre su propia muestra, la mitad de la total.
+          </p>
+        </div>
+      )}
 
       {/* proyección a la frecuencia observada */}
       <div className="border-t border-industrial p-5">
@@ -146,6 +187,43 @@ export default function ExpectancyPanel({
         </span>
       </div>
     </>
+  );
+}
+
+function Dir({
+  label,
+  s,
+  divisa,
+  equilibrio,
+}: {
+  label: string;
+  s: DirStat;
+  divisa?: string;
+  equilibrio: number | null;
+}) {
+  const decididas = s.wins + s.losses;
+  const bate = equilibrio != null && decididas > 0 && s.winRate >= equilibrio;
+  return (
+    <div className="bg-soft p-3.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="tag">{label}</p>
+        <span className="font-mono text-[10px] text-muted">
+          {s.trades} {pl(s.trades, "op", "ops")}
+        </span>
+      </div>
+      <p className="mt-1.5 font-mono text-lg font-medium tracking-tight">
+        <span className={decididas ? (bate ? "text-long" : "text-short") : "text-muted"}>
+          {decididas ? `${s.winRate.toFixed(0)}%` : "—"}
+        </span>
+        <span className="ml-1.5 text-[11px] font-normal text-muted">
+          {decididas ? `de ${decididas} decididas` : "sin cerrar"}
+        </span>
+      </p>
+      <p className={`mt-0.5 font-mono text-[11px] ${pnlClass(s.net)}`}>
+        {pnlFmt(s.net)}
+        {divisa && <span className="ml-1 text-muted">{divisa}</span>}
+      </p>
+    </div>
   );
 }
 
