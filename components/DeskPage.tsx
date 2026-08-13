@@ -324,7 +324,31 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             )}
           </div>
 
-          {journal.length > 0 && (
+          {/*
+            La tarjeta entera desaparecía cuando la mesa no tenía decisiones:
+            en Crypto o Commodities veías un hueco donde en Forex hay un carril,
+            sin nada que dijera si el Gestor no ha opinado todavía o si esta
+            mesa sencillamente no tiene esa sección. Un elemento que se esfuma
+            no informa; deja al usuario comparando pantallas para deducirlo.
+            Ahora la tarjeta se queda con su explicación, como el resto de
+            estados vacíos de la aplicación.
+          */}
+          {cargando ? null : journal.length === 0 ? (
+            <div className="rounded-xl border border-industrial bg-soft">
+              <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
+                <h2 className="tag">Gestor {meta.label} · decisiones</h2>
+                <span className="font-mono text-[11px] text-muted">0</span>
+              </div>
+              <div className="px-5 py-8 text-center">
+                <p className="text-sm font-medium text-dim">Sin decisiones en esta mesa</p>
+                <p className="mx-auto mt-1.5 max-w-[260px] text-[12px] leading-relaxed text-muted">
+                  El Gestor escribe aquí su tesis en cada ciclo. Puedes lanzarlo ahora con el botón de
+                  arriba, o verlas todas en el{" "}
+                  <a href="/journal" className="text-accent underline">Diario</a>.
+                </p>
+              </div>
+            </div>
+          ) : (
             <div className="overflow-hidden rounded-xl border border-industrial bg-soft">
               <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
                 <h2 className="tag">Gestor {meta.label} · decisiones</h2>
