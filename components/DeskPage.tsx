@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, useOnline, aCuenta } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, useOnline, aCuenta, pl } from "./ui";
 import { EPS_PNL } from "@/lib/model";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
@@ -388,7 +388,11 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
           <Kpi
             label="Posiciones"
             value={cargando ? null : `${positions.length}/${maxPerDesk}`}
-            sub={positions.length >= maxPerDesk ? "mesa llena" : `${maxPerDesk - positions.length} libres`}
+            sub={
+              positions.length >= maxPerDesk
+                ? "mesa llena"
+                : `${maxPerDesk - positions.length} ${pl(maxPerDesk - positions.length, "libre", "libres")}`
+            }
             tone={positions.length > maxPerDesk ? "short" : undefined}
           />
           <Kpi

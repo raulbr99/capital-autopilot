@@ -290,7 +290,18 @@ function SignalCard({
       </div>
 
       <div className="mt-2">
-        <Sparkline data={e.spark} h={36} />
+        {/*
+          La línea se coloreaba sola comparando la PRIMERA y la ÚLTIMA de las 30
+          velas, mientras el porcentaje de arriba mide la ventana de ~24 h. Con
+          activos en diario son treinta días contra uno, así que las dos cosas
+          se contradecían en la misma tarjeta: visto en una captura, AAPL con
+          "+1,11 %" en verde sobre una línea ROJA, y AMZN con "−0,74 %" en rojo
+          sobre una línea VERDE.
+          Las dos lecturas eran ciertas por separado; puestas juntas, una desmiente
+          a la otra. El color pasa a decir lo mismo que la cifra que encabeza la
+          tarjeta; la forma de la línea sigue enseñando las treinta velas.
+        */}
+        <Sparkline data={e.spark} h={36} up={chg == null ? undefined : chg >= 0} />
       </div>
 
       {/* La confianza solo se dibuja si hay señal: una barra al 66% bajo un
