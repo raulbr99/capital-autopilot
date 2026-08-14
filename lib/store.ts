@@ -136,6 +136,13 @@ export type BotState = {
   lastCronTick: number;
   cooldownUntil: number; // timestamp; no abrir hasta pasarlo
   stats: { signals: number; tradesOpened: number; tradesClosed: number };
+  /**
+   * Último disparo manual del Gestor por mesa. Vive en el estado PERSISTIDO y
+   * no en memoria: en serverless cada instancia tiene su propia memoria, así
+   * que un anti-rebote guardado en una variable del módulo solo frena los
+   * clics que caen en la misma instancia.
+   */
+  gestorFiredAt: Record<string, number>;
 };
 
 declare global {
@@ -155,6 +162,7 @@ function init(): BotState {
     aiReviewedAt: {},
     lastTick: 0,
     lastCronTick: 0,
+    gestorFiredAt: {},
     cooldownUntil: 0,
     stats: { signals: 0, tradesOpened: 0, tradesClosed: 0 },
   };

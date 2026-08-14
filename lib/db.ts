@@ -185,6 +185,7 @@ export async function loadRuntime(): Promise<void> {
       b.lastCronTick = data.data.lastCronTick ?? 0;
       b.prevDeposit = data.data.prevDeposit ?? 0;
       b.aiReviewedAt = data.data.aiReviewedAt ?? {};
+      b.gestorFiredAt = data.data.gestorFiredAt ?? {};
       b.stats = data.data.stats ?? b.stats;
     }
   } catch {
@@ -206,6 +207,7 @@ export async function saveRuntime(): Promise<void> {
         lastCronTick: b.lastCronTick,
         prevDeposit: b.prevDeposit,
         aiReviewedAt: b.aiReviewedAt,
+        gestorFiredAt: b.gestorFiredAt,
         stats: b.stats,
       },
       updated_at: new Date().toISOString(),
