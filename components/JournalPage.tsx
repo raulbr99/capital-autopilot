@@ -142,6 +142,19 @@ export default function JournalPage() {
           {shown.length > 0 && (
             <span className="ml-auto font-mono text-[11px] text-muted">
               {shown.length} {pl(shown.length, "entrada", "entradas")} · {traded} con operación
+              {/*
+                El alcance, visible y no solo en un title.
+                Los números de las pestañas cuentan cuántas entradas de cada
+                mesa hay entre las 60 más recientes, no cuántas tiene la mesa —
+                por eso "Stocks 6" convive con veinte entradas suyas al filtrar—.
+                Eso estaba explicado en el title del número desde la pasada 167,
+                y en un teléfono un title no existe: no hay dónde posar el ratón.
+                Media aplicación explica cosas por title; donde el dato es
+                engañoso sin la explicación, tiene que verse.
+              */}
+              {desk === "all" && (
+                <span className="text-muted"> · las más recientes del diario</span>
+              )}
             </span>
           )}
         </div>
