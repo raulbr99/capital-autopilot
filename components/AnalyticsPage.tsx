@@ -20,7 +20,7 @@ import type { TradeRecord, DeskCategory } from "./types";
  */
 import { analyze } from "@/lib/analytics";
 import { TZ, MUESTRA_MIN, EPS_PNL } from "@/lib/model";
-import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion, pdec, uds } from "./ui";
+import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion, pdec, uds, duracionMs } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
 
@@ -797,10 +797,7 @@ function exportarCsv(trades: TradeRecord[], etiqueta: string, divisa: string) {
 /** Cuánto estuvo abierta la operación. */
 function duracion(t: TradeRecord) {
   if (!t.closedTs || !t.ts) return "—";
-  const min = Math.max(0, Math.round((t.closedTs - t.ts) / 60000));
-  if (min < 60) return `${min} min`;
-  const h = Math.round(min / 6) / 10;
-  return h < 48 ? `${h} h` : `${Math.round(h / 24)} d`;
+  return duracionMs(t.closedTs - t.ts);
 }
 
 /**

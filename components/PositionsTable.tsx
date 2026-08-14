@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { OpenPos } from "./types";
-import { SectionHead, fmt, price, pnlClass, pnlFmt, positionRisk, Skeleton, aCuenta } from "./ui";
+import { TZ } from "@/lib/model";
+import { SectionHead, fmt, price, pnlClass, pnlFmt, positionRisk, Skeleton, aCuenta, duracionMs } from "./ui";
 import dynamic from "next/dynamic";
 
 // El modal del gráfico arrastra lightweight-charts (~56 kB). Como solo se abre
@@ -184,7 +185,27 @@ export default function PositionsTable({
                   const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain, convertido } = derive(p, divisa, eurusd);
                   return (
                     <tr key={p.key} className="border-b border-industrial/60 hover:bg-raised">
-                      <td className="px-4 py-3 text-white">{p.epic}</td>
+                      {/*
+                        Cuánto lleva abierta. El historial de operaciones
+                        cerradas tiene su columna "Duración" desde siempre; la
+                        tabla de las VIVAS, donde todavía se puede hacer algo,
+                        no decía nada. Y el dato ya venía en el snapshot: se
+                        usaba solo para marcar la vela de entrada en el gráfico.
+                        Con un bot que decide sobre velas de 4 h y diarias, que
+                        una posición lleve catorce días abierta —AAPL y V ahora
+                        mismo— es información, no un adorno.
+                      */}
+                      <td className="px-4 py-3 text-white">
+                        {p.epic}
+                        {p.openedAt && (
+                          <span
+                            className="ml-1.5 text-[10px] font-normal text-muted"
+                            title={`Abierta el ${new Date(p.openedAt).toLocaleString("es-ES", { timeZone: TZ, hour12: false })}`}
+                          >
+                            {duracionMs(Date.now() - Date.parse(p.openedAt))}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <span className={p.direction === "BUY" ? "text-long" : "text-short"}>
                           {p.direction === "BUY" ? "▲ LONG" : "▼ SHORT"}
@@ -302,7 +323,14 @@ export default function PositionsTable({
               return (
                 <div key={p.key} className="rounded-lg border border-industrial bg-base p-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-sm text-white">{p.epic}</span>
+                    <span className="font-mono text-sm text-white">
+                      {p.epic}
+                      {p.openedAt && (
+                        <span className="ml-1.5 text-[10px] font-normal text-muted">
+                          {duracionMs(Date.now() - Date.parse(p.openedAt))}
+                        </span>
+                      )}
+                    </span>
                     <div className="flex items-baseline gap-2">
                       <span className={`font-mono text-sm tabular-nums ${pnlClass(p.upl)}`}>{pnlFmt(p.upl)}</span>
                       {rMult != null && (

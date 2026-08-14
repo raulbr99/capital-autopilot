@@ -370,6 +370,20 @@ export function uds(n: number) {
   return Number.isFinite(n) ? String(Number(n.toPrecision(4))) : "—";
 }
 
+/**
+ * Cuánto duró (o lleva durando) algo, en la escala que toca.
+ *
+ * Estaba dentro de Analítica para las operaciones CERRADAS. La tabla de
+ * posiciones abiertas lo necesita igual —y con más motivo, porque ahí todavía
+ * se puede actuar— así que vive aquí antes de convertirse en dos copias.
+ */
+export function duracionMs(ms: number) {
+  const min = Math.max(0, Math.round(ms / 60000));
+  if (min < 60) return `${min} min`;
+  const h = Math.round(min / 6) / 10;
+  return h < 48 ? `${h} h` : `${Math.round(h / 24)} d`;
+}
+
 export function price(n: number | null | undefined) {
   return n == null ? "—" : fmt(n, pdec(n));
 }
