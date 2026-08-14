@@ -180,7 +180,10 @@ export default function ConfigPanel({
             desconectar los dos extremos de la fila.
           */}
           <div className="max-w-[540px] overflow-hidden rounded-lg border border-industrial">
-            <div className="flex items-center gap-1.5 border-b border-industrial bg-base px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-wider text-muted">
+            {/* Los rótulos de columna solo tienen sentido cuando la fila cabe
+                en una línea. En móvil la fila envuelve, así que se ocultan: los
+                controles se explican solos y todos llevan aria-label. */}
+            <div className="hidden items-center gap-1.5 border-b border-industrial bg-base px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-wider text-muted sm:flex">
               <span className="flex-1">Activo</span>
               <span className="w-[76px] text-center">Marco</span>
               <span className="w-[40px] text-center" title="Filtro de régimen: solo opera en tendencia">ADX</span>
@@ -195,11 +198,22 @@ export default function ConfigPanel({
                 {byDesk[d.key].map((i) => (
                   <div
                     key={i.epic}
-                    className={`flex items-center gap-1.5 border-b border-industrial/70 px-2.5 py-1 transition-colors last:border-b-0 hover:bg-raised ${
+                    /*
+                      flex-wrap. A 390 px la fila no daba de sí: los cinco
+                      controles se llevan unos 260 px de los 328 útiles, así que
+                      al nombre le quedaban 68 y ONCE de los veinte activos
+                      salían cortados —"NZDU…", "USDC…", "BTCU…", "SILV…"—. En
+                      la pantalla donde se elige qué opera el bot y se pausa o
+                      se borra un activo, no poder leer de cuál es la fila es
+                      grave: USDC… puede ser USDCHF, USDCAD o USDJPY.
+                      Envolviendo, el nombre ocupa su línea entera y los mandos
+                      bajan a la siguiente. En sm+ nada cambia: ahí caben.
+                    */
+                    className={`flex flex-wrap items-center gap-1.5 border-b border-industrial/70 px-2.5 py-1 transition-colors last:border-b-0 hover:bg-raised ${
                       i.paused ? "opacity-55" : ""
                     }`}
                   >
-                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <span className="flex min-w-0 basis-full items-center gap-1.5 sm:basis-auto sm:flex-1">
                       <span className="truncate font-mono text-[11px] text-white">{i.epic}</span>
                       <button
                         onClick={() => toggleLongOnly(i.epic)}
