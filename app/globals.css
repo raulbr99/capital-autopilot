@@ -179,3 +179,20 @@ select {
   background-position: right 0.5rem center;
   background-size: 11px 11px;
 }
+
+/*
+ * Y una segunda regla para el padding, porque sacar la anterior de @layer base
+ * no bastaba: el orden en el fichero solo decide entre selectores de la MISMA
+ * especificidad, y aquí compiten `select` (0,0,1) contra `.px-1.5` (0,1,0). La
+ * clase gana siempre, esté donde esté la regla.
+ *
+ * Medido en producción: los desplegables de marco del Lab quedaban con 6 px de
+ * hueco a la derecha y el de activos de Analítica con 12, cuando el chevron
+ * ocupa de 8 a 19 px desde el borde. Por eso "la del motor" se leía "la del
+ * mot⌄r", con la flecha encima de la penúltima letra.
+ *
+ * select[class] suma (0,1,1) y gana a una utilidad suelta sin tocar ninguna.
+ */
+select[class] {
+  padding-right: 1.6rem;
+}
