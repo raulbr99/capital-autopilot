@@ -866,7 +866,16 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
       en tarjetas desde la pasada 3; el historial —el registro de lo que el bot
       hizo con el dinero— se quedó sin ella.
     */}
-    <div className="hidden max-h-[520px] overflow-auto md:block">
+    {/*
+      La lista se corta a 520 px y hace scroll, pero nada lo indicaba: la última
+      fila queda seccionada a media altura y justo debajo empieza el pie de la
+      página, así que parece que ahí se acaba el historial. En macOS la barra de
+      scroll ni siquiera aparece hasta que la usas.
+      Es el mismo arreglo que llevó el registro en vivo hace pasadas —y el
+      carril de decisiones de las mesas antes— y esta tabla se quedó sin él.
+    */}
+    <div className="relative hidden md:block">
+    <div className="max-h-[520px] overflow-auto">
       <table className="w-full text-left font-mono text-[12px]">
         <thead className="sticky top-0 bg-soft">
           <tr className="border-b border-industrial text-muted">
@@ -929,7 +938,7 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-muted">{duracion(t)}</td>
                 <td className={`px-4 py-2.5 text-right tabular-nums ${pnlClass(t.pnl || 0)}`}>
-                  {t.pnl != null ? `${t.pnl >= 0 ? "+" : ""}${fmt(t.pnl)}` : "—"}
+                  {t.pnl != null ? pnlFmt(t.pnl) : "—"}
                 </td>
               </tr>
             );
@@ -937,9 +946,20 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
         </tbody>
       </table>
     </div>
+    {/* Degradado permanente: la tabla siempre tiene más filas que alto salvo
+        que el histórico sea muy corto, y en ese caso el degradado cae sobre el
+        borde de la tarjeta y no se nota. */}
+    {trades.length > 8 && (
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-soft to-transparent"
+        aria-hidden
+      />
+    )}
+    </div>
 
     {/* Móvil: una tarjeta por operación, con el resultado primero */}
-    <div className="max-h-[520px] space-y-2 overflow-y-auto p-3 md:hidden">
+    <div className="relative md:hidden">
+    <div className="max-h-[520px] space-y-2 overflow-y-auto p-3">
       {trades.map((t) => {
         const deIA = (t.reason || "").startsWith("IA:");
         const motivo = (t.reason || "").replace(/^IA:\s*/, "");
@@ -957,7 +977,7 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
                 </span>
               </span>
               <span className={`shrink-0 font-mono text-sm tabular-nums ${pnlClass(t.pnl || 0)}`}>
-                {t.pnl != null ? `${t.pnl >= 0 ? "+" : ""}${fmt(t.pnl)}` : "—"}
+                {t.pnl != null ? pnlFmt(t.pnl) : "—"}
               </span>
             </div>
             <div className="mt-2 grid grid-cols-3 gap-y-2 font-mono text-[11px] tabular-nums">
@@ -986,6 +1006,13 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
           </div>
         );
       })}
+    </div>
+    {trades.length > 4 && (
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-soft to-transparent"
+        aria-hidden
+      />
+    )}
     </div>
     </>
   );
