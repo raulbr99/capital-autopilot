@@ -112,9 +112,22 @@ export default function PositionsTable({
   const [confirmKey, setConfirmKey] = useState<string | null>(null);
 
   // Totales de la cartera: un blotter de broker siempre cierra con su suma
+  /**
+   * Totales. `mezcla` marca que alguna posición no se pudo llevar a la divisa
+   * de la cuenta, y entonces la suma junta unidades distintas.
+   *
+   * Hoy no pasa —los veinte activos cotizan en dólares y el cambio EURUSD viaja
+   * en el snapshot— pero el universo incluye GBPJPY y EURJPY, que cotizan en
+   * YENES. Abierta una de esas, su riesgo y su nocional entran en el total sin
+   * convertir, con una magnitud ~170 veces mayor, y dominan la suma. Las KPI de
+   * cada mesa ya avisan con un "aprox." desde la pasada 181; esta fila, que es
+   * la que cierra el blotter, se quedó sin ello.
+   */
+  let mezcla = false;
   const totals = positions.reduce(
     (a, p) => {
-      const { risk, notional } = derive(p, divisa, eurusd);
+      const { risk, notional, convertido } = derive(p, divisa, eurusd);
+      if (!convertido) mezcla = true;
       a.pnl += p.upl || 0;
       a.risk += risk ?? 0;
       a.notional += notional;
@@ -306,14 +319,18 @@ export default function PositionsTable({
                       quedó fuera.
                     */}
                     exposición <span className="tabular-nums text-dim">{fmt(totals.notional, 0)}</span>
-                    {equity && equity > 0 ? (
+                    {mezcla && <span className="text-accent"> aprox.</span>}
+                    {equity && equity > 0 && !mezcla ? (
                       <span className="ml-1 text-muted">
                         ({(totals.notional / equity).toFixed(1)}× capital)
                       </span>
                     ) : null}
                   </td>
                   <td className="px-4 py-2.5 text-right text-muted">a stop</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-dim">≈{fmt(totals.risk)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-dim">
+                    ≈{fmt(totals.risk)}
+                    {mezcla && <span className="text-accent"> aprox.</span>}
+                  </td>
                   <td className={`px-4 py-2.5 text-right font-medium tabular-nums ${pnlClass(totals.pnl)}`}>
                     {pnlFmt(totals.pnl)}
                   </td>
@@ -390,7 +407,10 @@ export default function PositionsTable({
 
             {/* Total de cartera también en móvil */}
             <div className="flex items-center justify-between rounded-lg border border-cement bg-base/60 px-3 py-2.5 font-mono text-[11px]">
-              <span className="text-muted">TOTAL · riesgo ≈{fmt(totals.risk)}</span>
+              <span className="text-muted">
+                TOTAL · riesgo ≈{fmt(totals.risk)}
+                {mezcla && <span className="text-accent"> aprox.</span>}
+              </span>
               <span className={`tabular-nums ${pnlClass(totals.pnl)}`}>{pnlFmt(totals.pnl)}</span>
             </div>
           </div>
