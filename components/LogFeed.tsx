@@ -109,7 +109,15 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-industrial bg-soft">
+    /*
+      h-full + columna flex: en el panel esta tarjeta es la última de la columna
+      izquierda y la de al lado —Gestión de riesgo— es mucho más alta. Con el
+      registro clavado en 460 px quedaban unos 400 px de tarjeta vacía debajo,
+      en mitad de la pantalla principal. Ahora se estira hasta donde llega la
+      columna de la derecha y el hueco se convierte en más líneas de registro,
+      que es justo lo que se quiere ver ahí.
+    */
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-industrial bg-soft">
       <SectionHead
         label="Registro en vivo"
         right={
@@ -128,11 +136,11 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
         decisiones de las mesas en la pasada 71 — y otra vez el patrón: puesto
         en un sitio y no en el de al lado.
       */}
-      <div className="relative">
+      <div className="relative min-h-0 grow">
       <div
         ref={caja}
         onScroll={medir}
-        className="max-h-[460px] overflow-y-auto"
+        className="h-full max-h-[460px] overflow-y-auto lg:max-h-none"
       >
         {rows.length === 0 ? (
           <div className="px-5 py-14 text-center">

@@ -728,7 +728,7 @@ export default function Dashboard() {
 
         {/* ACTIVIDAD + RIESGO — triage: lo accionable justo después del dinero */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
-          <div className="min-w-0 space-y-4">
+          <div className="flex min-w-0 flex-col gap-4">
             {cierreErr && (
               <p
                 role="alert"
@@ -752,7 +752,11 @@ export default function Dashboard() {
               marcos={Object.fromEntries((cfg?.instruments ?? []).map((i) => [i.epic, i.resolution]))}
               tasas={tasas}
             />
-            <LogFeed logs={historial.logs} />
+            {/* grow, no flex-1: la base sigue siendo su contenido, así que solo
+                se estira si sobra sitio — nunca se encoge por debajo. */}
+            <div className="min-h-0 lg:grow">
+              <LogFeed logs={historial.logs} />
+            </div>
           </div>
 
           <div className="min-w-0 space-y-4">
