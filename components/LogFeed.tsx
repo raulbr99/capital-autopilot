@@ -136,7 +136,7 @@ export default function LogFeed({ logs }: { logs: LogEntry[] }) {
         decisiones de las mesas en la pasada 71 — y otra vez el patrón: puesto
         en un sitio y no en el de al lado.
       */}
-      <div className="relative min-h-0 grow">
+      <div className="relative min-h-0 flex-1">
       <div
         ref={caja}
         onScroll={medir}

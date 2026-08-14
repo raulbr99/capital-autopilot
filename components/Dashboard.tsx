@@ -752,9 +752,22 @@ export default function Dashboard() {
               marcos={Object.fromEntries((cfg?.instruments ?? []).map((i) => [i.epic, i.resolution]))}
               tasas={tasas}
             />
-            {/* grow, no flex-1: la base sigue siendo su contenido, así que solo
-                se estira si sobra sitio — nunca se encoge por debajo. */}
-            <div className="min-h-0 lg:grow">
+            {/*
+              flex-1 con base 0, no grow con base automática.
+
+              Lo intenté primero con grow y salió al revés de lo buscado: con la
+              base en el contenido, quitar el tope de 460 px en lg dejaba que el
+              registro midiera lo que midieran sus cincuenta entradas —crecer
+              nunca encoge—, y el panel pasó de 3.100 px de alto a 5.300 con un
+              registro gigante sin scroll. El hueco desapareció por el método de
+              tirar la pared.
+
+              Con base 0 el registro no aporta altura a la fila: la marca la
+              columna de riesgo, y el registro ocupa exactamente lo que sobra y
+              hace scroll dentro. El suelo de 460 px lo protege del caso
+              contrario, que la columna de al lado sea la corta.
+            */}
+            <div className="min-h-0 lg:flex-1 lg:min-h-[460px]">
               <LogFeed logs={historial.logs} />
             </div>
           </div>
