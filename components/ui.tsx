@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { RESOLUCIONES, TZ, EPS_PNL } from "@/lib/model";
+import { RESOLUCIONES, TZ, EPS_PNL, CICLO_MIN, LATIDO_OK_MIN, LATIDO_MAL_MIN } from "@/lib/model";
 
 export const fmt = (n: number, d = 2) => {
   const v = Number.isFinite(n) ? n : 0;
@@ -775,6 +775,50 @@ export function useDatosViejos(lastOk?: number | null, cadaMs?: number) {
     return () => clearInterval(id);
   }, []);
   return lastOk != null && ahora - lastOk > Math.max(STALE_MS, (cadaMs ?? 0) * 2.5);
+}
+
+/**
+ * Aviso de motor parado, para las pantallas que NO son el panel.
+ *
+ * El latido del motor solo se veía en el panel principal. En una mesa —donde se
+ * cierran posiciones y se lanza el Gestor a mano— la pantalla tiene el mismo
+ * aspecto con el motor vivo que con el motor muerto: precios, señales y
+ * posiciones se siguen pintando porque los pide el navegador, no el cron.
+ *
+ * Y pasa de verdad: en una captura del auditor de las 04:07 el panel decía
+ * "hace 2 h · 7 ciclos sin correr". Dos horas sin mover stops, sin evaluar el
+ * freno diario y sin abrir nada. Con los avisos por Telegram/Discord sin
+ * configurar, la única forma de enterarse es que lo diga la pantalla que estés
+ * mirando.
+ */
+export function AvisoMotorParado({ lastCronTick }: { lastCronTick?: number | null }) {
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAhora(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  if (!lastCronTick) return null;
+  const min = Math.round((ahora - lastCronTick) / 60_000);
+  if (min <= LATIDO_OK_MIN) return null;
+  const ciclos = Math.max(1, Math.floor(min / CICLO_MIN) - 1);
+  const parado = min > LATIDO_MAL_MIN;
+  return (
+    <div
+      className={`mb-4 flex items-start gap-2.5 rounded-xl border px-4 py-3 ${
+        parado ? "border-short/30 bg-short/5" : "border-accent/30 bg-accent/5"
+      }`}
+    >
+      <span aria-hidden>{parado ? "🛑" : "⏳"}</span>
+      <p className="text-[12.5px] leading-relaxed text-dim">
+        <span className={`font-medium ${parado ? "text-short" : "text-accent"}`}>
+          {parado ? "El motor lleva parado" : "El motor no responde desde hace"}{" "}
+          {min < 60 ? `${min} min` : `${Math.round(min / 60)} h`}
+        </span>{" "}
+        ({ciclos} {ciclos === 1 ? "ciclo" : "ciclos"} sin correr). No se están moviendo stops ni
+        abriendo posiciones; lo que ves son precios que pide esta pantalla, no decisiones del bot.
+      </p>
+    </div>
+  );
 }
 
 export function AvisoSinConexion({

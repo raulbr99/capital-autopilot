@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, useOnline, aCuenta, pl } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, AvisoMotorParado, useOnline, aCuenta, pl } from "./ui";
 import { EPS_PNL } from "@/lib/model";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
@@ -279,6 +279,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
 
       <main className="mx-auto max-w-[1100px] px-5 py-6 md:px-8">
         <AvisoSinConexion lastOk={lastOk} cadaMs={12000} />
+        <AvisoMotorParado lastCronTick={snap?.state?.lastCronTick} />
         {/* Barra de mesa: identidad + estado de sesión + acción principal */}
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">

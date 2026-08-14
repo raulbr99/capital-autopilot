@@ -260,6 +260,21 @@ export const BASE_EQUITY = 1000;
  * "Reading from node:module is not handled". lib/model.ts existe justo para
  * esto — constantes puras que cruzan la frontera cliente/servidor.
  */
+/**
+ * Cadencia real del motor y umbrales de latido, compartidos.
+ *
+ * El cron lo dispara .github/workflows/autopilot.yml cada 15 min. Estos valores
+ * estaban dentro del panel; los necesita también el aviso de las mesas, así que
+ * viven aquí para que no acaben siendo dos calibraciones distintas del mismo
+ * indicador — que ya pasó una vez, cuando el panel seguía calibrado a "~58 min"
+ * mucho después de cambiar la cadencia.
+ */
+export const CICLO_MIN = 15;
+/** Hasta aquí, normal (deja margen a la deriva de GitHub Actions). */
+export const LATIDO_OK_MIN = 60;
+/** A partir de aquí, el motor se considera parado. */
+export const LATIDO_MAL_MIN = 150;
+
 export const IMMINENT_DAYS = 7;
 
 export const EPIC_RE = /^[A-Z0-9_.]{1,20}$/;

@@ -10,7 +10,7 @@ import RiskPanel from "./RiskPanel";
 import LogFeed from "./LogFeed";
 import ExpectancyPanel from "./ExpectancyPanel";
 import CommandPalette, { abrirPaleta, type Command } from "./CommandPalette";
-import { EPS_PNL } from "@/lib/model";
+import { EPS_PNL, CICLO_MIN, LATIDO_OK_MIN, LATIDO_MAL_MIN } from "@/lib/model";
 import AppHeader from "./AppHeader";
 import Link from "next/link";
 
@@ -354,7 +354,6 @@ export default function Dashboard() {
    * debería correr.
    */
   const latido = (() => {
-    const CICLO_MIN = 15; // .github/workflows/autopilot.yml
     /**
      * Mientras no ha llegado el primer snapshot no se sabe NADA del motor, y
      * este indicador afirmaba lo peor que puede afirmar: "sin latido", con el
@@ -378,9 +377,9 @@ export default function Dashboard() {
     const title =
       `Último ciclo del cron: ${new Date(ts).toLocaleString("es-ES")}` +
       ` · debería correr cada ${CICLO_MIN} min`;
-    if (min <= 60) return { texto: base, tone: "text-long", dot: "bg-long", vivo: true, title };
+    if (min <= LATIDO_OK_MIN) return { texto: base, tone: "text-long", dot: "bg-long", vivo: true, title };
     const faltan = perdidos > 0 ? ` · ${perdidos} ${perdidos === 1 ? "ciclo" : "ciclos"} sin correr` : "";
-    if (min <= 150)
+    if (min <= LATIDO_MAL_MIN)
       return { texto: `${base}${faltan}`, tone: "text-accent", dot: "bg-accent", vivo: false, title };
     return { texto: `${base}${faltan} · parado`, tone: "text-short", dot: "bg-short", vivo: false, title };
   })();
