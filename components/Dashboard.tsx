@@ -388,7 +388,9 @@ export default function Dashboard() {
   // o desde la lista de apps, sin volver a la pantalla.
   useEffect(() => {
     if (!snap) return;
-    const signo = dayPnlPct >= 0 ? "+" : "";
+    // `> 0`, no `>= 0`: una jornada plana no lleva "+". Este es el título de la
+    // pestaña, o sea lo que se lee de reojo desde otra ventana.
+    const signo = dayPnlPct > 0 ? "+" : "";
     document.title = `${signo}${dayPnlPct.toFixed(2)}% · ${fmt(lastEquity)}${
       acc?.currency ? ` ${acc.currency}` : ""
     } — Capital Autopilot`;
@@ -608,7 +610,7 @@ export default function Dashboard() {
             >
               <MiniStat
                 label="PNL HOY"
-                value={loading ? null : `${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
+                value={loading ? null : `${dayPnlPct > 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
                 sub={
                   loading || !lastEquity || Math.abs(dayPnlEur) < EPS_PNL
                     ? undefined
