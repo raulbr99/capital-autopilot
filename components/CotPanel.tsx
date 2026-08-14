@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui";
+import { COT_SESGO, COT_MASIF } from "@/lib/model";
 
 type Cot = {
   symbol: string;
@@ -16,8 +17,8 @@ type Cot = {
 };
 type Data = { fetchedAt: string; reportDate: string | null; forex: Cot[]; commodities: Cot[] };
 
-/** ≥80 % de un lado = todos en la misma barca. */
-const crowded = (pctLong: number) => pctLong >= 80 || pctLong <= 20;
+/** Todos en la misma barca. */
+const crowded = (pctLong: number) => pctLong >= COT_MASIF || pctLong <= 100 - COT_MASIF;
 
 const NAMES: Record<string, string> = {
   EUR: "Euro",
@@ -148,8 +149,19 @@ export default function CotPanel({
                     {c.pctLong.toFixed(0)}% long
                   </span>
                 </span>
-                {/* Marca del 50 %: sin referencia, la barra no dice de qué lado cae */}
-                <span className="absolute inset-y-0 left-1/2 w-px bg-muted/40" aria-hidden />
+                {/*
+                  La referencia no es el 50 %: el sesgo se declara a partir del
+                  55/45 (lib/cot.ts). Con una sola raya en el medio, un símbolo
+                  al 52 % enseñaba la barra pasada de la marca mientras la
+                  etiqueta de al lado decía "neutral" — la raya desmentía al
+                  veredicto. Pintada la banda entera, "neutral" es exactamente
+                  lo que se ve: el corte entre verde y rojo cae dentro de ella.
+                */}
+                <span
+                  className="absolute inset-y-0 border-x border-muted/40 bg-ink/20"
+                  style={{ left: `${100 - COT_SESGO}%`, width: `${2 * COT_SESGO - 100}%` }}
+                  aria-hidden
+                />
               </div>
               <span className={`flex w-24 shrink-0 items-center justify-end gap-1 whitespace-nowrap font-mono text-[10px] sm:w-40 sm:text-[11px] ${long ? "text-long" : short ? "text-short" : "text-muted"}`}>
                 {c.bias === "neutral" ? "neutral" : long ? "▲ net long" : "▼ net short"}
@@ -187,8 +199,9 @@ export default function CotPanel({
       <p className="border-t border-industrial px-5 py-2.5 text-[10px] leading-relaxed text-muted">
         Net de especuladores (no-comerciales, CFTC). Informe <span className="text-dim">semanal</span>: refleja
         posiciones del martes anterior, así que es contexto de fondo, nunca una señal de entrada.
-        Net-long = sesgo alcista; net-short = bajista; Δ = flujo vs la semana previa.{" "}
-        <span className="text-accent">MASIF.</span> marca un posicionamiento extremo (≥80 % a un lado):
+        Net-long = sesgo alcista; net-short = bajista; Δ = flujo vs la semana previa. Dentro de la banda
+        marcada ({100 - COT_SESGO}–{COT_SESGO} %) el reparto se considera <span className="text-dim">neutral</span>.{" "}
+        <span className="text-accent">MASIF.</span> marca un posicionamiento extremo (≥{COT_MASIF} % a un lado):
         el mercado ya está todo del mismo lado y suele avisar de agotamiento.
       </p>
     </div>

@@ -1,3 +1,4 @@
+import { COT_SESGO } from "./model";
 /**
  * COT — Commitment of Traders (CFTC Legacy Futures-Only, dataset 6dca-aqww).
  * Gratis, sin key. Net de NO-COMERCIALES (especuladores) = el sesgo del dinero
@@ -90,6 +91,6 @@ export async function cot(symbol: string): Promise<CotData | null> {
     longs,
     shorts,
     pctLong,
-    bias: pctLong > 55 ? "long" : pctLong < 45 ? "short" : "neutral",
+    bias: pctLong > COT_SESGO ? "long" : pctLong < 100 - COT_SESGO ? "short" : "neutral",
   };
 }

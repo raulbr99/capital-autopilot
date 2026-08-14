@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { COT_SESGO, COT_MASIF } from "@/lib/model";
 import { cot, type CotData } from "@/lib/cot";
 
 export const dynamic = "force-dynamic";
@@ -45,8 +46,10 @@ export async function GET() {
         `Informe semanal de la CFTC: refleja posiciones del martes anterior` +
         (antiguedadDias != null ? ` (hace ${antiguedadDias} días)` : "") +
         `, no de hoy. Es CONTEXTO DE FONDO, nunca una señal de entrada. ` +
-        `net = contratos netos de especuladores no comerciales; net>0 sesgo alcista, net<0 bajista. ` +
-        `change = flujo respecto a la semana previa. pctLong >=80 o <=20 marca posicionamiento extremo: ` +
+        `net = contratos netos de especuladores no comerciales. El campo bias NO es el signo de net: ` +
+        `solo se declara long por encima del ${COT_SESGO} % de un lado y short por debajo del ${100 - COT_SESGO} %; ` +
+        `entre medias es neutral. ` +
+        `change = flujo respecto a la semana previa. pctLong >=${COT_MASIF} o <=${100 - COT_MASIF} marca posicionamiento extremo: ` +
         `el mercado ya está todo del mismo lado y eso suele avisar de agotamiento, no confirmar la tendencia.`,
       antiguedadDias,
       forex: FOREX.map((s) => map[s]).filter(Boolean),

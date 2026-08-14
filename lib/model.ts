@@ -296,6 +296,21 @@ export const LATIDO_MAL_MIN = 150;
  * deciden si el mercado está "cargado de un lado" — y ya me ha pasado que el
  * panel se quedara sin cubrir dos de los cinco sesgos que produce el módulo.
  */
+/**
+ * Umbrales del COT.
+ *
+ * COT_SESGO: a partir de qué % de un lado se deja de llamar "neutral". La banda
+ * neutral es simétrica: 45–55. Vivía suelto dentro de lib/cot.ts mientras el
+ * panel dibujaba su marca de referencia en el 50 %, así que un símbolo al 52 %
+ * enseñaba la barra pasada de la raya y la etiqueta decía "neutral": la línea
+ * contradecía al veredicto que tenía al lado.
+ *
+ * COT_MASIF: posicionamiento extremo (>=80 % o <=20 %). Escrito tres veces —el
+ * panel, su pie de texto y la guía que la ruta le sirve a los Gestores.
+ */
+export const COT_SESGO = 55;
+export const COT_MASIF = 80;
+
 export const FUNDING_ALTO = 0.03;
 export const FUNDING_NEUTRO = 0.005;
 
