@@ -168,7 +168,7 @@ export default function BacktestPanel() {
               <Cell label="Aciertos" value={`${agg.winRate.toFixed(0)}%`} />
               <Cell
                 label="Retorno"
-                value={`${(agg.returnPct ?? 0) >= 0 ? "+" : ""}${(agg.returnPct ?? 0).toFixed(1)}%`}
+                value={`${(agg.returnPct ?? 0) > 0 ? "+" : ""}${(agg.returnPct ?? 0).toFixed(1)}%`}
                 tone={(agg.returnPct ?? 0) >= 0 ? "long" : "short"}
               />
               {/*
@@ -294,7 +294,7 @@ export default function BacktestPanel() {
                   ) : (
                     <>
                       <span className={`font-mono text-sm tabular-nums ${r.returnPct >= 0 ? "text-long" : "text-short"}`}>
-                        {r.returnPct >= 0 ? "+" : ""}
+                        {r.returnPct > 0 ? "+" : ""}
                         {r.returnPct.toFixed(1)}%
                       </span>
                       {/* Era "peor racha 98.66". Una racha es una serie de

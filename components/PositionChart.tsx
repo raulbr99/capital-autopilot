@@ -336,8 +336,7 @@ export default function PositionChart({
               {divisa && <span className="ml-1 text-muted">{divisa}</span>}
               {rMult != null && (
                 <span className="ml-1.5 text-muted" title="Resultado en múltiplos del riesgo hasta el stop">
-                  {rMult >= 0 ? "+" : ""}
-                  {rMult.toFixed(2)}R
+                  {pnlFmt(rMult)}R
                 </span>
               )}
             </span>

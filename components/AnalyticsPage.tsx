@@ -599,8 +599,7 @@ function ByInstrument({ rows }: { rows: { epic: string; pnl: number; trades: num
                 </div>
               </div>
               <span className={`w-16 shrink-0 text-right font-mono text-[13px] ${pnlClass(r.pnl)}`}>
-                {r.pnl >= 0 ? "+" : ""}
-                {fmt(r.pnl)}
+                {pnlFmt(r.pnl)}
               </span>
             </div>
           ))}
@@ -681,8 +680,7 @@ function DailyBars({ data }: { data: { date: string; pnl: number }[] }) {
           >
             <span className="text-muted">{fecha(activa.date)}</span>{" "}
             <span className={pnlClass(activa.pnl)}>
-              {activa.pnl >= 0 ? "+" : ""}
-              {fmt(activa.pnl)}
+              {pnlFmt(activa.pnl)}
             </span>
           </div>
         )}
@@ -695,7 +693,7 @@ function DailyBars({ data }: { data: { date: string; pnl: number }[] }) {
             return (
               <div
                 key={d.date}
-                title={`${fecha(d.date)}: ${d.pnl >= 0 ? "+" : ""}${fmt(d.pnl)}`}
+                title={`${fecha(d.date)}: ${pnlFmt(d.pnl)}`}
                 onMouseEnter={() => setFoco(i)}
                 onMouseLeave={() => setFoco(null)}
                 onTouchStart={() => setFoco(i)}

@@ -269,8 +269,7 @@ export default function PositionsTable({
                         {rMult != null && (
                           <>
                             <span className="ml-1.5 tabular-nums text-[10px] text-muted">
-                              {rMult >= 0 ? "+" : ""}
-                              {rMult.toFixed(2)}R
+                              {pnlFmt(rMult)}R
                             </span>
                             <RBar r={rMult} />
                           </>
@@ -343,8 +342,7 @@ export default function PositionsTable({
                       <span className={`font-mono text-sm tabular-nums ${pnlClass(p.upl)}`}>{pnlFmt(p.upl)}</span>
                       {rMult != null && (
                         <span className="font-mono text-[10px] tabular-nums text-muted">
-                          {rMult >= 0 ? "+" : ""}
-                          {rMult.toFixed(2)}R
+                          {pnlFmt(rMult)}R
                         </span>
                       )}
                     </div>
