@@ -32,6 +32,38 @@ export default function Dashboard() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [cierreErr, setCierreErr] = useState<string | null>(null);
+  /**
+   * Aviso sonoro de apertura y cierre. No había forma de apagarlo.
+   *
+   * Este panel está pensado para dejarse abierto todo el día —lo dice su propio
+   * indicador de latido y el título de la pestaña, que lleva el P&L para poder
+   * vigilarlo desde otra ventana—. Un pitido que no se puede silenciar en una
+   * pantalla que vive abierta acaba obligando a cerrar la pestaña, que es justo
+   * lo contrario de lo que busca. Cualquier plataforma seria tiene ese
+   * interruptor.
+   *
+   * Se recuerda entre sesiones y el flash de color se queda: es discreto (10 %
+   * de opacidad, 600 ms) y no hace ruido en una oficina.
+   */
+  const [sonido, setSonido] = useState(true);
+  useEffect(() => {
+    try {
+      setSonido(localStorage.getItem("ap_sonido") !== "0");
+    } catch {
+      /* sin almacenamiento: se queda encendido */
+    }
+  }, []);
+  const alternarSonido = useCallback(() => {
+    setSonido((s) => {
+      const n = !s;
+      try {
+        localStorage.setItem("ap_sonido", n ? "1" : "0");
+      } catch {
+        /* nada */
+      }
+      return n;
+    });
+  }, []);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<"long" | "short" | null>(null);
   const prevClosed = useRef(0);
@@ -102,18 +134,18 @@ export default function Dashboard() {
     const c = snap.state.stats.tradesClosed;
     if (prevOpened.current && o > prevOpened.current) {
       setFlash("long");
-      beep(660);
+      if (sonido) beep(660);
       loadTrades();
       setTimeout(() => setFlash(null), 600);
     } else if (prevClosed.current && c > prevClosed.current) {
       setFlash("short");
-      beep(440);
+      if (sonido) beep(440);
       loadTrades();
       setTimeout(() => setFlash(null), 600);
     }
     prevOpened.current = o;
     prevClosed.current = c;
-  }, [snap, loadTrades]);
+  }, [snap, loadTrades, sonido]);
 
   /**
    * Mismo desperdicio que tenía el Lab: tras el PATCH se pedía un tick COMPLETO
@@ -330,6 +362,12 @@ export default function Dashboard() {
     .map((t) => ({ ts: t.closedTs!, dir: t.direction, pnl: t.pnl }));
 
   const commands: Command[] = [
+    {
+      id: "sonido",
+      label: sonido ? "Silenciar avisos de operación" : "Activar avisos de operación",
+      hint: "Panel",
+      run: alternarSonido,
+    },
     // Motor
     {
       id: "toggle",
