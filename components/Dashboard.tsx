@@ -251,7 +251,26 @@ export default function Dashboard() {
       ? snap.account.pnl
       : positions.reduce((s, p) => s + (p.upl || 0), 0);
   const equity = historial.equity;
-  const lastEquity = equity.length ? equity[equity.length - 1].equity : 0;
+  /**
+   * Equity de la cuenta: el saldo EN VIVO, no el último punto de la curva.
+   *
+   * `lastEquity` salía del histórico de ap_equity, que el panel refresca cada
+   * 60 s, mientras `account.balance` llega en cada sondeo de 6 s. Y de
+   * lastEquity cuelgan cosas que quieren el valor de ahora: el equity de la
+   * cabecera, el título de la pestaña, el resultado del día en euros y los dos
+   * "% del capital" del bloque de riesgo.
+   *
+   * Peor que el retraso era la incoherencia entre pantallas: las mesas ya le
+   * pasan `account.balance` a la MISMA cabecera desde la pasada 176, así que
+   * saltar del panel a una mesa podía cambiar el número de arriba sin que
+   * hubiera pasado nada. Y con el histórico aún sin llegar valía 0, así que la
+   * cabecera escondía el equity varios segundos de más teniendo el dato.
+   *
+   * La curva sigue usando el histórico: para dibujar la serie hace falta la
+   * serie. Lo que cambia es de dónde sale "cuánto hay ahora".
+   */
+  const lastEquity =
+    acc?.balance ?? (equity.length ? equity[equity.length - 1].equity : 0);
   const configured = snap?.configured ?? true;
   const enabled = cfg?.enabled ?? false;
   // Sin snapshot no sabemos NADA: pintar 0 y "En espera" afirma que el motor
