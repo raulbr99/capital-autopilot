@@ -355,6 +355,26 @@ let ultimaEquity: { ts: number; equity: number } | null = null;
 const EQUITY_MIN_MS = 120_000; // no más de una fila cada 2 min si nada cambia
 const EQUITY_MIN_DELTA = 0.01; // ni por variaciones por debajo del céntimo
 
+/**
+ * El anti-duplicado de arriba vive en memoria, y en serverless eso es memoria
+ * POR INSTANCIA. Cada tick del navegador puede caer en una instancia fría, que
+ * no sabe nada de la fila que escribió la anterior, así que inserta igual.
+ *
+ * Medido en producción: 240 puntos cubriendo 12 h, con una mediana de 18
+ * SEGUNDOS entre muestras. Con el freno funcionando serían 120 s como mínimo.
+ * O sea que no frenaba casi nada.
+ *
+ * Y tiene consecuencia visible: la curva de equity del panel carga las últimas
+ * 240 filas, así que con la tabla inundada de puntos casi idénticos esas 240
+ * filas cubren medio día en vez de semanas — por eso los botones 1D/1S/1M del
+ * gráfico salen deshabilitados salvo "Todo". El propio comentario del gráfico
+ * describe el síntoma sin saber de dónde venía.
+ *
+ * La comprobación pasa a hacerse contra la BASE: una consulta a la última fila,
+ * que es barata y sí ve lo que escribieron las demás instancias. La caché en
+ * memoria se queda como atajo para no consultar cuando la misma instancia acaba
+ * de escribir.
+ */
 export async function appendEquity(pt: EquityPoint): Promise<void> {
   const s = await supa();
   if (!s) return;
@@ -364,6 +384,29 @@ export async function appendEquity(pt: EquityPoint): Promise<void> {
     Math.abs(pt.equity - ultimaEquity.equity) < EQUITY_MIN_DELTA
   ) {
     return; // ni ha pasado tiempo ni ha cambiado el dinero: no hay nada que registrar
+  }
+  try {
+    const { data } = await s
+      .from("ap_equity")
+      .select("ts, equity")
+      .order("ts", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data?.ts) {
+      const ultimaTs = new Date(data.ts).getTime();
+      const ultimaEq = Number(data.equity);
+      if (
+        pt.ts - ultimaTs < EQUITY_MIN_MS &&
+        Number.isFinite(ultimaEq) &&
+        Math.abs(pt.equity - ultimaEq) < EQUITY_MIN_DELTA
+      ) {
+        // Otra instancia ya lo registró hace nada: se cachea y se sale.
+        ultimaEquity = { ts: ultimaTs, equity: ultimaEq };
+        return;
+      }
+    }
+  } catch {
+    /* si la consulta falla, se inserta: perder un punto es peor que duplicarlo */
   }
   try {
     await s.from("ap_equity").insert({
