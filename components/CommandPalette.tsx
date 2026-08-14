@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTrap, useReturnFocus } from "./ui";
 
 /**
@@ -114,6 +114,26 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
     listRef.current?.querySelector('[data-sel="true"]')?.scrollIntoView({ block: "nearest" });
   }, [sel]);
 
+  /**
+   * ¿Queda lista por debajo del recorte?
+   *
+   * La lista se corta a 340 px y el último elemento que cabe queda seccionado
+   * por la mitad —"Mesa Commodities" partida a la altura de las letras, justo
+   * encima del pie—, sin nada que diga que hay más. Es el mismo arreglo que
+   * llevan el registro en vivo, el carril de decisiones de las mesas y el
+   * historial de Analítica; la paleta se quedó sin él.
+   *
+   * Se remide al escribir, porque el filtro cambia cuántos elementos hay.
+   */
+  const [hayMas, setHayMas] = useState(false);
+  const medirLista = useCallback(() => {
+    const el = listRef.current;
+    if (el) setHayMas(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+  }, []);
+  useEffect(() => {
+    medirLista();
+  }, [q, open, medirLista]);
+
   if (!open) return null;
 
   let idx = -1;
@@ -138,7 +158,8 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
           aria-label="Buscar comando"
           className="w-full border-b border-industrial bg-ink px-4 py-3 text-sm text-white placeholder:text-muted"
         />
-        <div ref={listRef} className="max-h-[340px] overflow-y-auto py-1">
+        <div className="relative">
+        <div ref={listRef} onScroll={medirLista} className="max-h-[340px] overflow-y-auto py-1">
           {flat.length === 0 && (
             <p className="px-4 py-6 text-center text-sm text-muted">Ningún comando coincide</p>
           )}
@@ -196,9 +217,20 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
             </div>
           ))}
         </div>
+        {hayMas && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-soft to-transparent" />
+        )}
+        </div>
+        {/*
+          Las pistas de teclado, solo donde hay teclado. En un teléfono el pie
+          decía "↑↓ navegar · ↵ ejecutar · esc cerrar" y "⌘K": cuatro
+          instrucciones y ninguna ejecutable. Lo que sí funciona ahí es tocar
+          fuera, y eso no lo decía nadie.
+        */}
         <div className="flex items-center justify-between border-t border-industrial px-4 py-2 font-mono text-[10px] text-muted">
-          <span>↑↓ navegar · ↵ ejecutar · esc cerrar</span>
-          <span>⌘K</span>
+          <span className="hidden sm:inline">↑↓ navegar · ↵ ejecutar · esc cerrar</span>
+          <span className="sm:hidden">toca fuera para cerrar</span>
+          <span className="hidden sm:inline">⌘K</span>
         </div>
       </div>
     </div>
