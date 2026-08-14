@@ -27,15 +27,17 @@ const EPIC_TO_BINANCE: Record<string, string> = {
 };
 
 // El funding solo cambia cada 8h; caché 10 min por proceso.
+import { FUNDING_ALTO, FUNDING_NEUTRO } from "./model";
+
 let cache: { t: number; data: FundingInfo[] } | null = null;
 const TTL = 10 * 60 * 1000;
 
 function biasFor(ratePct: number | null): FundingInfo["bias"] {
   if (ratePct == null) return "neutral";
-  if (ratePct >= 0.03) return "crowded-long";
-  if (ratePct >= 0.005) return "long";
-  if (ratePct <= -0.03) return "crowded-short";
-  if (ratePct <= -0.005) return "short";
+  if (ratePct >= FUNDING_ALTO) return "crowded-long";
+  if (ratePct >= FUNDING_NEUTRO) return "long";
+  if (ratePct <= -FUNDING_ALTO) return "crowded-short";
+  if (ratePct <= -FUNDING_NEUTRO) return "short";
   return "neutral";
 }
 

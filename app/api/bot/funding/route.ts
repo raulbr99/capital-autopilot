@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fundingRates } from "@/lib/funding";
+import { FUNDING_ALTO, FUNDING_NEUTRO } from "@/lib/model";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -14,7 +15,7 @@ export async function GET() {
     return NextResponse.json({
       fetchedAt: new Date().toISOString(),
       guide:
-        "funding >0: longs pagan (mercado cargado de longs); >=0.03%/8h sobrecalentado (riesgo long squeeze); <0: shorts pagan (combustible de squeeze alcista)",
+        `funding >0: longs pagan (mercado cargado de longs); >=${FUNDING_ALTO}%/8h sobrecalentado (riesgo long squeeze); <0: shorts pagan (combustible de squeeze alcista); por debajo de ±${FUNDING_NEUTRO}%/8h se considera neutral`,
       funding,
     });
   } catch (e: unknown) {

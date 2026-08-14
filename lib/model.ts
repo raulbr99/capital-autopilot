@@ -287,6 +287,18 @@ export const LATIDO_OK_MIN = 60;
 /** A partir de aquí, el motor se considera parado. */
 export const LATIDO_MAL_MIN = 150;
 
+/**
+ * Umbrales de funding de perpetuos, en % por cada 8 h.
+ *
+ * Estaban en lib/funding.ts, repetidos en el panel de la mesa de cripto como
+ * SOBRECALENTADO, otra vez en el texto del pie de ese panel y una cuarta vez en
+ * la guía que la ruta le sirve a los Gestores. Cuatro copias de dos números que
+ * deciden si el mercado está "cargado de un lado" — y ya me ha pasado que el
+ * panel se quedara sin cubrir dos de los cinco sesgos que produce el módulo.
+ */
+export const FUNDING_ALTO = 0.03;
+export const FUNDING_NEUTRO = 0.005;
+
 export const IMMINENT_DAYS = 7;
 
 export const EPIC_RE = /^[A-Z0-9_.]{1,20}$/;

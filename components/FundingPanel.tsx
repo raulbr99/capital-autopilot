@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui";
+import { FUNDING_ALTO, FUNDING_NEUTRO } from "@/lib/model";
 
 type Fund = {
   epic: string;
@@ -17,8 +18,7 @@ type Data = { fetchedAt: string; funding: Fund[] };
 
 const NOMBRES: Record<string, string> = { BTCUSD: "Bitcoin", ETHUSD: "Ether" };
 
-/** Umbral del propio endpoint: >=0.03 %/8h es posicionamiento sobrecalentado. */
-const SOBRECALENTADO = 0.03;
+
 
 const pct = (n: number | null | undefined, d = 4) =>
   n == null || !Number.isFinite(n) ? "—" : `${n > 0 ? "+" : ""}${n.toFixed(d)}%`;
@@ -94,7 +94,7 @@ export default function FundingPanel({ className = "" }: { className?: string })
           ))}
 
         {rows.map((f) => {
-          const caliente = Math.abs(f.currentRatePct) >= SOBRECALENTADO;
+          const caliente = Math.abs(f.currentRatePct) >= FUNDING_ALTO;
           /*
             El módulo devuelve CINCO sesgos: crowded-long, long, neutral, short
             y crowded-short. Este panel —que escribí yo— solo miraba "long" y
@@ -162,8 +162,8 @@ export default function FundingPanel({ className = "" }: { className?: string })
         <span className="text-dim">largos</span>, o sea que el mercado está cargado de largos;
         negativa = la pagan los cortos. Es <span className="text-dim">contexto de posicionamiento</span>,
         el equivalente del COT en cripto — nunca una señal de entrada.{" "}
-        <span className="text-accent">ALTO</span> marca ≥{SOBRECALENTADO}% cada 8 h: el lado que paga
-        está muy cargado y suele preceder a un cierre en cascada. Por debajo de ±0,005 % cada 8 h la
+        <span className="text-accent">ALTO</span> marca ≥{FUNDING_ALTO}% cada 8 h: el lado que paga
+        está muy cargado y suele preceder a un cierre en cascada. Por debajo de ±{FUNDING_NEUTRO}% cada 8 h la
         tasa se considera <span className="text-dim">neutral</span>: es ruido, no posicionamiento.
       </p>
     </div>
