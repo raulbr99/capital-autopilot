@@ -325,7 +325,17 @@ function SignalCard({
 
       <p className={`mt-2 text-[11px] leading-snug ${active ? "text-dim" : "text-muted"}`}>{s.reason}</p>
 
-      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-industrial pt-3 font-mono text-[10px] tabular-nums sm:grid-cols-4 sm:gap-2">
+      {/*
+        Dos columnas SIEMPRE, no cuatro en pantallas anchas.
+        Estas tarjetas viven en una rejilla de tres columnas, así que en
+        escritorio cada una mide unos 215 px: repartir eso en cuatro deja 50 px
+        por celda, y un precio de bitcoin no cabe. Visto en una captura de la
+        mesa de cripto: "63,316.9 63,555.0 34" se corría de sus columnas y los
+        valores dejaban de estar bajo su etiqueta, con el ADX empujado fuera de
+        sitio. Con dos columnas hay ~100 px por celda, que sí dan.
+        En móvil no cambia nada: ahí ya eran dos.
+      */}
+      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-industrial pt-3 font-mono text-[10px] tabular-nums">
         {/*
           Las medias son precios y deben escribirse como tal. Con dos decimales
           fijos, USDCHF enseñaba "SMA-F 0.81 · SMA-S 0.81" y EURUSD "1.15 · 1.15":
