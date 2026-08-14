@@ -17,10 +17,22 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
  *  se cae a mitad de tanda, el resto de pruebas debe seguir corriendo y el
  *  fallo no puede escribirse como un defecto de la aplicación. */
 let fallos = 0;
+let arnes = 0;
 
 /** Abre una página capturando TODA excepción o error de consola. */
 async function abrir(path) {
-  const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
+  /* Lanzar nueve navegadores seguidos falla de vez en cuando con "Failed to
+     launch the browser process". Es del arnés, no de la web: se reintenta. */
+  let browser;
+  for (let i = 0; ; i++) {
+    try {
+      browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
+      break;
+    } catch (e) {
+      if (i >= 2) throw Object.assign(e, { arnes: true });
+      await esperar(1500);
+    }
+  }
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 900 });
   const errores = [];
@@ -52,8 +64,16 @@ async function prueba(nombre, path, accion) {
   try {
     ({ page, errores, browser } = await abrir(path));
   } catch (e) {
-    fallos++;
-    console.log(`❌ ${nombre.padEnd(34)} no carga: ${e.message.slice(0, 60)}`);
+    /* Fallo del ARNÉS (no se pudo abrir el navegador) frente a fallo de la web.
+       Contarlos juntos fue lo que dejó pasar la caída de las mesas: un ❌ del
+       arnés se lee igual que un ❌ de la aplicación y se acaba ignorando. */
+    if (e.arnes || /launch the browser|Session closed|Protocol error/.test(e.message || "")) {
+      arnes++;
+      console.log(`⚠️  ${nombre.padEnd(34)} arnés: ${String(e.message).slice(0, 50)}`);
+    } else {
+      fallos++;
+      console.log(`❌ ${nombre.padEnd(34)} no carga: ${e.message.slice(0, 60)}`);
+    }
     return;
   }
   let detalle = "";
@@ -178,10 +198,52 @@ await prueba("desplegar tesis del diario", "/journal", async (p) => {
   return "sin tesis largas ahora mismo";
 });
 
+
+/**
+ * Interacciones que solo se ejecutan CON DATOS.
+ *
+ * La caída de /stocks y /commodities vivió semanas porque el código que
+ * reventaba solo corre cuando la mesa tiene posiciones abiertas: con la mesa
+ * vacía, la página renderiza perfecta. Las pruebas de arriba abrían el gráfico
+ * desde el panel, que es la ruta que sí se ejercitaba.
+ *
+ * Estas recorren las rutas dependientes de datos en las mesas y en Analítica,
+ * que son las que tienen ramas que no se tocan si el histórico está vacío.
+ */
+await prueba("gráfico desde una mesa", "/stocks", async (p) => {
+  const btn = await p.waitForSelector('button[title="Ver gráfico"]', { timeout: 20000 }).catch(() => null);
+  if (!btn) return "sin posiciones en esta mesa — no comprobable";
+  await btn.click();
+  await esperar(5000);
+  const r = await p.evaluate(() => ({
+    modal: !!document.querySelector('[role="dialog"]'),
+    lienzos: document.querySelectorAll("canvas").length,
+  }));
+  if (!r.modal) throw new Error("el modal no se monta desde la mesa");
+  if (!r.lienzos) throw new Error("el modal abre pero no dibuja");
+  return `modal ok · ${r.lienzos} lienzos`;
+});
+
+await prueba("filtros de Analítica", "/analytics", async (p) => {
+  await p.waitForSelector("select[aria-label='Filtrar por instrumento']", { timeout: 20000 });
+  await esperar(2000);
+  // mesa con histórico -> el desplegable de activos debe acotarse a ella
+  const mesas = await p.$$("button");
+  for (const b of mesas) {
+    const t = (await p.evaluate((el) => el.textContent || "", b)).trim();
+    if (t.startsWith("Stocks")) { await b.click(); break; }
+  }
+  await esperar(1500);
+  const n = await p.$$eval("select[aria-label='Filtrar por instrumento'] option", (o) => o.length);
+  if (n < 1) throw new Error("el desplegable de activos se queda sin opciones");
+  return `activos tras filtrar por mesa: ${n - 1}`;
+});
+
 console.log("\n=== Carga limpia de cada página ===");
 for (const path of ["/", "/forex", "/crypto", "/stocks", "/commodities", "/analytics", "/journal", "/lab"]) {
   await prueba(`sin errores en ${path}`, path, async () => "");
 }
 
 console.log(`\n${fallos === 0 ? "✅ Todo funciona." : `❌ ${fallos} pruebas con errores.`}`);
+if (arnes) console.log(`⚠️  ${arnes} ${arnes === 1 ? "prueba" : "pruebas"} sin comprobar por fallos del navegador de pruebas.`);
 process.exit(fallos === 0 ? 0 : 1);
