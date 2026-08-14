@@ -161,7 +161,18 @@ export default function ConfigPanel({
             flotaba suelta arriba a la derecha sin alinearse con nada. Ahora las
             cabeceras son reales y comparten anchura con sus celdas.
           */}
-          <div className="overflow-hidden rounded-lg border border-industrial">
+          {/*
+            Ancho acotado. La celda del activo es flex-1, así que en una pantalla
+            de escritorio el nombre quedaba pegado al borde izquierdo y sus
+            controles a setecientos píxeles a la derecha, con el vacío en medio:
+            visto en una captura a 1440, la fila NZDUSD y su desplegable de marco
+            no parecen la misma fila. Una tabla de veinte filas así no se lee, se
+            adivina.
+            En móvil no cambia nada —el contenedor ya es más estrecho que el
+            tope— y las filas ganan realce al pasar por encima, como el resto de
+            tablas del panel.
+          */}
+          <div className="max-w-[760px] overflow-hidden rounded-lg border border-industrial">
             <div className="flex items-center gap-1.5 border-b border-industrial bg-base px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-wider text-muted">
               <span className="flex-1">Activo</span>
               <span className="w-[76px] text-center">Marco</span>
@@ -177,7 +188,7 @@ export default function ConfigPanel({
                 {byDesk[d.key].map((i) => (
                   <div
                     key={i.epic}
-                    className={`flex items-center gap-1.5 border-b border-industrial/70 px-2.5 py-1 last:border-b-0 ${
+                    className={`flex items-center gap-1.5 border-b border-industrial/70 px-2.5 py-1 transition-colors last:border-b-0 hover:bg-raised ${
                       i.paused ? "opacity-55" : ""
                     }`}
                   >
