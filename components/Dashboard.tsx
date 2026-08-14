@@ -33,6 +33,52 @@ export default function Dashboard() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [cierreErr, setCierreErr] = useState<string | null>(null);
+
+  /**
+   * Alto de la fila actividad+riesgo, medido.
+   *
+   * La columna de riesgo mide 1.335 px y la izquierda —posiciones + registro—
+   * se quedaba en 744, así que sobraban casi 600 px de nada debajo del
+   * registro, en mitad de la pantalla principal.
+   *
+   * No se arregla solo con flex. Lo probé de dos formas y las dos fallan por lo
+   * mismo: un contenedor flex de altura automática calcula su alto intrínseco
+   * sumando el CONTENIDO de sus hijos, tenga el hijo la base que tenga. Con
+   * grow, el registro se estiraba hasta sus cincuenta entradas (panel de 3.100
+   * a 5.300 px). Con flex-1 y base 0, exactamente igual: la base 0 reparte el
+   * espacio sobrante, pero no evita que el hijo aporte su contenido al alto de
+   * la fila.
+   *
+   * Con la altura de la columna fijada en píxeles ya no hay nada intrínseco que
+   * calcular: el registro se reparte lo que sobra y hace scroll dentro. Solo en
+   * lg —abajo las columnas se apilan y manda el tope de 460 px— y solo si la de
+   * riesgo es la más alta, que es el caso que sobra.
+   */
+  const cajaRiesgo = useRef<HTMLDivElement>(null);
+  const [altoFila, setAltoFila] = useState<number | null>(null);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    let ro: ResizeObserver | null = null;
+    const medir = () => {
+      const el = cajaRiesgo.current;
+      if (!mq.matches || !el) return setAltoFila(null);
+      const h = Math.round(el.getBoundingClientRect().height);
+      setAltoFila(h > 600 ? h : null);
+    };
+    ro = new ResizeObserver(medir);
+    if (cajaRiesgo.current) ro.observe(cajaRiesgo.current);
+    mq.addEventListener("change", medir);
+    medir();
+    return () => {
+      ro?.disconnect();
+      mq.removeEventListener("change", medir);
+    };
+    // Sin dependencias: el div de la columna existe siempre —lo condicional es
+    // la tarjeta de dentro—, así que el observer ya se entera cuando monta y la
+    // columna cambia de alto. Con [cfg] esto quedaba por encima de su propia
+    // declaración: el mismo TDZ que dejó dos mesas muertas en la pasada 181,
+    // esta vez cazado por tsc antes de salir.
+  }, []);
   /**
    * Aviso sonoro de apertura y cierre. No había forma de apagarlo.
    *
@@ -728,7 +774,7 @@ export default function Dashboard() {
 
         {/* ACTIVIDAD + RIESGO — triage: lo accionable justo después del dinero */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4" style={altoFila ? { height: altoFila } : undefined}>
             {cierreErr && (
               <p
                 role="alert"
@@ -767,12 +813,12 @@ export default function Dashboard() {
               hace scroll dentro. El suelo de 460 px lo protege del caso
               contrario, que la columna de al lado sea la corta.
             */}
-            <div className="min-h-0 lg:flex-1 lg:min-h-[460px]">
+            <div className="min-h-0 lg:flex-1">
               <LogFeed logs={historial.logs} />
             </div>
           </div>
 
-          <div className="min-w-0 space-y-4">
+          <div ref={cajaRiesgo} className="min-w-0 space-y-4">
             {cfg && <RiskPanel cfg={cfg} busy={busy} patch={patch} equity={lastEquity} currency={acc?.currency} />}
             {/*
               Esta tarjeta era un enlace al Lab y nada más, ocupando un hueco
