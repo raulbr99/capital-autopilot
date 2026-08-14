@@ -206,7 +206,15 @@ export default function PositionsTable({
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      {/*
+                        whitespace-nowrap: al añadir la antigüedad junto al
+                        activo en la pasada 224, la columna ACTIVO se ensanchó y
+                        empujó a esta, que empezó a partir "▲ LONG" en dos
+                        líneas —flecha arriba, palabra abajo— en las cuatro
+                        filas. No lo vi entonces porque lo comprobé leyendo el
+                        código; sale a la vista en una captura.
+                      */}
+                      <td className="whitespace-nowrap px-4 py-3">
                         <span className={p.direction === "BUY" ? "text-long" : "text-short"}>
                           {p.direction === "BUY" ? "▲ LONG" : "▼ SHORT"}
                         </span>

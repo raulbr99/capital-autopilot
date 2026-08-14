@@ -387,8 +387,11 @@ export function uds(n: number) {
 export function duracionMs(ms: number) {
   const min = Math.max(0, Math.round(ms / 60000));
   if (min < 60) return `${min} min`;
-  const h = Math.round(min / 6) / 10;
-  return h < 48 ? `${h} h` : `${Math.round(h / 24)} d`;
+  const h = min / 60;
+  // El decimal solo informa en las primeras horas. A partir de diez, "25.5 h"
+  // ocupa más de lo que dice y ensancha la columna sin añadir nada.
+  if (h < 10) return `${Math.round(h * 10) / 10} h`;
+  return h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} d`;
 }
 
 export function price(n: number | null | undefined) {
