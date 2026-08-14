@@ -1,11 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /**
+   * ¿Hay puerta que abrir?
+   *
+   * Sin DASHBOARD_PASSWORD definida —que es el estado de hoy— esta pantalla
+   * enseñaba un formulario de contraseña con el botón deshabilitado hasta
+   * escribir algo, y la única forma de descubrir que no hay contraseña era
+   * inventarse una y enviarla. Un callejón sin salida: ni entras, ni te vas,
+   * porque tampoco había un enlace de vuelta al panel.
+   *
+   * El endpoint que lo dice ya existe y lo consume la tarjeta de Acceso del
+   * Lab: GET /api/auth devuelve { protegido }. Se pregunta al montar.
+   */
+  const [protegido, setProtegido] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/auth")
+      .then((r) => r.json())
+      .then((d) => setProtegido(!!d?.protegido))
+      .catch(() => setProtegido(true)); // ante la duda, se pide contraseña
+  }, []);
 
   const entrar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +76,21 @@ export default function LoginForm() {
           Este panel opera sobre una cuenta real: puede abrir y cerrar posiciones.
         </p>
 
+        {protegido === false && (
+          <div className="mt-4 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2.5">
+            <p className="text-[12.5px] leading-relaxed text-dim">
+              <span className="font-medium text-accent">No hay contraseña configurada.</span> El panel
+              está abierto: no hace falta entrar por aquí.
+            </p>
+            <a
+              href="/"
+              className="mt-2 inline-flex min-h-[34px] items-center rounded-lg border border-cement px-3 text-[13px] font-medium text-dim transition-colors hover:border-accent hover:text-accent"
+            >
+              Ir al panel
+            </a>
+          </div>
+        )}
+
         <label className="mt-5 block">
           <span className="tag">Contraseña</span>
           <input
@@ -69,7 +103,11 @@ export default function LoginForm() {
           />
         </label>
 
-        {err && <p className="mt-2 text-[12px] text-short">{err}</p>}
+        {err && (
+          <p role="alert" className="mt-2 text-[12px] text-short">
+            {err}
+          </p>
+        )}
 
         <button
           type="submit"
