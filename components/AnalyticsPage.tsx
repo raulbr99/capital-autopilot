@@ -345,8 +345,16 @@ export default function AnalyticsPage() {
               />
             </section>
 
-            {/* Mecánica: un win rate suelto no dice nada sin su punto de equilibrio */}
-            <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_400px]">
+            {/*
+              Mecánica: un win rate suelto no dice nada sin su punto de equilibrio.
+
+              `items-start` porque en una rejilla las celdas se estiran a la
+              altura de la más alta: la tarjeta de la izquierda tiene cuatro
+              líneas y la de la derecha ocho, así que en escritorio la primera
+              quedaba con un tercio de su alto en blanco. Visto en una captura a
+              1440. Cada tarjeta ocupa ahora lo que ocupa su contenido.
+            */}
+            <section className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_400px]">
               <div className="rounded-xl border border-industrial bg-soft">
                 <SectionHead label="Mecánica del sistema" />
                 <div className="space-y-3 p-5">
