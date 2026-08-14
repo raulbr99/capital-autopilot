@@ -457,30 +457,6 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
               instruments={instruments}
               adxThreshold={snap?.state?.config?.strategy?.adxThreshold ?? 25}
             />
-            {cierreErr && (
-              <p
-                role="alert"
-                className="flex items-start gap-2 rounded-lg border border-short/40 bg-short/10 px-3 py-2 text-[12px] leading-relaxed text-short"
-              >
-                <span aria-hidden>⚠️</span>
-                <span>
-                  {cierreErr} La posición sigue abierta.{" "}
-                  <button onClick={() => setCierreErr(null)} className="underline underline-offset-2">
-                    Entendido
-                  </button>
-                </span>
-              </p>
-            )}
-            <PositionsTable
-              positions={positions}
-              onClose={closePos}
-              busy={busy}
-              cargando={cargando}
-              divisa={currency}
-              equity={snap?.account?.balance ?? null}
-              marcos={Object.fromEntries(instruments.map((i) => [i.epic, i.resolution]))}
-              tasas={tasas}
-            />
             {journal.length === 0 && (
               <div className="dotgrid rounded-xl border border-industrial bg-soft px-5 py-7 text-center">
                 <p className="text-sm font-medium text-dim">El gestor IA de {meta.label} decide cada hora</p>
@@ -547,6 +523,49 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
               </div>
             </div>
           )}
+        </div>
+
+        {/*
+          Las posiciones abiertas, a todo el ancho.
+
+          Estaban dentro de la columna izquierda de la rejilla, junto a la matriz
+          de señales, con el carril del Gestor ocupando 340 px a la derecha. Medido
+          en producción a 1440: la tabla mide 853 px y su caja 674, así que 179 px
+          se quedaban fuera. Lo que caía fuera era la última columna —el P&L de
+          cada posición y su barra de R—, o sea el número por el que se abre esta
+          pantalla. Y el recorte no se ve: el contenedor tiene overflow auto y en
+          macOS la barra no aparece hasta que la usas, de modo que la tabla parece
+          terminar en "RIESGO".
+
+          Abajo y a todo el ancho caben los 853 px con holgura, que además es donde
+          va el blotter en cualquier terminal. El aviso de error al cerrar viaja con
+          ella: es la respuesta al botón de esta tabla.
+        */}
+        <div className="mt-5 space-y-5">
+          {cierreErr && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 rounded-lg border border-short/40 bg-short/10 px-3 py-2 text-[12px] leading-relaxed text-short"
+            >
+              <span aria-hidden>⚠️</span>
+              <span>
+                {cierreErr} La posición sigue abierta.{" "}
+                <button onClick={() => setCierreErr(null)} className="underline underline-offset-2">
+                  Entendido
+                </button>
+              </span>
+            </p>
+          )}
+          <PositionsTable
+            positions={positions}
+            onClose={closePos}
+            busy={busy}
+            cargando={cargando}
+            divisa={currency}
+            equity={snap?.account?.balance ?? null}
+            marcos={Object.fromEntries(instruments.map((i) => [i.epic, i.resolution]))}
+            tasas={tasas}
+          />
         </div>
               <AppFooter />
       </main>
