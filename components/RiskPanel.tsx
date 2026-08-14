@@ -82,11 +82,25 @@ export default function RiskPanel({
               posiciones nuevas.
             </p>
           )}
+          {/*
+            El texto iba SUELTO dentro de un contenedor flex. En flex, cada nodo
+            de texto y cada span se convierte en un elemento propio, así que
+            "Freno diario", la palabra "desactivado" y el resto de la frase se
+            colocaban como tres cajas independientes, con el gap metido entre
+            ellas y saltando de línea por su cuenta. En pantalla se leía "Freno
+            desactivado : nada detiene al bot si encadena / diario pérdidas en
+            una misma jornada": la frase partida y "Freno diario" roto en dos
+            trozos separados por una línea. Lo vi en una captura, no leyendo el
+            código.
+            El icono es el único elemento flex; la frase va entera en su span.
+          */}
           {r.maxDailyLossPct <= 0 && (
             <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-short">
               <span aria-hidden>⚠️</span>
-              Freno diario <span className="font-medium">desactivado</span>: nada detiene al bot si encadena
-              pérdidas en una misma jornada.
+              <span>
+                Freno diario <span className="font-medium">desactivado</span>: nada detiene al bot si
+                encadena pérdidas en una misma jornada.
+              </span>
             </p>
           )}
         </div>

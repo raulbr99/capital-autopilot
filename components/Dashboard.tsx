@@ -708,7 +708,7 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-            <EquityChart data={equity} markers={markers} />
+            <EquityChart data={equity} markers={markers} divisa={acc?.currency ?? ""} />
           </div>
         </section>
 

@@ -473,7 +473,11 @@ export default function AnalyticsPage() {
             <section className="mt-4 rounded-xl border border-industrial bg-soft">
               <SectionHead label="PnL acumulado" />
               <div className="p-5">
-                <EquityChart data={a.pnlCurve.map((p) => ({ ts: p.ts, equity: p.cum }))} markers={markers} />
+                <EquityChart
+                  data={a.pnlCurve.map((p) => ({ ts: p.ts, equity: p.cum }))}
+                  markers={markers}
+                  divisa={divisa}
+                />
               </div>
             </section>
 

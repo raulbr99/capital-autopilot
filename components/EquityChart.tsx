@@ -14,7 +14,22 @@ const RANGES = [
   { k: "all", label: "Todo", ms: Infinity },
 ];
 
-export default function EquityChart({ data, markers = [] }: { data: Point[]; markers?: Marker[] }) {
+export default function EquityChart({
+  data,
+  markers = [],
+  divisa = "",
+}: {
+  data: Point[];
+  markers?: Marker[];
+  /**
+   * Divisa de la cuenta. Aquí había un "€" escrito a fuego en dos sitios —la
+   * variación del periodo y el valor bajo el cursor— que el barrido de la
+   * pasada 212 no cogió porque busqué el símbolo en las plantillas y estos
+   * estaban pegados a una expresión. El resto del panel toma la divisa de la
+   * cuenta desde hace pasadas; este gráfico se quedó fuera.
+   */
+  divisa?: string;
+}) {
   const [range, setRange] = useState("all");
 
   const { filtered, fmarkers } = useMemo(() => {
@@ -59,7 +74,8 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className={`font-mono text-xs tabular-nums ${pnlClass(delta)}`}>
-          {pnlFmt(delta)}€{" "}
+          {pnlFmt(delta)}
+          {divisa && <span className="text-muted"> {divisa}</span>}{" "}
           <span className="text-muted">
             {deltaPct != null ? `(${pnlFmt(deltaPct)}%) ` : ""}
             {/* "en el periodo" no decía QUÉ periodo, y el eje de abajo solo da
@@ -93,7 +109,7 @@ export default function EquityChart({ data, markers = [] }: { data: Point[]; mar
           })}
         </div>
       </div>
-      <Curve data={filtered} markers={fmarkers} />
+      <Curve data={filtered} markers={fmarkers} divisa={divisa} />
     </div>
   );
 }
@@ -103,7 +119,7 @@ const AXIS_H = 18; // banda inferior para las fechas
 const PAD_R = 48; // espacio para los valores del eje
 const PAD_Y = 10;
 
-function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
+function Curve({ data, markers, divisa }: { data: Point[]; markers: Marker[]; divisa?: string }) {
   const [w, setW] = useState(320); // se corrige al medir; nunca debe empujar el layout
   const [hover, setHover] = useState<number | null>(null);
 
@@ -300,7 +316,10 @@ function Curve({ data, markers }: { data: Point[]; markers: Marker[] }) {
           className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-lg border border-cement bg-raised px-2.5 py-1.5 shadow-elevated"
           style={{ left: Math.min(Math.max(x(hover!), 52), plotW - 52) }}
         >
-          <p className="font-mono text-[11px] tabular-nums text-white">{fmt(hi.equity)} €</p>
+          <p className="font-mono text-[11px] tabular-nums text-white">
+            {fmt(hi.equity)}
+            {divisa && <span className="text-muted"> {divisa}</span>}
+          </p>
           <p className="font-mono text-[9px] text-muted">{fecha(hi.ts)}</p>
         </div>
       )}
