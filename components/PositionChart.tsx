@@ -128,7 +128,27 @@ export default function PositionChart({
       borderVisible: false,
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
     });
-    const mkLine = (price: number | null | undefined, color: string, title: string, dashed = false) =>
+    /**
+     * `etiquetaEje` decide si la línea pone además su valor en el eje de precios.
+     *
+     * La de ENTRADA no lo pone, y no es capricho: el eje ya dibuja siempre la
+     * etiqueta del último precio, y una posición recién abierta tiene la entrada
+     * pegada al precio actual. Visto en una captura de SILVER, con entrada
+     * 64,561 y precio 64,356 sobre una escala de 52 a 70: las dos etiquetas se
+     * montaban una encima de otra, y el rótulo "Entrada" acababa solapando
+     * también al del stop. Justo la esquina donde se leen los niveles.
+     *
+     * El stop y el objetivo sí la llevan: están a 2 y 3 ATR del precio por
+     * construcción, así que no colisionan. Y los cuatro valores exactos están
+     * en la rejilla de abajo.
+     */
+    const mkLine = (
+      price: number | null | undefined,
+      color: string,
+      title: string,
+      dashed = false,
+      etiquetaEje = true
+    ) =>
       price == null
         ? null
         : series.createPriceLine({
@@ -136,10 +156,10 @@ export default function PositionChart({
             color,
             lineWidth: 1,
             lineStyle: dashed ? LineStyle.Dashed : LineStyle.Solid,
-            axisLabelVisible: true,
+            axisLabelVisible: etiquetaEje,
             title,
           });
-    mkLine(pos.entry, C.entry, "Entrada", true);
+    mkLine(pos.entry, C.entry, "Entrada", true, false);
     mkLine(pos.stopLevel, C.down, "SL");
     mkLine(pos.limitLevel, C.tp, "TP");
 
