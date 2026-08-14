@@ -64,17 +64,40 @@ export default function CotPanel({
 
   const rows = category === "forex" ? d?.forex : d?.commodities;
 
-  // Antigüedad del informe: el COT es semanal y refleja posiciones del martes
-  // anterior. Sin decirlo, se lee como si fuera de hoy.
+  /**
+   * Antigüedad del informe. El COT es semanal —la CFTC publica el viernes las
+   * posiciones del martes anterior— así que en un ciclo normal el dato tiene
+   * entre 3 y 10 días. Sin decirlo, se lee como si fuera de hoy.
+   *
+   * Y hasta ahora eso era todo: un "hace N d" en gris pequeño, sin umbral. Si
+   * el feed se rompe, el panel seguiría dibujando las mismas barras con la
+   * misma pinta mientras el dato envejece semanas, y los Gestores seguirían
+   * leyéndolo como contexto de mercado. Es el mismo fallo silencioso que tenía
+   * el latido del motor antes de calibrarlo.
+   *
+   * Pasados 14 días falta al menos una publicación; pasados 21, tres semanas
+   * sin actualizar no son contexto, son ruido viejo.
+   */
   const ageDays = d?.reportDate
     ? Math.floor((Date.now() - new Date(d.reportDate).getTime()) / 86_400_000)
     : null;
+  const viejo = ageDays != null && ageDays > 14;
+  const muyViejo = ageDays != null && ageDays > 21;
 
   return (
     <div className={`rounded-xl border border-industrial bg-soft ${className}`}>
       <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
         <h2 className="tag">COT · posicionamiento institucional</h2>
-        <span className="font-mono text-[10px] text-muted">
+        <span
+          className={`font-mono text-[10px] ${
+            muyViejo ? "text-short" : viejo ? "text-accent" : "text-muted"
+          }`}
+          title={
+            viejo
+              ? "La CFTC publica cada semana: este informe se ha quedado atrás."
+              : undefined
+          }
+        >
           {loading && !d
             ? "cargando…"
             : d?.reportDate
@@ -146,6 +169,20 @@ export default function CotPanel({
           );
         })}
         {!loading && (!rows || rows.length === 0) && <p className="text-xs text-muted">Sin datos COT.</p>}
+        {viejo && (
+          <p
+            className={`flex items-start gap-1.5 border-t border-industrial pt-2.5 text-[11px] leading-relaxed ${
+              muyViejo ? "text-short" : "text-accent"
+            }`}
+          >
+            <span aria-hidden>⚠️</span>
+            <span>
+              Informe de hace {ageDays} días. La CFTC publica cada semana, así que{" "}
+              {muyViejo ? "faltan varias entregas" : "falta al menos una entrega"}: esto ya no
+              describe el posicionamiento actual.
+            </span>
+          </p>
+        )}
       </div>
       <p className="border-t border-industrial px-5 py-2.5 text-[10px] leading-relaxed text-muted">
         Net de especuladores (no-comerciales, CFTC). Informe <span className="text-dim">semanal</span>: refleja
