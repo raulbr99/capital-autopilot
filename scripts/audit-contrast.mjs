@@ -29,6 +29,18 @@ for (const theme of ["dark", "light"]) {
     await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
     await new Promise((r) => setTimeout(r, 2500));
 
+    /* Igual que en el auditor de móvil: no medir el contraste de la pantalla
+       de error creyendo que es la página. */
+    const roto = await page.evaluate(
+      () => (document.body.innerText || "").includes("no se ha podido dibujar")
+    );
+    if (roto) {
+      totalFails++;
+      console.log(`❌ ${path}: la página se cayó a la pantalla de error`);
+      await browser.close().catch(() => {});
+      continue;
+    }
+
     const fails = await page.evaluate(() => {
       const lum = ([r, g, b]) => {
         const f = (c) => {

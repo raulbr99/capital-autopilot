@@ -62,6 +62,37 @@ for (const dev of DEVICES) {
       await page.goto(BASE + path, { waitUntil: "networkidle2", timeout: 45000 });
       await new Promise((r) => setTimeout(r, 2500)); // que entren los datos del cliente
 
+      /**
+       * ¿La página ha RENDERIZADO la app, o es la pantalla de error?
+       *
+       * Esto faltaba y costó caro. Durante semanas /stocks y /commodities
+       * estuvieron cayéndose a "Esta pantalla no se ha podido dibujar" en
+       * producción, y este auditor las daba por buenas: medía el ancho de la
+       * pantalla de error, no encontraba desbordamientos —lógico, es una
+       * tarjeta centrada— y escribía "✅ desbordan 0". Una herramienta que
+       * aprueba una página rota es peor que no tenerla, porque da confianza.
+       *
+       * Ahora se comprueba primero que hay aplicación: la marca de la cabecera
+       * presente y ningún texto de las tres pantallas de fallo.
+       */
+      const sano = await page.evaluate(() => {
+        const t = document.body.innerText || "";
+        return {
+          roto:
+            t.includes("no se ha podido dibujar") ||
+            t.includes("La aplicación no ha podido arrancar"),
+          hayApp: !!document.querySelector('a[aria-label="Ir al panel"]'),
+        };
+      });
+      if (sano.roto || !sano.hayApp) {
+        problemas++;
+        console.log(
+          `❌ ${path.padEnd(11)} ${sano.roto ? "la página se cayó a la pantalla de error" : "no ha renderizado la aplicación"}`
+        );
+        await browser.close().catch(() => {});
+        continue;
+      }
+
       const report = await page.evaluate(() => {
         const doc = document.documentElement;
         // Elementos que sobresalen del viewport (los que de verdad desbordan)

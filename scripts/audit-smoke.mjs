@@ -63,6 +63,20 @@ async function prueba(nombre, path, accion) {
     errores.push(`acción: ${e.message.slice(0, 110)}`);
   }
   await esperar(600);
+  /*
+    Además de la consola: comprobar que NO estamos mirando la pantalla de
+    error. Una excepción durante el render la captura la frontera de error, y
+    si algún día deja de escribir en consola, esta prueba seguiría en verde
+    sobre una página muerta. Se comprueba el resultado, no solo el síntoma.
+  */
+  try {
+    const roto = await page.evaluate(() =>
+      (document.body.innerText || "").includes("no se ha podido dibujar")
+    );
+    if (roto) errores.push("la página se cayó a la pantalla de error");
+  } catch {
+    /* si la página ya no responde, lo dirá el catch de arriba */
+  }
   const ok = errores.length === 0;
   if (!ok) fallos++;
   process.stdout.write(`${ok ? "✅" : "❌"} ${nombre.padEnd(34)} ${detalle}\n`);
