@@ -147,6 +147,39 @@ export default function ConfigPanel({
       instruments: instruments.map((i) => (i.epic === epic ? { ...i, paused: !i.paused } : i)),
     });
 
+  /*
+    Dos columnas en escritorio. La tabla estaba acotada a 540 px para que el
+    nombre del activo y sus mandos no acabaran en extremos opuestos de la fila
+    (pasada 176), y eso resolvió la fila pero dejó el problema contrario: en una
+    captura a 1440 la tarjeta mide unos 1000 px de ancho y la tabla ocupaba poco
+    más de la mitad, con 460 px de vacío a la derecha y veinte filas apiladas
+    hacia abajo. Una lista de instrumentos alta y estrecha en medio de una
+    tarjeta ancha es justo lo que no hace ningún terminal de bróker.
+
+    Se parten los grupos —no las filas— por el corte que deja las dos columnas
+    más igualadas, así que cada mesa sigue entera bajo su cabecera y el orden de
+    mesas no cambia. Por debajo de lg vuelve a ser una sola columna acotada.
+  */
+  const gruposVisibles = DESK_ORDER.filter((d) => byDesk[d.key]?.length);
+  const filasDe = (ds: typeof gruposVisibles) =>
+    ds.reduce((n, d) => n + byDesk[d.key].length, 0);
+  let corte = gruposVisibles.length;
+  if (gruposVisibles.length > 1) {
+    let mejor = Infinity;
+    for (let c = 1; c < gruposVisibles.length; c++) {
+      const dif = Math.abs(
+        filasDe(gruposVisibles.slice(0, c)) - filasDe(gruposVisibles.slice(c))
+      );
+      if (dif < mejor) {
+        mejor = dif;
+        corte = c;
+      }
+    }
+  }
+  const columnas = [gruposVisibles.slice(0, corte), gruposVisibles.slice(corte)].filter(
+    (c) => c.length
+  );
+
   return (
     <div className="border border-industrial bg-soft rounded-xl">
       <SectionHead label="Instrumentos y señal" />
@@ -179,7 +212,9 @@ export default function ConfigPanel({
             ancho útil es de poco más de 400, así que 540 deja un respiro sin
             desconectar los dos extremos de la fila.
           */}
-          <div className="max-w-[540px] overflow-hidden rounded-lg border border-industrial">
+          <div className="grid max-w-[540px] items-start gap-2 lg:max-w-none lg:grid-cols-2">
+            {columnas.map((grupos, ci) => (
+            <div key={ci} className="overflow-hidden rounded-lg border border-industrial">
             {/* Los rótulos de columna solo tienen sentido cuando la fila cabe
                 en una línea. En móvil la fila envuelve, así que se ocultan: los
                 controles se explican solos y todos llevan aria-label. */}
@@ -190,7 +225,7 @@ export default function ConfigPanel({
               <span className="w-[40px] text-center">Pausa</span>
               <span className="w-[36px]" aria-hidden />
             </div>
-            {DESK_ORDER.filter((d) => byDesk[d.key]?.length).map((d) => (
+            {grupos.map((d) => (
               <div key={d.key}>
                 <p className="border-b border-industrial bg-base/60 px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider text-dim">
                   {d.label} <span className="text-muted">{byDesk[d.key].length}</span>
@@ -340,6 +375,8 @@ export default function ConfigPanel({
                 ))}
               </div>
             ))}
+            </div>
+            ))}
           </div>
           {/*
             Un activo sin mesa no es un activo sin clasificar: es un activo mal
@@ -361,7 +398,7 @@ export default function ConfigPanel({
               {aviso}
             </p>
           )}
-          <div className="mt-2 flex gap-1.5">
+          <div className="mt-2 flex max-w-[540px] gap-1.5 lg:max-w-none">
             <input
               value={w}
               onChange={(e) => {
