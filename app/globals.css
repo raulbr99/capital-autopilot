@@ -140,6 +140,30 @@ body {
   textarea {
     border-radius: 0.5rem;
   }
+
+  /*
+   * Desplegables con la piel de la aplicación.
+   *
+   * Los <select> se quedaban con el control nativo del sistema: fondo gris
+   * propio, flecha del navegador y su tipografía. Visto en una captura de la
+   * pestaña de Investigación, los dos selectores de marco parecen de otra
+   * aplicación al lado de los botones "▶ Ejecutar" y "▶ Validar", y lo mismo
+   * pasa en los veinte del universo y en el filtro de activos de Analítica.
+   *
+   * appearance:none quita el control nativo —y con él la flecha—, así que se
+   * dibuja una propia como imagen de fondo. El gris es el mismo en los dos
+   * temas: es un tono medio que se lee sobre el fondo oscuro y sobre el claro.
+   * El hueco a la derecha deja sitio a la flecha para que no pise al texto.
+   */
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 1.55rem;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%238C94A0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.45rem center;
+    background-size: 11px 11px;
+  }
 }
 
 ::-webkit-scrollbar {
