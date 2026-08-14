@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePoll, Skeleton } from "./ui";
+import { IMMINENT_DAYS } from "@/lib/model";
 
 type Ape = {
   ticker: string;
@@ -42,14 +43,27 @@ type Data = {
 };
 
 /**
- * Resultados próximos. El Gestor lo usa como REGLA DURA (no abre con earnings
- * a <=7 días, porque el hueco de apertura se salta el stop), así que quien mira
- * el tablero tiene que ver lo mismo que decide la IA.
+ * Resultados próximos.
+ *
+ * El aviso decía "el motor no abre posiciones nuevas en este activo". No es
+ * cierto, y conviene precisarlo: grep de `earnings` e `imminent` en
+ * lib/engine.ts, cero coincidencias. La regla vive en el texto que se le pasa
+ * al Gestor —"earnings.daysUntil <= 7 bloquea abrir en ese activo"— así que la
+ * cumple un modelo, no una comprobación de código. Un modelo la puede saltar.
+ *
+ * La diferencia importa: una cosa es "esto no puede pasar" y otra "le hemos
+ * pedido que no lo haga". Con un hueco de apertura tras resultados saltándose
+ * el stop, quien mira el tablero merece saber cuál de las dos es.
+ *
+ * El umbral sale ahora de lib/model.ts —donde viven las constantes que cruzan
+ * la frontera cliente/servidor— en vez de estar repetido aquí como un 7 suelto.
+ * Importarlo de lib/earnings.ts, que es donde se calcula `imminent`, rompía el
+ * build: ese módulo arrastra dependencias de Node.
  */
 function EarningsCell({ e }: { e?: Earn }) {
   if (!e || e.daysUntil == null) return null;
   const d = e.daysUntil;
-  const soon = d <= 7;
+  const soon = d <= IMMINENT_DAYS;
   const near = d <= 21;
   return (
     <span
@@ -58,7 +72,7 @@ function EarningsCell({ e }: { e?: Earn }) {
       }`}
       title={
         soon
-          ? `Resultados en ${d} ${d === 1 ? "día" : "días"}: el motor no abre posiciones nuevas en este activo`
+          ? `Resultados en ${d} ${d === 1 ? "día" : "días"}: el Gestor tiene instrucción de no abrir aquí. Es una regla del prompt, no un bloqueo del motor.`
           : `Próximos resultados en ${d} ${d === 1 ? "día" : "días"}${e.epsEstimate != null ? ` · BPA estimado ${e.epsEstimate.toFixed(2)}` : ""}`
       }
     >

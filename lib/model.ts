@@ -252,6 +252,16 @@ export const EPS_PNL = 0.005;
  */
 export const BASE_EQUITY = 1000;
 
+/**
+ * Días hasta resultados por debajo de los cuales un valor se considera "en
+ * zona de earnings". Vive aquí y no en lib/earnings.ts porque el tablero de
+ * sentimiento lo necesita en el navegador, y ese módulo arrastra dependencias
+ * de servidor: importarlo desde un componente rompe el build con
+ * "Reading from node:module is not handled". lib/model.ts existe justo para
+ * esto — constantes puras que cruzan la frontera cliente/servidor.
+ */
+export const IMMINENT_DAYS = 7;
+
 export const EPIC_RE = /^[A-Z0-9_.]{1,20}$/;
 export const MAX_INSTRUMENTOS = 60;
 

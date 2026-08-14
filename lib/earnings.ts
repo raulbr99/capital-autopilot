@@ -21,7 +21,8 @@ export type EarningsInfo = {
 let cache: { t: number; key: string; data: EarningsInfo[] } | null = null;
 const TTL = 6 * 60 * 60 * 1000;
 
-const IMMINENT_DAYS = 7;
+import { IMMINENT_DAYS } from "./model";
+export { IMMINENT_DAYS };
 
 export async function earningsCalendar(symbols: string[]): Promise<EarningsInfo[]> {
   if (!symbols.length) return [];
