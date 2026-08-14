@@ -90,7 +90,14 @@ export default function AppHeader({
         <Nav active={active} />
       </div>
 
-      <div className="flex shrink-0 items-center gap-3">
+      {/*
+        gap-2 en móvil. Medido a 390 px en el panel: el bloque derecho ocupa 232
+        de los 350 útiles y a la navegación le quedan 58, con lo que el botón que
+        dice en qué sección estás mostraba "P…". En las mesas, sin el botón de
+        búsqueda, le quedan 104 y cabe hasta "Commodities": el problema es de
+        reparto, no de diseño.
+      */}
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {/* Cotización de la cuenta: el dato que un broker nunca esconde */}
         {/*
           El equity estaba oculto por debajo de 640 px, así que en un móvil
@@ -105,7 +112,7 @@ export default function AppHeader({
           haciendo aunque se vean menos pestañas.
         */}
         {v.equity != null && (
-          <div className="flex items-baseline gap-1.5 border-r border-industrial pr-2 sm:gap-2 sm:pr-3">
+          <div className="flex items-baseline gap-1.5 border-r border-industrial pr-1.5 sm:gap-2 sm:pr-3">
             <span className="font-mono text-[13px] font-medium tabular-nums text-white sm:text-sm">
               {fmt(v.equity)}
               <span className="hidden text-[11px] font-normal text-muted sm:inline"> {v.currency}</span>

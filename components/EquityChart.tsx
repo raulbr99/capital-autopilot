@@ -72,8 +72,15 @@ export default function EquityChart({
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <span className={`font-mono text-xs tabular-nums ${pnlClass(delta)}`}>
+      {/*
+        flex-wrap. A 390 px la fila no da de sí: la variación ocupa 166 px, el
+        grupo de rangos 161 y el ancho útil de la tarjeta es 310, así que el
+        grupo se salía 17 px del margen interior y "Todo" acababa pegado al
+        borde redondeado de la tarjeta, como si estuviera cortado. Envolviendo,
+        los rangos bajan a su propia línea cuando no caben.
+      */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <span className={`min-w-0 font-mono text-xs tabular-nums ${pnlClass(delta)}`}>
           {pnlFmt(delta)}
           {divisa && <span className="text-muted"> {divisa}</span>}{" "}
           <span className="text-muted">

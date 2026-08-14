@@ -1,0 +1,13 @@
+import puppeteer from "puppeteer-core";
+const OUT = "/private/tmp/claude-501/-Users-raulbr99-Documents-GitHub/bb2bb4a0-ff8b-4701-b76c-3f012af86926/scratchpad";
+const b = await puppeteer.launch({ executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: "new", args: ["--no-sandbox"] });
+const p = await b.newPage();
+await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+await p.goto("https://capital-autopilot.vercel.app/", { waitUntil: "domcontentloaded", timeout: 90000 }).catch(()=>{});
+await new Promise(r => setTimeout(r, 9000));
+await p.screenshot({ path: `${OUT}/mov1.png` });
+await p.evaluate(() => window.scrollTo(0, 900));
+await new Promise(r => setTimeout(r, 800));
+await p.screenshot({ path: `${OUT}/mov2.png` });
+console.log("alto", await p.evaluate(() => document.body.scrollHeight));
+await b.close();

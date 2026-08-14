@@ -165,7 +165,7 @@ export default function Nav({ active }: { active: string }) {
         onClick={() => setMenu((m) => !m)}
         aria-expanded={menu}
         aria-haspopup="menu"
-        className="flex min-h-[36px] w-full min-w-0 items-center gap-1.5 rounded-lg border border-industrial px-2.5 text-[12.5px] font-medium text-white"
+        className="flex min-h-[36px] w-full min-w-0 items-center gap-1 rounded-lg border border-industrial px-2 text-[12.5px] font-medium text-white sm:gap-1.5 sm:px-2.5"
       >
         <span className="min-w-0 flex-1 truncate text-left">{actualItem?.label ?? "Menú"}</span>
         <span className={`shrink-0 text-[9px] text-muted transition-transform ${menu ? "rotate-180" : ""}`}>▼</span>
