@@ -22,7 +22,8 @@ export type SimTrade = {
  * real; sirve para que cada activo arriesgue el MISMO importe por trade y los
  * resultados sean comparables entre sí (BTC ya no se dispara frente a EURUSD).
  */
-export const BASE_EQUITY = 1000;
+export { BASE_EQUITY } from "./model";
+import { BASE_EQUITY } from "./model";
 
 export type SimMetrics = {
   trades: number;

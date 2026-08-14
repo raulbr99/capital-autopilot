@@ -214,6 +214,27 @@ export type EquityPoint = { ts: number; equity: number };
  * pide contraseña— dejaría cada tick por encima del límite de 60 s de la
  * función: el cron se cae y el bot deja de gestionar las posiciones vivas.
  */
+/**
+ * Muestra mínima para que un porcentaje se presente como una tasa.
+ *
+ * Estaba escrito CUATRO veces —Analítica, el Diario, el backtest y la ruta
+ * /api/bot/lessons— y cada copia llevaba un comentario diciendo "igual que en
+ * el otro sitio", que es la forma más clara de documentar que algo debería
+ * vivir en uno solo. No es un detalle cosmético: este número decide si una
+ * pantalla enseña "0 % de acierto" o "muestra corta, sin conclusión" sobre las
+ * mismas operaciones. Si las copias se separan, el mismo histórico sería
+ * concluyente en una pantalla y no en la de al lado — y la cuarta copia es la
+ * que gobierna lo que se le CUENTA a los Gestores.
+ */
+export const MUESTRA_MIN = 5;
+
+/**
+ * Equity nocional del simulador. Vive aquí y no en lib/sim.ts porque el panel
+ * del backtest necesita el mismo número para expresar la caída máxima en %, y
+ * no puede importar el simulador entero desde el navegador.
+ */
+export const BASE_EQUITY = 1000;
+
 export const EPIC_RE = /^[A-Z0-9_.]{1,20}$/;
 export const MAX_INSTRUMENTOS = 60;
 

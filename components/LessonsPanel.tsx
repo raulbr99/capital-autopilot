@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MUESTRA_MIN } from "@/lib/model";
 import { SectionHead, fmt, pnlClass, pnlFmt, pl } from "./ui";
 
 type Lado = {
@@ -12,12 +13,7 @@ type Lado = {
   breakevenWinRate: number;
 };
 
-/**
- * Por debajo de esto un porcentaje no es una estadística, es una anécdota: con
- * 1 operación cerrada en pérdida sale "0%", que se lee como un dato duro y no
- * lo es. Mismo criterio que el walk-forward.
- */
-const MUESTRA_MIN = 5;
+
 type Data = {
   closed: number;
   netTotal: number;

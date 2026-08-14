@@ -2,12 +2,9 @@
 
 import { useState } from "react";
 import { SectionHead, Skeleton, fmt, pf, Sparkline, pl } from "./ui";
-import { RESOLUCIONES } from "@/lib/model";
+import { RESOLUCIONES, MUESTRA_MIN, BASE_EQUITY } from "@/lib/model";
 
-/** Equity nocional del backtest (lib/sim.ts). Con él, la caída se expresa en %. */
-const BASE_EQUITY = 1000;
-/** Igual que en Analítica y el Diario: bajo esta muestra el % no es una tasa. */
-const MUESTRA_MIN = 5;
+
 
 type BTResult = {
   epic: string;

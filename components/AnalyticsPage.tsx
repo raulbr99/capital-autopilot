@@ -19,7 +19,7 @@ import type { TradeRecord, DeskCategory } from "./types";
  * único fichero duplicado.
  */
 import { analyze } from "@/lib/analytics";
-import { TZ } from "@/lib/model";
+import { TZ, MUESTRA_MIN } from "@/lib/model";
 import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion, pdec, uds } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
@@ -546,8 +546,7 @@ function Kpi({
   );
 }
 
-/** Igual que en el panel del Diario: bajo esta muestra el % no es una tasa. */
-const MUESTRA_MIN = 5;
+
 
 function ByInstrument({ rows }: { rows: { epic: string; pnl: number; trades: number; winRate: number }[] }) {
   if (!rows.length) return <div className="p-8 text-center text-sm text-muted">Sin datos</div>;
