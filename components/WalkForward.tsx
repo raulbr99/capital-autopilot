@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { SectionHead, fmt, pf, Sparkline } from "./ui";
-import { RESOLUCIONES } from "@/lib/model";
+import { RESOLUCIONES, MIN_OOS } from "@/lib/model";
 
 type Metrics = {
   trades: number;
@@ -35,8 +35,7 @@ const VERDICT: Record<string, { label: string; cls: string }> = {
   none: { label: "Sin ventaja", cls: "bg-short/15 text-short border-short/40" },
 };
 
-/** Con pocas operaciones fuera de muestra el veredicto es ruido, no evidencia. */
-const MIN_OOS = 20;
+
 
 export default function WalkForward({
   watchlist,

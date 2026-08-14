@@ -15,6 +15,7 @@
 import type { Candle } from "./capital";
 import type { StrategyConfig } from "./strategy";
 import type { RiskConfig } from "./store";
+import { MIN_OOS } from "./model";
 import { simulate, metricsOf, SimMetrics, SimTrade } from "./sim";
 
 export type WFParams = {
@@ -136,9 +137,9 @@ export function walkForward(
 
   let verdict: WalkForwardResult["verdict"] = "none";
   let note = "";
-  if (oosAggregate.trades < 12) {
+  if (oosAggregate.trades < MIN_OOS) {
     verdict = "none";
-    note = "Pocos trades OOS para concluir — amplía histórico/resolución.";
+    note = `Menos de ${MIN_OOS} operaciones fuera de muestra: no hay veredicto que dar. Amplía histórico o baja el marco.`;
   } else if (pfOos >= 1.3 && oosAggregate.netPnl > 0 && degradation >= 0.6) {
     verdict = "edge";
     note = "Ventaja consistente fuera de muestra. Candidata a validar más.";

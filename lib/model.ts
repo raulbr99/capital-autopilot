@@ -229,6 +229,18 @@ export type EquityPoint = { ts: number; equity: number };
 export const MUESTRA_MIN = 5;
 
 /**
+ * Operaciones fuera de muestra mínimas para que un veredicto de walk-forward
+ * sea evidencia y no ruido.
+ *
+ * Estaba escrito dos veces y con valores DISTINTOS: el motor concluía a partir
+ * de 12 y el panel exigía 20 para enseñar el veredicto. Con 15 operaciones, el
+ * motor devolvía "edge" y su nota —"Ventaja consistente fuera de muestra.
+ * Candidata a validar más."— mientras el panel rotulaba la fila "Sin concluir".
+ * La insignia y la frase de debajo, en la misma fila, decían cosas contrarias.
+ */
+export const MIN_OOS = 20;
+
+/**
  * Bajo este importe, un P&L se considera CERO.
  *
  * Separa tres cosas que en un panel de trading no son la misma: ganar, perder y
