@@ -151,6 +151,18 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
    * que su precio ya está en este snapshot. Sirve para llevar a la divisa de la
    * cuenta lo que sale de multiplicar precios por tamaño.
    */
+  /**
+   * `currency` va ANTES de enCuenta, y esto no es estilo: enCuenta la lee, y
+   * declararla después dejaba la constante en zona muerta temporal. El fallo no
+   * salía siempre —enCuenta solo se ejecuta dentro del reduce de `positions`—,
+   * así que una mesa SIN posiciones abiertas renderizaba perfectamente y una
+   * mesa CON posiciones se caía entera a la pantalla de error.
+   *
+   * Es exactamente lo que estaba pasando en producción: forex y cripto bien,
+   * acciones y materias primas —las dos que tienen posiciones ahora mismo—
+   * muertas. Lo introduje yo al convertir el riesgo a la divisa de la cuenta.
+   */
+  const currency = snap?.account?.currency ?? "";
   const eurusd = (snap?.evals ?? []).find((e) => e.epic === "EURUSD")?.price ?? null;
   const enCuenta = (importe: number, p: { currency?: string }) =>
     aCuenta(importe, p.currency, currency, eurusd);
@@ -168,7 +180,6 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
   const exposure = suma((p) => Math.abs(p.size * p.entry));
   const riskAtStop = suma((p) => positionRisk(p).risk ?? 0);
   const maxPerDesk = snap?.state.config.maxPerDesk ?? 4;
-  const currency = snap?.account?.currency ?? "";
   /**
    * Estado de sesión de la mesa.
    *

@@ -13,7 +13,8 @@ const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 /** Una mesa por tipo de bloque de contexto: sentimiento, COT y funding. */
 const PAGES = ["/", "/forex", "/crypto", "/stocks", "/analytics", "/journal", "/lab"];
 
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
+/** Un navegador por página: ver la nota en audit-mobile.mjs. Una caída del
+ *  Chrome headless no puede contarse como un fallo de contraste. */
 let totalFails = 0;
 
 for (const theme of ["dark", "light"]) {
@@ -21,6 +22,7 @@ for (const theme of ["dark", "light"]) {
   const seen = new Map();
 
   for (const path of PAGES) {
+    const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
     await page.goto(`${BASE}${path}?theme=${theme}`, { waitUntil: "networkidle2", timeout: 45000 });
@@ -84,7 +86,7 @@ for (const theme of ["dark", "light"]) {
       if (!seen.has(key)) seen.set(key, { ...f, count: 0, page: path });
       seen.get(key).count++;
     }
-    await page.close();
+    await browser.close().catch(() => {});
   }
 
   const list = [...seen.values()].sort((a, b) => a.ratio - b.ratio);
@@ -97,5 +99,4 @@ for (const theme of ["dark", "light"]) {
   }
 }
 
-await browser.close();
 console.log(`\n${totalFails === 0 ? "Contraste correcto en ambos temas." : `${totalFails} combinaciones por debajo del mínimo.`}`);

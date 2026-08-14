@@ -13,11 +13,14 @@ const BASE = process.argv[2] || "https://capital-autopilot.vercel.app";
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
+/** Un navegador por prueba: ver la nota en audit-mobile.mjs. Cuando el headless
+ *  se cae a mitad de tanda, el resto de pruebas debe seguir corriendo y el
+ *  fallo no puede escribirse como un defecto de la aplicación. */
 let fallos = 0;
 
 /** Abre una página capturando TODA excepción o error de consola. */
 async function abrir(path) {
+  const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 900 });
   const errores = [];
@@ -41,13 +44,13 @@ async function abrir(path) {
     }
   }
   await esperar(5000);
-  return { page, errores };
+  return { page, errores, browser };
 }
 
 async function prueba(nombre, path, accion) {
-  let page, errores;
+  let page, errores, browser;
   try {
-    ({ page, errores } = await abrir(path));
+    ({ page, errores, browser } = await abrir(path));
   } catch (e) {
     fallos++;
     console.log(`❌ ${nombre.padEnd(34)} no carga: ${e.message.slice(0, 60)}`);
@@ -64,7 +67,7 @@ async function prueba(nombre, path, accion) {
   if (!ok) fallos++;
   process.stdout.write(`${ok ? "✅" : "❌"} ${nombre.padEnd(34)} ${detalle}\n`);
   for (const e of errores) console.log(`      ↳ ${e}`);
-  await page.close();
+  await browser.close().catch(() => {});
 }
 
 console.log("=== Interacciones ===");
@@ -166,6 +169,5 @@ for (const path of ["/", "/forex", "/crypto", "/stocks", "/commodities", "/analy
   await prueba(`sin errores en ${path}`, path, async () => "");
 }
 
-await browser.close();
 console.log(`\n${fallos === 0 ? "✅ Todo funciona." : `❌ ${fallos} pruebas con errores.`}`);
 process.exit(fallos === 0 ? 0 : 1);

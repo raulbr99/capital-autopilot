@@ -29,12 +29,27 @@ const DEVICES = [
 
 mkdirSync(OUT, { recursive: true });
 
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
+/**
+ * Un navegador POR PÁGINA, no uno para toda la tanda.
+ *
+ * Compartir la instancia hacía que una caída del Chrome headless —"Attempted to
+ * use detached Frame", que sale sobre todo cuando el service worker toma el
+ * control— abortara el recorrido entero y lo escribiera como un fallo DE LA
+ * APLICACIÓN. Me pasó cuatro veces y en dos estuve a punto de arreglar un bug
+ * que no existía: perseguí una recarga fantasma hasta contar documentos con
+ * sessionStorage para demostrar que no la había.
+ *
+ * Un auditor que a veces acusa en falso deja de servir para lo que existe.
+ * Ahora cada página va en su propio navegador, un fallo del arnés se marca
+ * aparte (⚠️) y no cuenta como problema de la web, y la tanda sigue.
+ */
 let problemas = 0;
+let arnes = 0;
 
 for (const dev of DEVICES) {
   console.log(`\n=== ${dev.name} (${dev.width}px) ===`);
   for (const path of PAGES) {
+    const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
     const page = await browser.newPage();
     await page.setViewport({
       width: dev.width,
@@ -168,12 +183,14 @@ for (const dev of DEVICES) {
 
       await page.screenshot({ path: `${OUT}/${dev.name}${path.replace(/\//g, "_") || "_home"}.png` });
     } catch (e) {
-      console.log(`❌ ${path}: ${e.message.slice(0, 80)}`);
+      // Fallo DEL ARNÉS, no de la página: se distingue a propósito.
+      arnes++;
+      console.log(`⚠️  ${path}: arnés · ${e.message.slice(0, 70)}`);
     }
-    await page.close();
+    await browser.close().catch(() => {});
   }
 }
 
-await browser.close();
 console.log(`\n${problemas === 0 ? "Sin desbordamientos." : `${problemas} páginas con desbordamiento.`}`);
+if (arnes) console.log(`${arnes} ${arnes === 1 ? "página" : "páginas"} sin comprobar por caídas del navegador de pruebas.`);
 console.log(`Capturas en ${OUT}/`);
