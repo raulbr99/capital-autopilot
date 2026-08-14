@@ -730,9 +730,15 @@ async function executePmDecision(
             price: e.price,
             indicators: e.signal?.indicators,
           },
+          /*
+            Sin `as any`: los dos campos están tipados en BotConfig desde hace
+            tiempo. El casteo era la razón de que la interfaz no se enterara del
+            umbral de los cortos — sin error de tipos, nada obligaba a
+            actualizar el panel, que siguió enseñando solo el de largos.
+          */
           act.direction === "SELL"
-            ? ((cfg as any).committeeMinApprovalsShort ?? 2)
-            : ((cfg as any).committeeMinApprovals ?? 1)
+            ? (cfg.committeeMinApprovalsShort ?? 2)
+            : (cfg.committeeMinApprovals ?? 1)
         );
         if (!verdict.approved) {
           const no = verdict.votes.find((v) => !v.approve);

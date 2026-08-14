@@ -424,10 +424,33 @@ export default function ConfigPanel({
               <>Apagado: abre y cierra solo el motor técnico, con sus reglas de SMA, RSI y ADX.</>
             )}
           </p>
+          {/*
+            El comité tiene DOS umbrales, no uno: los cortos exigen más votos
+            que los largos porque históricamente pierden más. Aquí se enseñaba
+            solo el de largos, así que el panel decía "1 aprob. mín." mientras
+            el motor exige 3 para abrir un corto (engine.ts elige entre
+            committeeMinApprovals y committeeMinApprovalsShort según la
+            dirección). Con el valor de hoy, la regla mostrada era falsa para la
+            mitad de las operaciones posibles — y justo para la mitad más
+            restringida, que es la que explica por qué se veta una propuesta.
+          */}
           <div className="flex items-center justify-between rounded-lg border border-industrial px-3 py-2 text-[11px]">
             <span className="text-muted">🗳️ Comité IA — vota antes de abrir</span>
-            <span className={cfg.committee ? "text-long" : "text-muted"}>
-              {cfg.committee ? `ON · ${cfg.committeeMinApprovals ?? 1} aprob. mín.` : "OFF"}
+            <span
+              className={cfg.committee ? "text-long" : "text-muted"}
+              title={
+                cfg.committee
+                  ? "Aprobaciones mínimas para no vetar. Los cortos llevan su propio umbral."
+                  : undefined
+              }
+            >
+              {cfg.committee
+                ? `ON · ${cfg.committeeMinApprovals ?? 1} aprob.${
+                    (cfg.committeeMinApprovalsShort ?? 2) !== (cfg.committeeMinApprovals ?? 1)
+                      ? ` · ${cfg.committeeMinApprovalsShort ?? 2} en cortos`
+                      : ""
+                  }`
+                : "OFF"}
             </span>
           </div>
           {cfg.pmMode && (
