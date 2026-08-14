@@ -853,6 +853,20 @@ function salidaFiable(t: TradeRecord): boolean {
  * columna "tamano" desde siempre. Era la única que no estaba en la vista.
  */
 function TradeTable({ trades }: { trades: TradeRecord[] }) {
+  /**
+   * ¿Alguna fila sin precio de salida? Entonces hay que explicarlo A LA VISTA.
+   *
+   * La explicación —"el P&L sí es real, sale del efectivo de la cuenta, no de
+   * estos dos precios"— vivía solo en el title de la celda. En un teléfono un
+   * title no existe, así que ahí quedaba un "sin registrar" a secas junto a un
+   * resultado de −27,00, que invita justo a lo contrario de lo que pasa: a
+   * dudar del importe.
+   *
+   * Y no es marginal: de las 37 cerradas, cinco no tienen precio de salida, y
+   * son las que más movieron la cuenta —los cierres que reconcilia el motor a
+   * posteriori son los que saltaron por stop o take-profit en el broker—.
+   */
+  const haySinRegistrar = trades.some((t) => !salidaFiable(t));
   return (
     <>
     {/*
@@ -1012,6 +1026,14 @@ function TradeTable({ trades }: { trades: TradeRecord[] }) {
       />
     )}
     </div>
+
+    {haySinRegistrar && (
+      <p className="border-t border-industrial px-4 py-2.5 text-[11px] leading-relaxed text-muted">
+        <span className="text-dim">«sin registrar»</span> es el precio de salida, no el resultado: en
+        los cierres que el motor reconcilia después no hay precio que anotar. El P&amp;L de esas
+        operaciones sí es real — sale del efectivo de la cuenta, no de estos dos precios.
+      </p>
+    )}
     </>
   );
 }
