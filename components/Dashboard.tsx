@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion, aCuenta, useDatosViejos } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion, aCuenta, useDatosViejos, alternarTema } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -399,16 +399,7 @@ export default function Dashboard() {
       id: "theme",
       label: "Cambiar entre tema claro y oscuro",
       hint: "Vista",
-      run: () => {
-        const el = document.documentElement;
-        const next = el.getAttribute("data-theme") === "light" ? "dark" : "light";
-        el.setAttribute("data-theme", next);
-        try {
-          localStorage.setItem("theme", next);
-        } catch {
-          /* modo privado */
-        }
-      },
+      run: alternarTema,
     },
   ];
 

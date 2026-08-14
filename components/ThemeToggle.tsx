@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { syncThemeColor } from "./ui";
+import { alternarTema, syncThemeColor } from "./ui";
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -14,15 +14,16 @@ export default function ThemeToggle() {
     syncThemeColor(cur);
   }, []);
 
-  const toggle = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    try {
-      localStorage.setItem("theme", next);
-    } catch {}
-    syncThemeColor(next);
-    setTheme(next);
-  };
+  /** El cambio lo hace el ayudante compartido; aquí solo se refleja. */
+  const toggle = () => setTheme(alternarTema());
+
+  // ...y también cuando lo cambia otro (la paleta de comandos), para que el
+  // icono no se quede contando el tema anterior.
+  useEffect(() => {
+    const oir = (e: Event) => setTheme((e as CustomEvent).detail as "dark" | "light");
+    window.addEventListener("tema:cambiado", oir);
+    return () => window.removeEventListener("tema:cambiado", oir);
+  }, []);
 
   return (
     <button

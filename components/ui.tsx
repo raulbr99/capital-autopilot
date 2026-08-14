@@ -530,6 +530,36 @@ export function syncThemeColor(theme: "dark" | "light") {
 }
 
 /**
+ * Cambiar de tema, en un solo sitio.
+ *
+ * Había DOS implementaciones: el botón de la cabecera y el comando de la paleta
+ * (⌘K → "Cambiar entre tema claro y oscuro"). La del comando ponía el atributo
+ * y lo guardaba en localStorage, y se dejaba dos cosas que la otra sí hacía:
+ *
+ *  · syncThemeColor, o sea el <meta name="theme-color"> que colorea la barra
+ *    del navegador y la de estado de la PWA instalada. Cambiando el tema desde
+ *    la paleta, la página se ponía clara y la barra del sistema se quedaba en el
+ *    #0B0D11 oscuro.
+ *  · avisar al botón de la cabecera, que guarda el tema en su propio estado para
+ *    elegir icono: quedaba enseñando el sol sobre un tema claro hasta recargar.
+ *
+ * Ahora las dos rutas llaman aquí y el botón se entera por un evento.
+ */
+export function alternarTema(): "dark" | "light" {
+  const el = document.documentElement;
+  const next = el.getAttribute("data-theme") === "light" ? "dark" : "light";
+  el.setAttribute("data-theme", next);
+  try {
+    localStorage.setItem("theme", next);
+  } catch {
+    /* modo privado */
+  }
+  syncThemeColor(next);
+  window.dispatchEvent(new CustomEvent("tema:cambiado", { detail: next }));
+  return next;
+}
+
+/**
  * ¿Hay conexión? Instalada como PWA se abre en el metro, en un ascensor o con
  * el avión activado: el caparazón carga desde caché y, sin avisar, la pantalla
  * enseña un estado que no puede verificar. Mejor decirlo.
