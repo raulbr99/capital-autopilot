@@ -231,7 +231,25 @@ export default function Dashboard() {
   const acc = snap?.account;
   const positions = snap?.openPositions ?? [];
   const evals = snap?.evals ?? [];
-  const floatPnl = positions.reduce((s, p) => s + (p.upl || 0), 0);
+  /**
+   * P&L flotante: el de Capital, no una suma propia.
+   *
+   * Esto sumaba el `upl` de cada posición. Capital redondea cada uno a dos
+   * decimales, así que la suma se separa de lo que dicen sus libros: medido
+   * ahora mismo con cuatro posiciones, el panel decía −1,29 y el broker −1,28.
+   * Un céntimo, sí, pero la diferencia crece con el número de posiciones y
+   * discrepa de la cifra de arriba: el equity que preside la pantalla sale de
+   * `balance`, y balance − deposit da EXACTAMENTE account.pnl (comprobado:
+   * 224,06 − 225,34 = −1,28).
+   *
+   * O sea que el panel enseñaba dos números que no cuadran entre sí teniendo el
+   * bueno en el mismo objeto. Se usa el del broker y la suma queda de respaldo
+   * por si algún día no viene.
+   */
+  const floatPnl =
+    typeof snap?.account?.pnl === "number"
+      ? snap.account.pnl
+      : positions.reduce((s, p) => s + (p.upl || 0), 0);
   const equity = historial.equity;
   const lastEquity = equity.length ? equity[equity.length - 1].equity : 0;
   const configured = snap?.configured ?? true;

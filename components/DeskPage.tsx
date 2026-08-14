@@ -317,7 +317,9 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             */}
             {!session.open && !firing && firedAt == null && (
               <p className="max-w-[230px] text-right text-[11px] leading-snug text-muted">
-                {meta.label === "Stocks" ? "Bolsa cerrada" : "Mercado cerrado"}: analizará, pero no podrá
+                {/* Por la CATEGORÍA, no por la etiqueta visible: renombrar la
+                    mesa en DESKS cambiaría en silencio qué texto sale aquí. */}
+                {category === "stocks" ? "Bolsa cerrada" : "Mercado cerrado"}: analizará, pero no podrá
                 abrir ni cerrar hasta la apertura.
               </p>
             )}
