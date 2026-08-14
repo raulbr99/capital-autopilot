@@ -54,7 +54,28 @@ export default function ConfigPanel({
    * crearlo, y sin valor por defecto: no hay ninguno que sea correcto por
    * omisión.
    */
-  const add = () => {
+  const [comprobando, setComprobando] = useState(false);
+
+  /**
+   * Comprobar que el epic EXISTE antes de meterlo en el universo.
+   *
+   * Hasta ahora solo se validaba la forma con una expresión regular, y eso deja
+   * pasar cualquier cosa con pinta de epic: escribe NVDIA en vez de NVDA y el
+   * instrumento entra, el motor gasta una petición en él en CADA ciclo para
+   * fallar, y la rejilla enseña una tarjeta "sin datos" para siempre sin decir
+   * por qué.
+   *
+   * La comprobación de verdad ya estaba desplegada y sin usar: /api/capital/markets
+   * busca en el catálogo de Capital y devuelve epic, nombre y precios. Ningún
+   * componente la llamaba. Ahora el formulario la usa y, cuando no hay
+   * coincidencia exacta, ofrece los epics parecidos que devuelve el broker —que
+   * es justo lo que uno necesita cuando se ha equivocado de nombre.
+   *
+   * Si la búsqueda falla (broker caído, sin credenciales), NO se bloquea el
+   * alta: se cae a la validación de formato de antes. Una avería del broker no
+   * puede impedirte configurar el bot.
+   */
+  const add = async () => {
     const v = w.toUpperCase().trim();
     /**
      * Antes cualquier texto valía. Escribir "hola mundo" creaba un instrumento
@@ -69,6 +90,24 @@ export default function ConfigPanel({
     if (instruments.length >= MAX_INSTRUMENTOS)
       return setAviso(`Tope de ${MAX_INSTRUMENTOS} instrumentos: cada uno cuesta una petición por ciclo.`);
     setAviso(null);
+    setComprobando(true);
+    try {
+      const r = await fetch(`/api/capital/markets?q=${encodeURIComponent(v)}`);
+      const d = await r.json();
+      const lista: { epic: string; name: string }[] = Array.isArray(d?.markets) ? d.markets : [];
+      if (r.ok && lista.length && !lista.some((m) => m.epic === v)) {
+        const cerca = lista.slice(0, 3).map((m) => m.epic).join(", ");
+        setComprobando(false);
+        return setAviso(`Capital no tiene ningún activo con el epic ${v}. Parecidos: ${cerca}.`);
+      }
+      if (r.ok && !lista.length) {
+        setComprobando(false);
+        return setAviso(`Capital no encuentra ningún activo para "${v}".`);
+      }
+    } catch {
+      /* sin catálogo: se sigue con la validación de formato */
+    }
+    setComprobando(false);
     patch({
       instruments: [...instruments, { epic: v, resolution: DEFAULT_RESOLUTION, category: mesa }],
     });
@@ -311,12 +350,12 @@ export default function ConfigPanel({
             </select>
             <button
               onClick={add}
-              disabled={busy || !w.trim() || !mesa}
+              disabled={busy || comprobando || !w.trim() || !mesa}
               aria-label="Añadir instrumento"
               title={!mesa ? "Elige la mesa: define el apalancamiento" : "Añadir instrumento"}
               className="min-h-[36px] min-w-[40px] rounded-lg bg-accent px-3 font-display text-xs text-onaccent disabled:opacity-40"
             >
-              +
+              {comprobando ? "…" : "+"}
             </button>
           </div>
         </div>
