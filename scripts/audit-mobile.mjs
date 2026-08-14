@@ -43,14 +43,40 @@ mkdirSync(OUT, { recursive: true });
  * Ahora cada página va en su propio navegador, un fallo del arnés se marca
  * aparte (⚠️) y no cuenta como problema de la web, y la tanda sigue.
  */
+/**
+ * Un navegador REUTILIZADO que se relanza si muere.
+ *
+ * Aislar cada página en su propio Chrome (pasada 219) arregló los falsos
+ * positivos, pero multiplicó el tiempo: dieciséis arranques de navegador por
+ * tanda, de dos minutos a más de diez. Una suite que tarda diez minutos se pasa
+ * menos, que es justo el fallo que quería evitar.
+ *
+ * Aquí se reutiliza uno solo y se comprueba antes de cada página si sigue vivo;
+ * si se cayó, se levanta otro. Rápido como antes y resistente como ayer.
+ */
+let browser = null;
+async function navegador() {
+  if (browser && browser.connected) return browser;
+  browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
+  return browser;
+}
+async function tirarNavegador() {
+  try {
+    await browser?.close();
+  } catch {
+    /* ya estaba muerto */
+  }
+  browser = null;
+}
+
 let problemas = 0;
 let arnes = 0;
 
 for (const dev of DEVICES) {
   console.log(`\n=== ${dev.name} (${dev.width}px) ===`);
   for (const path of PAGES) {
-    const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
-    const page = await browser.newPage();
+    const nav = await navegador();
+    const page = await nav.newPage();
     await page.setViewport({
       width: dev.width,
       height: dev.height,
@@ -89,7 +115,7 @@ for (const dev of DEVICES) {
         console.log(
           `❌ ${path.padEnd(11)} ${sano.roto ? "la página se cayó a la pantalla de error" : "no ha renderizado la aplicación"}`
         );
-        await browser.close().catch(() => {});
+        await page.close().catch(() => {});
         continue;
       }
 
@@ -217,11 +243,13 @@ for (const dev of DEVICES) {
       // Fallo DEL ARNÉS, no de la página: se distingue a propósito.
       arnes++;
       console.log(`⚠️  ${path}: arnés · ${e.message.slice(0, 70)}`);
+      await tirarNavegador(); // si el fallo fue del navegador, el siguiente arranca limpio
     }
-    await browser.close().catch(() => {});
+    await page.close().catch(() => {});
   }
 }
 
 console.log(`\n${problemas === 0 ? "Sin desbordamientos." : `${problemas} páginas con desbordamiento.`}`);
 if (arnes) console.log(`${arnes} ${arnes === 1 ? "página" : "páginas"} sin comprobar por caídas del navegador de pruebas.`);
 console.log(`Capturas en ${OUT}/`);
+await tirarNavegador();

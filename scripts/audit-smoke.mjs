@@ -16,6 +16,27 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 /** Un navegador por prueba: ver la nota en audit-mobile.mjs. Cuando el headless
  *  se cae a mitad de tanda, el resto de pruebas debe seguir corriendo y el
  *  fallo no puede escribirse como un defecto de la aplicación. */
+/**
+ * Un navegador REUTILIZADO que se relanza si muere. Aislar cada prueba en su
+ * propio Chrome arregló los falsos positivos pero disparó el tiempo de la tanda
+ * (quince arranques). Reutilizar uno y comprobar que sigue vivo da las dos
+ * cosas: velocidad y resistencia.
+ */
+let browser = null;
+async function navegador() {
+  if (browser && browser.connected) return browser;
+  browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
+  return browser;
+}
+async function tirarNavegador() {
+  try {
+    await browser?.close();
+  } catch {
+    /* ya estaba muerto */
+  }
+  browser = null;
+}
+
 let fallos = 0;
 let arnes = 0;
 
@@ -23,17 +44,18 @@ let arnes = 0;
 async function abrir(path) {
   /* Lanzar nueve navegadores seguidos falla de vez en cuando con "Failed to
      launch the browser process". Es del arnés, no de la web: se reintenta. */
-  let browser;
+  let nav;
   for (let i = 0; ; i++) {
     try {
-      browser = await puppeteer.launch({ executablePath: CHROME, headless: "new" });
+      nav = await navegador();
       break;
     } catch (e) {
       if (i >= 2) throw Object.assign(e, { arnes: true });
+      await tirarNavegador();
       await esperar(1500);
     }
   }
-  const page = await browser.newPage();
+  const page = await nav.newPage();
   await page.setViewport({ width: 1280, height: 900 });
   const errores = [];
   page.on("pageerror", (e) => errores.push(`excepción: ${e.message.slice(0, 120)}`));
@@ -56,13 +78,13 @@ async function abrir(path) {
     }
   }
   await esperar(5000);
-  return { page, errores, browser };
+  return { page, errores };
 }
 
 async function prueba(nombre, path, accion) {
-  let page, errores, browser;
+  let page, errores;
   try {
-    ({ page, errores, browser } = await abrir(path));
+    ({ page, errores } = await abrir(path));
   } catch (e) {
     /* Fallo del ARNÉS (no se pudo abrir el navegador) frente a fallo de la web.
        Contarlos juntos fue lo que dejó pasar la caída de las mesas: un ❌ del
@@ -101,7 +123,7 @@ async function prueba(nombre, path, accion) {
   if (!ok) fallos++;
   process.stdout.write(`${ok ? "✅" : "❌"} ${nombre.padEnd(34)} ${detalle}\n`);
   for (const e of errores) console.log(`      ↳ ${e}`);
-  await browser.close().catch(() => {});
+  await page.close().catch(() => {});
 }
 
 console.log("=== Interacciones ===");
@@ -247,3 +269,4 @@ for (const path of ["/", "/forex", "/crypto", "/stocks", "/commodities", "/analy
 console.log(`\n${fallos === 0 ? "✅ Todo funciona." : `❌ ${fallos} pruebas con errores.`}`);
 if (arnes) console.log(`⚠️  ${arnes} ${arnes === 1 ? "prueba" : "pruebas"} sin comprobar por fallos del navegador de pruebas.`);
 process.exit(fallos === 0 ? 0 : 1);
+await tirarNavegador();

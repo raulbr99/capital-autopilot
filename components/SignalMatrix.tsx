@@ -98,7 +98,15 @@ export default function SignalMatrix({
         /* whitespace-nowrap: sin esto el chip parte "Todas" y su número en dos
            líneas cuando la fila va justa, y los tres filtros pasan a ocupar el
            doble de alto. Visto en una captura a 390 px. */
-        className={`whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+        /*
+          min-h-[34px]: al impedir ayer que el chip partiera su número en dos
+          líneas, dejó de ser alto por accidente y se quedó en 25 px — por
+          debajo del mínimo táctil. El auditor lo cazó al primer pase: "táctil
+          57×25 Todas 5". Es la misma altura que ya llevan los filtros del
+          registro en vivo desde la pasada 179; estos nunca la tuvieron, pasaban
+          porque envolvían.
+        */
+        className={`inline-flex min-h-[34px] items-center gap-1 whitespace-nowrap rounded-md px-2 text-[11px] font-medium transition-colors ${
           on ? "bg-raised text-white" : "text-muted hover:text-dim"
         }`}
       >
