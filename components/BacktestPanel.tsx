@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SectionHead, Skeleton, fmt, pf, Sparkline, pl } from "./ui";
-import { RESOLUCIONES, MUESTRA_MIN, BASE_EQUITY } from "@/lib/model";
+import { RESOLUCIONES, MUESTRA_MIN, BASE_EQUITY, marcoLabel } from "@/lib/model";
 
 
 
@@ -10,6 +10,9 @@ type BTResult = {
   epic: string;
   bars: number;
   trades: number;
+  /** Marco con el que se midió ESTA fila (pasada 159). Estaba leyéndose con un
+   *  casteo porque nunca se añadió al tipo. */
+  resolution?: string;
   wins: number;
   winRate: number;
   netPnl: number;
@@ -270,7 +273,7 @@ export default function BacktestPanel() {
                        (de ahí el guion). Mismo umbral de muestra que el resto
                        de la app. */
                     <p className="whitespace-nowrap font-mono text-[10px] tabular-nums text-muted">
-                      {(r as any).resolution ? `${(r as any).resolution} · ` : ""}
+                      {r.resolution ? `${marcoLabel(r.resolution)} · ` : ""}
                       {r.trades} {pl(r.trades, "op", "ops")}
                       {r.trades >= MUESTRA_MIN
                         ? ` · ${r.winRate.toFixed(0)}% · PF ${pf(r.profitFactor)}`

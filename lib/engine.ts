@@ -719,7 +719,7 @@ async function executePmDecision(
         /* fail-open */
       }
       // ---- comité IA: varios modelos votan antes de abrir ----
-      if ((cfg as any).committee) {
+      if (cfg.committee) {
         const verdict = await committeeVote(
           {
             epic: act.epic,
@@ -901,7 +901,17 @@ async function manageOpenPositions(
   ourTrades: TradeRecord[],
   cfg: ReturnType<typeof bot>["config"]
 ): Promise<void> {
-  const r = cfg.risk as any;
+  /**
+   * Sin `as any`. Esta función es la que MUEVE los stops de posiciones vivas y
+   * cierra parte de ellas, y leía toda su configuración a través de un casteo:
+   * activeManage, breakevenAtr, trailAtr, trailDistAtr, scaleOutAtr y
+   * scaleOutPct. Con el casteo, renombrar o perder uno de esos campos no
+   * produce ningún error de tipos — simplemente llega `undefined`, las
+   * comparaciones con `>=` dan false y el trailing deja de moverse en silencio,
+   * sobre dinero real. Los seis están declarados en RiskConfig; el casteo solo
+   * quitaba la red.
+   */
+  const r = cfg.risk;
   if (!r.activeManage) return;
   const atrByEpic = new Map(evals.map((e) => [e.epic, e.atr]));
   const origSize = new Map<string, number>();
