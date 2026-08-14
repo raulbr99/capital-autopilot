@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { RESOLUCIONES, TZ } from "@/lib/model";
+import { RESOLUCIONES, TZ, EPS_PNL } from "@/lib/model";
 
 export const fmt = (n: number, d = 2) => {
   const v = Number.isFinite(n) ? n : 0;
@@ -30,7 +30,8 @@ export const pl = (n: number, singular: string, plural: string) =>
   n === 1 ? singular : plural;
 
 // P&L: el cero es NEUTRO (ni verde ni "+"), solo color con signo real.
-const EPS = 0.005;
+// El umbral es el mismo que usan analytics y la ruta de lecciones: ver EPS_PNL.
+const EPS = EPS_PNL;
 export const pnlClass = (v: number) =>
   v > EPS ? "text-long" : v < -EPS ? "text-short" : "text-dim";
 export const pnlFmt = (v: number, d = 2) => (v > EPS ? "+" : "") + fmt(v, d);

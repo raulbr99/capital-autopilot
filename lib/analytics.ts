@@ -3,13 +3,12 @@
  */
 
 import type { TradeRecord } from "./store";
-import { TZ } from "./model";
+import { TZ, EPS_PNL } from "./model";
 
 // Una operación cerrada EXACTAMENTE a cero no es un acierto: es un empate.
 // Contarla como ganadora inflaba el win rate (8 de 33 en el histórico actual:
 // 52% aparente frente al 36% real) y contradecía al panel de expectativa, que
 // ya lo hacía bien. El win rate se mide sobre las que SÍ se decidieron.
-const EPS_PNL = 0.005;
 const esGanadora = (p: number | undefined) => (p || 0) > EPS_PNL;
 const esPerdedora = (p: number | undefined) => (p || 0) < -EPS_PNL;
 

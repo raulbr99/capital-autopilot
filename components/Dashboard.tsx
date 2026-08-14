@@ -10,6 +10,7 @@ import RiskPanel from "./RiskPanel";
 import LogFeed from "./LogFeed";
 import ExpectancyPanel from "./ExpectancyPanel";
 import CommandPalette, { abrirPaleta, type Command } from "./CommandPalette";
+import { EPS_PNL } from "@/lib/model";
 import AppHeader from "./AppHeader";
 import Link from "next/link";
 
@@ -573,11 +574,11 @@ export default function Dashboard() {
                 label="PNL HOY"
                 value={loading ? null : `${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%`}
                 sub={
-                  loading || !lastEquity || Math.abs(dayPnlEur) < 0.005
+                  loading || !lastEquity || Math.abs(dayPnlEur) < EPS_PNL
                     ? undefined
                     : `${pnlFmt(dayPnlEur)} ${acc?.currency ?? ""}`
                 }
-                tone={Math.abs(dayPnlPct) < 0.005 ? undefined : dayPnlPct > 0 ? "long" : "short"}
+                tone={Math.abs(dayPnlPct) < EPS_PNL ? undefined : dayPnlPct > 0 ? "long" : "short"}
               />
               {/* "TRADES HOY" cabía; "OPERACIONES HOY" no —se truncaba en "OPERACIONES H…"—.
                   La app ya usa "op/ops" como forma compacta en celdas densas
@@ -678,7 +679,7 @@ export default function Dashboard() {
         <section className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-industrial bg-industrial md:grid-cols-4">
           <StatCard label="Efectivo" value={loading ? null : acc ? fmt(acc.deposit) : "—"} unit={acc?.currency} />
           <StatCard label="Disponible" value={loading ? null : acc ? fmt(acc.available) : "—"} unit={acc?.currency} />
-          <StatCard label="PnL flotante" value={loading ? null : pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < 0.005 ? undefined : floatPnl > 0 ? "long" : "short"} />
+          <StatCard label="PnL flotante" value={loading ? null : pnlFmt(floatPnl)} unit={acc?.currency} tone={Math.abs(floatPnl) < EPS_PNL ? undefined : floatPnl > 0 ? "long" : "short"} />
           <StatCard
             label="Posiciones"
             value={loading ? null : `${positions.length}`}

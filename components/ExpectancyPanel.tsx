@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SectionHead, StatCard, fmt, pf, pnlClass, pnlFmt, pl } from "./ui";
+import { EPS_PNL } from "@/lib/model";
 
 type DirStat = { trades: number; wins: number; losses: number; winRate: number; net: number };
 
@@ -94,7 +95,7 @@ export default function ExpectancyPanel({
     );
 
   const beatsBreakeven = d.breakevenWinRate != null && d.winRate >= d.breakevenWinRate;
-  const positive = d.expectancy > 0.005;
+  const positive = d.expectancy > EPS_PNL;
 
   return shell(
     <>
@@ -110,7 +111,7 @@ export default function ExpectancyPanel({
           label="Por operación"
           value={`${pnlFmt(d.expectancy)}`}
           unit={divisa || undefined}
-          tone={positive ? "long" : d.expectancy < -0.005 ? "short" : undefined}
+          tone={positive ? "long" : d.expectancy < -EPS_PNL ? "short" : undefined}
         />
         <StatCard label="Profit factor" value={pf(d.profitFactor)} tone={d.profitFactor >= 1 ? "long" : "short"} />
         <StatCard label="Resultado neto" value={`${pnlFmt(d.netTotal)}`} unit={divisa || undefined} tone={d.netTotal >= 0 ? "long" : "short"} />

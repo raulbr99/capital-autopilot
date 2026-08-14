@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
 import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, useOnline, aCuenta } from "./ui";
+import { EPS_PNL } from "@/lib/model";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
 import PositionsTable from "./PositionsTable";
@@ -413,7 +414,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
             value={cargando ? null : positions.length ? pnlFmt(deskPnl) : "—"}
             sub={positions.length ? currency : "sin posiciones"}
             tone={
-              !positions.length || Math.abs(deskPnl) < 0.005
+              !positions.length || Math.abs(deskPnl) < EPS_PNL
                 ? undefined
                 : deskPnl > 0
                   ? "long"

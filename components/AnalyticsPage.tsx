@@ -19,7 +19,7 @@ import type { TradeRecord, DeskCategory } from "./types";
  * único fichero duplicado.
  */
 import { analyze } from "@/lib/analytics";
-import { TZ, MUESTRA_MIN } from "@/lib/model";
+import { TZ, MUESTRA_MIN, EPS_PNL } from "@/lib/model";
 import { fmt, pf, pnlFmt, pnlClass, SectionHead, Skeleton, usePoll, deskMap, price, pl, AppFooter, AvisoSinConexion, pdec, uds } from "./ui";
 import EquityChart from "./EquityChart";
 import AppHeader from "./AppHeader";
@@ -298,7 +298,7 @@ export default function AnalyticsPage() {
                 value={pnlFmt(a.netPnl)}
                 unidad={divisa}
                 sub={equity ? `${pnlFmt((a.netPnl / equity) * 100)}% del capital` : undefined}
-                tone={Math.abs(a.netPnl) < 0.005 ? undefined : a.netPnl > 0 ? "long" : "short"}
+                tone={Math.abs(a.netPnl) < EPS_PNL ? undefined : a.netPnl > 0 ? "long" : "short"}
                 big
               />
               {/* El color lo decide el umbral, no el capricho: verde solo si

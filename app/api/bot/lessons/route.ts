@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getTrades, loadConfig, getJournal } from "@/lib/db";
 import { recorta } from "@/lib/store";
-import { MUESTRA_MIN } from "@/lib/model";
+import { MUESTRA_MIN, EPS_PNL } from "@/lib/model";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -15,7 +15,7 @@ export const fetchCache = "force-no-store";
 // se mide sobre las que se decidieron — igual que en /api/bot/expectancy y en
 // analyze(). Antes esta ruta inflaba el acierto del Gestor con sus propios
 // breakevens, y es el resumen que los Gestores leen para juzgarse.
-const EPS_PNL = 0.005;
+
 
 const gano = (p?: number) => (p || 0) > EPS_PNL;
 const perdio = (p?: number) => (p || 0) < -EPS_PNL;

@@ -4,7 +4,7 @@ import { getTrades, getEquity } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-const EPS = 0.005;
+import { EPS_PNL as EPS } from "@/lib/model";
 
 /**
  * Expectativa REAL del bot calculada solo con trades cerrados:

@@ -229,6 +229,23 @@ export type EquityPoint = { ts: number; equity: number };
 export const MUESTRA_MIN = 5;
 
 /**
+ * Bajo este importe, un P&L se considera CERO.
+ *
+ * Separa tres cosas que en un panel de trading no son la misma: ganar, perder y
+ * salir en tablas. De él dependen el recuento de aciertos, el color de cada
+ * cifra y el "+" de los importes positivos.
+ *
+ * Estaba escrito TRES veces con nombre propio —EPS en components/ui.tsx para el
+ * color, EPS_PNL en lib/analytics.ts para contar aciertos y otro EPS_PNL en la
+ * ruta /api/bot/lessons para lo que se le cuenta a los Gestores— más el literal
+ * 0.005 suelto en cinco sitios de la interfaz. Hoy los tres valen lo mismo;
+ * el día que uno cambie, una operación contada "a cero" por las métricas
+ * seguiría pintándose en verde en la fila de al lado, y el modelo tendría un
+ * recuento de aciertos distinto del que ve la persona.
+ */
+export const EPS_PNL = 0.005;
+
+/**
  * Equity nocional del simulador. Vive aquí y no en lib/sim.ts porque el panel
  * del backtest necesita el mismo número para expresar la caída máxima en %, y
  * no puede importar el simulador entero desde el navegador.
