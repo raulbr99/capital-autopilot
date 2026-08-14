@@ -100,7 +100,14 @@ export function Clock({ className }: { className?: string }) {
 
 export function SectionHead({ label, right }: { label: string; right?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between border-b border-industrial px-5 py-3.5">
+    /*
+      flex-wrap: en una mesa a 390 px el título "Señales · en vivo" y sus tres
+      filtros no caben en una línea, y sin permitir el salto el título se
+      comprime y se parte en "SEÑALES · EN / VIVO" mientras los chips se
+      estrujan a su lado. Con wrap, los filtros bajan enteros a la línea
+      siguiente. En escritorio no cambia nada: siguen cabiendo.
+    */
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-industrial px-5 py-3.5">
       <h2 className="tag">{label}</h2>
       {right ?? <span className="h-1.5 w-1.5 rounded-full bg-accent/70" />}
     </div>

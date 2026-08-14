@@ -95,7 +95,10 @@ export default function SignalMatrix({
         key={id}
         onClick={() => setFilter(id)}
         aria-pressed={on}
-        className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+        /* whitespace-nowrap: sin esto el chip parte "Todas" y su número en dos
+           líneas cuando la fila va justa, y los tres filtros pasan a ocupar el
+           doble de alto. Visto en una captura a 390 px. */
+        className={`whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
           on ? "bg-raised text-white" : "text-muted hover:text-dim"
         }`}
       >
