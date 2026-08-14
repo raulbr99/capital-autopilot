@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Snapshot, JournalEntry, OpenPos, DeskCategory } from "./types";
-import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, AvisoMotorParado, useOnline, aCuenta, pl } from "./ui";
+import { pnlFmt, fmt, DeskGlyph, deskSession, usePoll, positionRisk, deskMap, AppFooter, Skeleton, AvisoSinConexion, AvisoMotorParado, useOnline, aCuenta, pl, tasasDe } from "./ui";
 import { EPS_PNL } from "@/lib/model";
 import AppHeader from "./AppHeader";
 import SignalMatrix from "./SignalMatrix";
@@ -163,9 +163,9 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
    * muertas. Lo introduje yo al convertir el riesgo a la divisa de la cuenta.
    */
   const currency = snap?.account?.currency ?? "";
-  const eurusd = (snap?.evals ?? []).find((e) => e.epic === "EURUSD")?.price ?? null;
+  const tasas = tasasDe(snap?.evals);
   const enCuenta = (importe: number, p: { currency?: string }) =>
-    aCuenta(importe, p.currency, currency, eurusd);
+    aCuenta(importe, p.currency, currency, tasas);
   /** true si ALGUNA posición no se ha podido convertir: entonces no se afirma el %. */
   let sinConvertir = false;
   const suma = (f: (p: (typeof positions)[number]) => number) =>
@@ -479,7 +479,7 @@ export default function DeskPage({ category }: { category: DeskCategory }) {
               divisa={currency}
               equity={snap?.account?.balance ?? null}
               marcos={Object.fromEntries(instruments.map((i) => [i.epic, i.resolution]))}
-              eurusd={eurusd}
+              tasas={tasas}
             />
             {journal.length === 0 && (
               <div className="dotgrid rounded-xl border border-industrial bg-soft px-5 py-7 text-center">

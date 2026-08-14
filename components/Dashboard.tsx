@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, OpenPos, TradeRecord, Instrument } from "./types";
-import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion, aCuenta, useDatosViejos, alternarTema } from "./ui";
+import { fmt, price, pnlFmt, pnlClass, SectionHead, StatCard, DeskGlyph, Skeleton, deskSession, usePoll, useOnline, positionRisk, deskOfEpic, AppFooter, variacion, AvisoSinConexion, aCuenta, useDatosViejos, alternarTema, tasasDe } from "./ui";
 import EquityChart from "./EquityChart";
 import PositionsTable from "./PositionsTable";
 import RiskPanel from "./RiskPanel";
@@ -291,11 +291,11 @@ export default function Dashboard() {
    * del panel", y su umbral de alarma está en el 10 % del capital. Un riesgo
    * real del 9 % se pintaba en rojo como 10,4 %.
    */
-  const eurusd = (snap?.evals ?? []).find((e) => e.epic === "EURUSD")?.price ?? null;
+  const tasas = tasasDe(snap?.evals);
   let riesgoAprox = false;
   const openRisk = positions.reduce((s, p) => {
     const bruto = positionRisk(p).risk ?? 0;
-    const enCuenta = aCuenta(bruto, p.currency, snap?.account?.currency, eurusd);
+    const enCuenta = aCuenta(bruto, p.currency, snap?.account?.currency, tasas);
     if (enCuenta == null) {
       riesgoAprox = true;
       return s + bruto;
@@ -750,7 +750,7 @@ export default function Dashboard() {
               divisa={acc?.currency ?? ""}
               equity={lastEquity}
               marcos={Object.fromEntries((cfg?.instruments ?? []).map((i) => [i.epic, i.resolution]))}
-              eurusd={eurusd}
+              tasas={tasas}
             />
             <LogFeed logs={historial.logs} />
           </div>

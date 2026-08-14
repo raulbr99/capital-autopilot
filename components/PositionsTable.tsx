@@ -25,9 +25,9 @@ const ChartIcon = (
  * múltiplo de R dividía uno entre otro. Con el cambio disponible se pasan a la
  * divisa de la cuenta; sin él se dejan como están y la fila lo dice en su title.
  */
-function derive(p: OpenPos, divisaCuenta?: string, eurusd?: number | null) {
+function derive(p: OpenPos, divisaCuenta?: string, tasas?: Record<string, number>) {
   const cur = p.currentPrice ?? p.entry;
-  const conv = (v: number) => aCuenta(v, p.currency, divisaCuenta, eurusd);
+  const conv = (v: number) => aCuenta(v, p.currency, divisaCuenta, tasas);
   const r0 = positionRisk(p);
   const riskConv = r0.risk == null ? null : conv(r0.risk);
   const convertido = r0.risk == null || riskConv != null;
@@ -94,7 +94,7 @@ export default function PositionsTable({
   divisa,
   equity,
   marcos,
-  eurusd,
+  tasas,
 }: {
   positions: OpenPos[];
   onClose: (p: OpenPos) => void;
@@ -104,8 +104,8 @@ export default function PositionsTable({
   equity?: number | null;
   /** epic → resolución del motor, para abrir el gráfico en su marco. */
   marcos?: Record<string, string>;
-  /** Cambio EUR/USD del propio universo, para llevar riesgo y nocional a la cuenta. */
-  eurusd?: number | null;
+  /** Cambios del propio universo (USD y JPY), para llevar riesgo y nocional a la cuenta. */
+  tasas?: Record<string, number>;
   busy: boolean;
 }) {
   const [chartPos, setChartPos] = useState<OpenPos | null>(null);
@@ -126,7 +126,7 @@ export default function PositionsTable({
   let mezcla = false;
   const totals = positions.reduce(
     (a, p) => {
-      const { risk, notional, convertido } = derive(p, divisa, eurusd);
+      const { risk, notional, convertido } = derive(p, divisa, tasas);
       if (!convertido) mezcla = true;
       a.pnl += p.upl || 0;
       a.risk += risk ?? 0;
@@ -195,7 +195,7 @@ export default function PositionsTable({
               </thead>
               <tbody>
                 {positions.map((p) => {
-                  const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain, convertido } = derive(p, divisa, eurusd);
+                  const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain, convertido } = derive(p, divisa, tasas);
                   return (
                     <tr key={p.key} className="border-b border-industrial/60 hover:bg-raised">
                       {/*
@@ -343,7 +343,7 @@ export default function PositionsTable({
           {/* Móvil: tarjetas apiladas */}
           <div className="space-y-2 p-3 md:hidden">
             {positions.map((p) => {
-              const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain } = derive(p, divisa, eurusd);
+              const { cur, risk, distPct, distTone, curTone, rMult, locked, lockedGain } = derive(p, divisa, tasas);
               return (
                 <div key={p.key} className="rounded-lg border border-industrial bg-base p-3">
                   <div className="flex items-center justify-between">
@@ -423,7 +423,7 @@ export default function PositionsTable({
         onClose={() => setChartPos(null)}
         divisa={divisa}
         marcoMotor={marcos?.[chartPos.epic]}
-        rMult={derive(chartPos, divisa, eurusd).rMult}
+        rMult={derive(chartPos, divisa, tasas).rMult}
       />
     )}
     </>

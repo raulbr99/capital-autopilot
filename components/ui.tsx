@@ -631,19 +631,53 @@ export function useOnline() {
  * (los cruces contra el yen, por ejemplo), se devuelve null y quien pinte decide
  * qué decir — pero no se afirma una equivalencia que no se tiene.
  */
+/**
+ * Cambios contra la divisa de la cuenta, sacados del propio universo.
+ *
+ * EURUSD y EURJPY son dos de los veinte instrumentos que el motor evalúa cada
+ * ciclo, así que sus precios ya viajan en el snapshot: no hace falta ninguna
+ * fuente nueva para convertir dólares NI yenes. Un precio de EURUSD son dólares
+ * por euro y uno de EURJPY, yenes por euro, así que los dos se usan igual.
+ */
+export function tasasDe(
+  evals: { epic: string; price: number }[] | undefined
+): Record<string, number> {
+  const t: Record<string, number> = {};
+  const p = (epic: string) => evals?.find((e) => e.epic === epic)?.price;
+  const usd = p("EURUSD");
+  const jpy = p("EURJPY");
+  if (usd && usd > 0) t.USD = usd;
+  if (jpy && jpy > 0) t.JPY = jpy;
+  return t;
+}
+
+/**
+ * Llevar a la divisa de la CUENTA un importe nacido de precios.
+ *
+ * Antes solo sabía de dólares, así que un cruce contra el yen —GBPJPY y EURJPY
+ * están en el universo— devolvía null y sus cifras de riesgo y exposición se
+ * quedaban sin convertir, sumándose con una magnitud unas 170 veces mayor. Ayer
+ * lo tapé marcando esos totales como "aprox."; el arreglo de verdad es
+ * convertirlos, y el dato para hacerlo ya estaba en el snapshot.
+ *
+ * `tasas` va en unidades de esa divisa por unidad de la cuenta, que es
+ * exactamente lo que da un par EUR/x cuando la cuenta es en euros.
+ */
 export function aCuenta(
   importe: number,
   divisaPos: string | undefined,
   divisaCuenta: string | undefined,
-  eurusd: number | null | undefined
+  tasas: Record<string, number> | number | null | undefined
 ): number | null {
   if (!Number.isFinite(importe)) return null;
   const a = (divisaPos || "").toUpperCase();
   const b = (divisaCuenta || "").toUpperCase();
   if (!a || !b || a === b) return importe;
-  if (!eurusd || eurusd <= 0) return null;
-  if (a === "USD" && b === "EUR") return importe / eurusd;
-  if (a === "EUR" && b === "USD") return importe * eurusd;
+  // Compat: si llega un número suelto se interpreta como el EURUSD de siempre.
+  const t: Record<string, number> =
+    typeof tasas === "number" ? (tasas > 0 ? { USD: tasas } : {}) : tasas || {};
+  if (b === "EUR" && t[a] > 0) return importe / t[a];
+  if (a === "EUR" && t[b] > 0) return importe * t[b];
   return null;
 }
 
