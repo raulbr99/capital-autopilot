@@ -192,10 +192,23 @@ export default function JournalEntryCard({
         </div>
       )}
 
+      {/*
+        Esto era un <p>: texto gris inerte que anuncia decisiones ocultas sin
+        forma de verlas. El desplegable existe, pero está ARRIBA y, cuando la
+        tesis es larga, su etiqueta dice "Leer tesis completa" — que no suena a
+        "ver las otras tres decisiones". Visto en una captura del Diario: una
+        tarjeta de forex con una operación VETADA POR EL COMITÉ y, debajo, "y 3
+        decisiones más" en gris, sin nada que invite a pulsarlo.
+        Las decisiones ocultas de una mesa incluyen vetos y omisiones: es
+        justamente lo que uno viene a leer aquí.
+      */}
       {!open && ocultas > 0 && (
-        <p className="mt-1.5 text-[11px] text-muted">
-          y {ocultas} {ocultas > 1 ? "decisiones" : "decisión"} más
-        </p>
+        <button
+          onClick={() => setOpen(true)}
+          className="-mx-1 mt-1.5 min-h-[32px] px-1 text-[11px] font-medium text-accent transition-opacity hover:opacity-80"
+        >
+          Ver {ocultas} {ocultas > 1 ? "decisiones" : "decisión"} más
+        </button>
       )}
 
       {esperasVacias > 0 && (
