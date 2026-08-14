@@ -92,7 +92,9 @@ export default function LabPage() {
         }`}
       >
         <span className={`block text-[13px] font-medium ${on ? "text-white" : "text-muted"}`}>{label}</span>
-        <span className="mt-0.5 block truncate text-[11px] text-muted">{hint}</span>
+        {/* "simulación · no toca la cuenta" se cortaba en "…no toca la c…" a
+            390 px, que es justo la mitad que importa de esa frase. */}
+        <span className="mt-0.5 block text-[11px] leading-snug text-muted">{hint}</span>
       </button>
     );
   };

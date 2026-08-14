@@ -37,7 +37,16 @@ function Kpi({ label, value, sub, tone }: { label: string; value: string | null;
       ) : (
         <p className={`mt-0.5 font-mono text-lg font-medium tabular-nums ${c}`}>{value}</p>
       )}
-      {value != null && sub && <p className="mt-0.5 truncate font-mono text-[10px] text-muted">{sub}</p>}
+      {/*
+        Sin truncate. En un teléfono la rejilla es de dos columnas, unos 175 px
+        por celda, y "2.3% del capital si saltan todos" se quedaba en "2.3% del
+        capital si sa…": la frase que explica la cifra cortada justo antes de
+        decir de qué cifra habla. Estas tarjetas no llevan title, así que en
+        táctil no había forma de leer el resto. Que envuelva y la fila crezca.
+      */}
+      {value != null && sub && (
+        <p className="mt-0.5 font-mono text-[10px] leading-snug text-muted">{sub}</p>
+      )}
     </div>
   );
 }
