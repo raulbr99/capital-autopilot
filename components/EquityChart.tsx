@@ -189,7 +189,25 @@ function Curve({ data, markers, divisa }: { data: Point[]; markers: Marker[]; di
     const back = data.map((_, i) => `${x(data.length - 1 - i)},${y(values[data.length - 1 - i])}`);
     const ddArea = `${peakPts.join(" ")} ${back.join(" ")}`;
 
-    return { values, min, max, plotW, plotH, x, xt, y, t0, tSpan, line, area, ddArea, up: values[values.length - 1] >= values[0] };
+    /**
+     * Línea de cero. Este mismo componente dibuja dos cosas distintas: en el
+     * panel, la equity de la cuenta —que ronda los 225 €, así que el cero cae
+     * fuera del encuadre y no pinta nada—; en Analítica, el P&L ACUMULADO, donde
+     * el cero es el punto de equilibrio y es la referencia más importante del
+     * gráfico.
+     *
+     * Ahí la rejilla marcaba máximo, medio y mínimo: +9,57 / −5,79 / −21,14. Los
+     * tres son valores del recorrido, ninguno es el cero, así que la curva
+     * cruzaba de ganar a perder sin que nada lo señalara. Saber si el bot está
+     * por encima o por debajo de donde empezó es lo primero que se mira en esa
+     * pantalla, y había que deducirlo interpolando entre dos rótulos.
+     *
+     * Se dibuja sola cuando el cero cae dentro del rango, así que la curva de
+     * equity no cambia.
+     */
+    const hayCero = min < 0 && max > 0;
+
+    return { values, min, max, plotW, plotH, x, xt, y, t0, tSpan, line, area, ddArea, hayCero, up: values[values.length - 1] >= values[0] };
   }, [data, w]);
 
   if (!geom) {
@@ -201,7 +219,7 @@ function Curve({ data, markers, divisa }: { data: Point[]; markers: Marker[]; di
     );
   }
 
-  const { values, min, max, plotW, plotH, x, xt, y, t0, tSpan, line, area, ddArea, up } = geom;
+  const { values, min, max, plotW, plotH, x, xt, y, t0, tSpan, line, area, ddArea, hayCero, up } = geom;
   const tone = up ? "long" : "short";
   const hi = hover != null ? data[hover] : null;
   // Con menos de un día de datos, repetir la fecha en los dos extremos no
@@ -258,15 +276,38 @@ function Curve({ data, markers, divisa }: { data: Point[]; markers: Marker[]; di
         {[0, 0.5, 1].map((g) => {
           const gy = PAD_Y + g * (plotH - PAD_Y * 2);
           const val = max - g * (max - min);
+          /* Con el cero rotulado, un valor de rejilla a menos de doce píxeles se
+             le monta encima: manda el cero, que es el que significa algo. */
+          const tapado = hayCero && Math.abs(gy - y(0)) < 12;
           return (
             <g key={g}>
               <line x1={0} x2={plotW} y1={gy} y2={gy} className="stroke-industrial" strokeWidth="1" />
-              <text x={plotW + 8} y={gy + 3.5} className="fill-muted font-mono text-[10px]">
-                {fmt(val, values[0] > 1000 ? 0 : 2)}
-              </text>
+              {!tapado && (
+                <text x={plotW + 8} y={gy + 3.5} className="fill-muted font-mono text-[10px]">
+                  {fmt(val, values[0] > 1000 ? 0 : 2)}
+                </text>
+              )}
             </g>
           );
         })}
+
+        {/* Equilibrio: por encima se gana, por debajo se pierde. */}
+        {hayCero && (
+          <g>
+            <line
+              x1={0}
+              x2={plotW}
+              y1={y(0)}
+              y2={y(0)}
+              className="stroke-cement"
+              strokeWidth="1"
+              strokeDasharray="4 3"
+            />
+            <text x={plotW + 8} y={y(0) + 3.5} className="fill-dim font-mono text-[10px]">
+              0
+            </text>
+          </g>
+        )}
 
         <polygon points={ddArea} className="fill-short" opacity="0.07" />
         <polygon points={area} fill="url(#eqfill)" />
