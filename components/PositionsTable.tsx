@@ -369,6 +369,7 @@ export default function PositionsTable({
         onClose={() => setChartPos(null)}
         divisa={divisa}
         marcoMotor={marcos?.[chartPos.epic]}
+        rMult={derive(chartPos, divisa, eurusd).rMult}
       />
     )}
     </>

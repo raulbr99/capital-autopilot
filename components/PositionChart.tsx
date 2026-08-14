@@ -23,6 +23,7 @@ export default function PositionChart({
   onClose,
   divisa = "",
   marcoMotor,
+  rMult,
 }: {
   pos: OpenPos;
   onClose: () => void;
@@ -30,6 +31,12 @@ export default function PositionChart({
   divisa?: string;
   /** Resolución con la que el motor decide en ESTE activo. */
   marcoMotor?: string;
+  /**
+   * Resultado en múltiplos de RIESGO. Lo calcula la tabla —que es quien tiene
+   * el cambio de divisa para llevar el riesgo a la moneda de la cuenta— y se
+   * pasa hecho, en vez de traer aquí toda esa fontanería.
+   */
+  rMult?: number | null;
 }) {
   /**
    * Abrir en el marco que usa el motor para este activo, no en 4 horas fijas.
@@ -296,9 +303,23 @@ export default function PositionChart({
                 {uds(pos.size)}
               </span>
             </span>
+            {/*
+              El múltiplo de R al lado del P&L, como en la tabla ("PNL · R").
+              Es la forma en que un operador puntúa una posición viva —"voy
+              +1,2R"— y es lo que la hace comparable con las demás aunque los
+              importes sean de tamaños distintos. Estaba en la fila desde la que
+              se abre este modal y se perdía al abrirlo, igual que le pasaba al
+              tamaño hasta la pasada 205.
+            */}
             <span className={`font-mono text-xs ${pnlClass(pos.upl)}`}>
               {pnlFmt(pos.upl)}
               {divisa && <span className="ml-1 text-muted">{divisa}</span>}
+              {rMult != null && (
+                <span className="ml-1.5 text-muted" title="Resultado en múltiplos del riesgo hasta el stop">
+                  {rMult >= 0 ? "+" : ""}
+                  {rMult.toFixed(2)}R
+                </span>
+              )}
             </span>
           </div>
           <div className="flex items-center gap-2">
