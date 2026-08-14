@@ -28,7 +28,6 @@ export default function JournalPage() {
   const [cargadoDe, setCargadoDe] = useState<string | null>(null);
   const [lastOk, setLastOk] = useState<number | null>(null);
   const [desk, setDesk] = useState("all");
-  const [open, setOpen] = useState<Set<number>>(new Set());
 
   /**
    * Filtrar por mesa se hacía en el navegador sobre las 60 entradas más
@@ -75,13 +74,6 @@ export default function JournalPage() {
     }
     return [...m.entries()];
   }, [shown]);
-
-  const toggle = (id: number) =>
-    setOpen((s) => {
-      const n = new Set(s);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
-    });
 
   const traded = shown.filter((e) => summarize(e.actions).kind === "traded").length;
 
@@ -213,10 +205,34 @@ export default function JournalPage() {
           </div>
         ) : (
           <div className="space-y-7">
-            {days.map(([day, list]) => (
+            {days.map(([day, list]) => {
+              const opero = list.filter((e) => summarize(e.actions).kind === "traded").length;
+              return (
               <section key={day}>
-                <h2 className="mb-3 border-b border-industrial pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted">
-                  {day}
+                {/*
+                  Pegajosa bajo la cabecera de la app (64 px). El diario carga las
+                  60 entradas más recientes de una vez: en escritorio eso son unos
+                  catorce mil píxeles de scroll, y a mitad de recorrido la fecha a
+                  la que pertenece lo que estás leyendo ya se quedó arriba. Un
+                  diario en el que hay que subir para saber de qué día es la
+                  entrada no es un diario, es un volcado.
+
+                  Y de paso el recuento del día: cuántas entradas y cuántas
+                  acabaron abriendo algo. Es lo que se busca al repasar una
+                  jornada, y hasta ahora había que contar los puntos verdes de la
+                  línea de tiempo uno a uno.
+                */}
+                <h2 className="sticky top-[64px] z-10 mb-3 flex items-baseline justify-between gap-3 border-b border-industrial bg-ink/90 py-1.5 text-[11px] font-medium uppercase tracking-wider text-muted backdrop-blur">
+                  <span>{day}</span>
+                  <span className="shrink-0 font-mono text-[10px] normal-case tracking-normal">
+                    {list.length} {pl(list.length, "entrada", "entradas")}
+                    {opero > 0 && (
+                      <>
+                        {" · "}
+                        <span className="text-long">{opero} con operación</span>
+                      </>
+                    )}
+                  </span>
                 </h2>
                 <div className="relative space-y-3 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-industrial">
                   {list.map((e) => {
@@ -234,7 +250,8 @@ export default function JournalPage() {
                   })}
                 </div>
               </section>
-            ))}
+              );
+            })}
           </div>
         )}
               <AppFooter />
