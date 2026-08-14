@@ -471,7 +471,19 @@ export async function clearEquity(): Promise<void> {
   }
 }
 
-export async function getEquity(limit = 300): Promise<EquityPoint[]> {
+/**
+ * Curva de equity para el panel.
+ *
+ * Devolvía las `limit` filas MÁS RECIENTES, y con el punto cada ~2 min eso son
+ * ocho horas: por eso los botones 1D, 1S y 1M del gráfico salen siempre
+ * deshabilitados y solo queda "Todo". El selector de rango existía de adorno.
+ *
+ * `abanico` lee un tramo más largo y lo adelgaza quedándose con uno de cada N,
+ * así que la respuesta pesa lo mismo y cubre mucho más tiempo. Para una curva de
+ * equity la resolución fina no aporta nada —lo que se lee es la forma— y el
+ * último punto se conserva siempre para que el extremo derecho sea el actual.
+ */
+export async function getEquity(limit = 300, abanico = 1): Promise<EquityPoint[]> {
   const s = await supa();
   if (!s) return bot().equity.slice(-limit);
   try {
@@ -479,11 +491,18 @@ export async function getEquity(limit = 300): Promise<EquityPoint[]> {
       .from("ap_equity")
       .select("*")
       .order("ts", { ascending: false })
-      .limit(limit);
-    if (Array.isArray(data))
-      return data
+      .limit(limit * Math.max(1, abanico));
+    if (Array.isArray(data)) {
+      const filas = data
         .map((r) => ({ ts: new Date(r.ts).getTime(), equity: Number(r.equity) }))
         .reverse();
+      if (abanico <= 1 || filas.length <= limit) return filas;
+      // Uno de cada N, contando desde el final para no perder el punto actual.
+      const paso = Math.ceil(filas.length / limit);
+      const out: EquityPoint[] = [];
+      for (let i = filas.length - 1; i >= 0; i -= paso) out.unshift(filas[i]);
+      return out;
+    }
   } catch {
     /* noop */
   }

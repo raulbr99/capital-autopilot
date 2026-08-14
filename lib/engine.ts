@@ -331,7 +331,12 @@ export async function runEngine(allowTradesIntent: boolean): Promise<EngineResul
   await appendEquity({ ts: Date.now(), equity });
   await saveRuntime();
   // Histórico desde BD (consistente entre instancias serverless)
-  const equityHistory = await getEquity(240);
+  /**
+   * 240 puntos, pero adelgazando un tramo cuatro veces más largo: la curva pasa
+   * de cubrir ~8 h a ~1,5 días con el mismo peso de respuesta. Con eso el botón
+   * "1D" del gráfico deja de estar apagado siempre.
+   */
+  const equityHistory = await getEquity(240, 4);
 
   return {
     configured: true,
