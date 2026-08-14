@@ -171,8 +171,15 @@ export default function ConfigPanel({
             En móvil no cambia nada —el contenedor ya es más estrecho que el
             tope— y las filas ganan realce al pasar por encima, como el resto de
             tablas del panel.
+
+            El primer intento fue 760 px y se quedó corto: en una captura en
+            tema claro seguían quedando unos 450 px de vacío entre el nombre y
+            sus controles. Con el contenido real —epic de hasta diez caracteres
+            más sus insignias, unos 150 px, y el grupo de mandos, unos 210— el
+            ancho útil es de poco más de 400, así que 540 deja un respiro sin
+            desconectar los dos extremos de la fila.
           */}
-          <div className="max-w-[760px] overflow-hidden rounded-lg border border-industrial">
+          <div className="max-w-[540px] overflow-hidden rounded-lg border border-industrial">
             <div className="flex items-center gap-1.5 border-b border-industrial bg-base px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-wider text-muted">
               <span className="flex-1">Activo</span>
               <span className="w-[76px] text-center">Marco</span>
