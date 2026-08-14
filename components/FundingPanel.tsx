@@ -11,7 +11,7 @@ type Fund = {
   annualizedPct: number | null;
   nextFundingTime: string | null;
   markPrice: number | null;
-  bias: "long" | "short" | "neutral";
+  bias: "crowded-long" | "long" | "neutral" | "short" | "crowded-short";
 };
 type Data = { fetchedAt: string; funding: Fund[] };
 
@@ -95,8 +95,17 @@ export default function FundingPanel({ className = "" }: { className?: string })
 
         {rows.map((f) => {
           const caliente = Math.abs(f.currentRatePct) >= SOBRECALENTADO;
-          const largo = f.bias === "long";
-          const corto = f.bias === "short";
+          /*
+            El módulo devuelve CINCO sesgos: crowded-long, long, neutral, short
+            y crowded-short. Este panel —que escribí yo— solo miraba "long" y
+            "short", así que los dos extremos caían al caso por defecto y se
+            rotulaban "neutral": justo lo contrario de lo que significan. Y
+            convivían con la insignia ALTO, que sí se calcula aparte, así que
+            con el funding disparado la fila habría dicho "ALTO" y "neutral" a
+            dos centímetros.
+          */
+          const largo = f.bias === "long" || f.bias === "crowded-long";
+          const corto = f.bias === "short" || f.bias === "crowded-short";
           return (
             <div key={f.epic} className="flex items-center gap-3">
               <span className="w-20 shrink-0 truncate text-[13px] font-medium text-white sm:w-24 sm:text-sm">
@@ -154,7 +163,8 @@ export default function FundingPanel({ className = "" }: { className?: string })
         negativa = la pagan los cortos. Es <span className="text-dim">contexto de posicionamiento</span>,
         el equivalente del COT en cripto — nunca una señal de entrada.{" "}
         <span className="text-accent">ALTO</span> marca ≥{SOBRECALENTADO}% cada 8 h: el lado que paga
-        está muy cargado y suele preceder a un cierre en cascada.
+        está muy cargado y suele preceder a un cierre en cascada. Por debajo de ±0,005 % cada 8 h la
+        tasa se considera <span className="text-dim">neutral</span>: es ruido, no posicionamiento.
       </p>
     </div>
   );
