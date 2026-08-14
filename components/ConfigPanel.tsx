@@ -209,7 +209,16 @@ export default function ConfigPanel({
                       Envolviendo, el nombre ocupa su línea entera y los mandos
                       bajan a la siguiente. En sm+ nada cambia: ahí caben.
                     */
-                    className={`flex flex-wrap items-center gap-1.5 border-b border-industrial/70 px-2.5 py-1 transition-colors last:border-b-0 hover:bg-raised ${
+                    /*
+                      El separador entre filas y el aire vertical van con la
+                      envoltura de ayer: al partirse la fila en dos líneas
+                      —nombre arriba, mandos abajo— una raya al 70 % de opacidad
+                      dejaba de leerse como final de instrumento, y con veinte
+                      seguidos cuesta ver dónde acaba uno y empieza el siguiente.
+                      En sm+ la fila sigue siendo una línea y el aire vuelve a lo
+                      de antes.
+                    */
+                    className={`flex flex-wrap items-center gap-1.5 border-b border-industrial px-2.5 py-2 transition-colors last:border-b-0 hover:bg-raised sm:py-1 ${
                       i.paused ? "opacity-55" : ""
                     }`}
                   >
